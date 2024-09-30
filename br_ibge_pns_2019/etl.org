@@ -1,0 +1,122 @@
+#+property: header-args:sh  :tangle ./etl.sh
+
+# Local Variables: 
+# eval: (add-hook 'after-save-hook (lambda () (org-babel-tangle) )) 
+# End:
+
+manually tangle to =etl.sh= file with =C-c C-v t=  (=org-babel-tangle=)
+
+#+begin_src sh
+#!/bin/bash
+
+# shell script configs
+set -eu
+
+echo "Extract-Transform Scripts for IBGE/PNS2019\n"
+#+end_src
+
+
+#+begin_src sh
+# microdata (in text format)
+mdata=ftp://ftp.ibge.gov.br/PNS/2019/Microdados/Dados/PNS_2019_20220525.zip
+# dictionary of variables (needed to parse microdata)
+vdict=ftp://ftp.ibge.gov.br/PNS/2019/Microdados/Documentacao/Dicionario_e_input_20220530.zip
+data=pns
+# temporary directory
+tmpdir=/tmp/${data}/raw
+# target directory
+tgtdir=/tmp/$data/data
+#+end_src
+
+
+#+begin_src sh
+check_if_dependencies_are_installed(){
+    i=0
+
+    if ! command -v curl >/dev/null 2>&1
+    then
+        echo "please install 'curl' to continue."
+        i=1
+    fi
+
+    if ! command -v unzip >/dev/null 2>&1
+    then
+        echo "please install 'unzip' to continue."
+        i=1
+    fi
+
+    if [ $i -gt 0 ];
+    then
+        echo 'please install the missing dependencies before proceeding.'
+        exit 1
+    fi
+}
+#+end_src
+
+
+#+begin_src sh
+create_temporary_directories(){
+
+    echo "Creating temporary directory $tmpdir..."
+    rm -rf ${tmpdir}
+    mkdir -p ${tmpdir}
+
+    echo "DONE.\nCreating temporary directory $tgtdir..."
+    rm -rf ${tgtdir}
+    mkdir -p ${tgtdir}
+
+    echo "DONE."
+}
+#+end_src
+
+
+#+begin_src sh
+fetch_microdata(){
+
+    echo "Fetching the microdata from $mdata..."
+    curl ${mdata} -o ${tmpdir}/mdata.zip
+
+    echo '  DONE. Unziping the microdata...'
+    unzip ${tmpdir}/mdata.zip -d ${tmpdir}
+
+    echo '  DONE. Deleting the downloaded microdata zip file...'
+    rm -rf ${tmpdir}/mdata.zip
+    echo 'DONE.'
+}
+#+end_src
+
+
+#+begin_src sh
+fetch_variables_dictionary(){
+    
+    echo "Fetching the dictionary of variables from $vdict..."
+    curl ${vdict} -o ${tmpdir}/vdict.zip
+
+    echo '  DONE. Unziping the data dictionary...'
+    unzip ${tmpdir}/vdict.zip -d ${tmpdir}
+    
+    echo '  DONE. Deleting the downloaded data dictionary zip file...'
+    rm -rf ${tmpdir}/vdict.zip
+
+}
+#+end_src
+
+
+#+begin_src sh
+main(){
+
+    check_if_dependencies_are_installed
+
+    create_temporary_directories
+    
+    fetch_microdata
+    
+    fetch_variables_dictionary
+}
+
+main
+
+exit 0
+#+end_src
+
+
