@@ -122,11 +122,35 @@ dict <-
     col_names = FALSE
   )
 
-dict %>%
+pars <-
+  dict %>%
   rename(pos = 1, length = 2, var = 3, q_code = 4, q_desc = 5, a_code = 6, a_desc = 7) %>% 
   mutate(part='', module='', .before = "pos") %>%
   fill(pos, length, var, q_code, q_desc) %>%
-  str
+  as.data.frame()
+
+aux_part <- ''
+aux_module <- ''
+
+for (i in seq_len(nrow(pars))){
+  if (grepl('^parte', pars[i,'pos'], ignore.case = TRUE)){
+    aux_part <- pars[i,'pos'] 
+  }
+  if (grepl('^módulo', pars[i,'pos'], ignore.case = TRUE)){
+    aux_module <- pars[i,'pos'] 
+  }
+  pars[i,'part'] <- aux_part
+  pars[i,'module'] <- aux_module
+}
+
+pars %>%
+  filter(
+    !grepl('^parte', pos, ignore.case = TRUE),
+    !grepl('^módulo', pos, ignore.case = TRUE),
+    !grepl('caso de mais', pos, ignore.case = TRUE),
+    !grepl('variáve', pos, ignore.case = TRUE)
+  ) %>%
+  View
 #+end_src
 
 
