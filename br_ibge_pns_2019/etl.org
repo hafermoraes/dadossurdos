@@ -161,6 +161,15 @@ var_dict <-
   ) %>% 
   transmute(part, module, var, q_code, q_desc, a_code, a_desc, characters, create_table_fields) 
 
+## dicionário de variáveis 
+var_dict %>%
+  select(part, module, var, q_code, q_desc, a_code, a_desc) %>%
+  write_delim(
+    file = '/tmp/pns/data/pns2019_variables_dictionary.txt',
+    delim = '|',
+    quote = 'none',
+    col_names = FALSE
+  )
 
 ## argumento 'characters' da função 'cut' para delimitação do microdado
 var_dict %>%
@@ -197,6 +206,24 @@ parse_variables_dictionary_using_GNU_R(){
 #+end_src
 
 
+#+begin_src sh
+prepare_microdata_for_data_ingestion(){
+
+    echo 'Transform microdata from fixed width format to delimited file'
+
+    # 'characters' argument from 'cut' function
+    CHARACTERS_ARG=$(cat /tmp/pns/data/cut_characters)
+
+    # from fixed width format to pipe (|) delimited text file
+    cut \
+        --output-delimiter='|' \
+        --characters=$CHARACTERS_ARG \
+        /tmp/pns/raw/PNS_2019.txt > \
+        /tmp/pns/data/pns2019_microdata.txt
+    
+}
+#+end_src
+
 
 #+begin_src sh
 main(){
@@ -210,6 +237,8 @@ main(){
     fetch_variables_dictionary
 
     parse_variables_dictionary_using_GNU_R
+
+    prepare_microdata_for_data_ingestion
 }
 
 main
