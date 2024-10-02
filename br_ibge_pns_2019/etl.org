@@ -102,11 +102,12 @@ fetch_variables_dictionary(){
 #+end_src
 
 
-#+begin_src R
+#+begin_src R :tangle parse_variables_dictionary.R
 ## bibliotecas de análise
 library(readxl)   # read_excel
 library(dplyr)    # mutate, filter, as_tibble, rename, fill, unique
 library(readr)    # write_delim
+library(tidyr)    # fill
 library(stringr)  # str_pad, str_flatten, str_replace_all
 
 dict <-
@@ -183,9 +184,18 @@ var_dict %>%
     quote = 'none',
     col_names = FALSE
   )
-
-
 #+end_src
+
+
+#+begin_src sh
+parse_variables_dictionary_using_GNU_R(){
+
+    echo 'Parsing the variables dictionary using GNU R'
+    Rscript parse_variables_dictionary.R
+    
+}
+#+end_src
+
 
 
 #+begin_src sh
@@ -198,6 +208,8 @@ main(){
     fetch_microdata
     
     fetch_variables_dictionary
+
+    parse_variables_dictionary_using_GNU_R
 }
 
 main
