@@ -1,0 +1,21 @@
+# build image with:
+#    docker buildx build -t dadossurdos_etl -f ETL_Dockerfile .
+
+# Start from a small and minimal R docker image
+FROM rhub/r-minimal:4.5.0
+
+# install curl (download files) and coreutils (for right version of 'cut' command)
+RUN apk add curl coreutils
+
+# install arrow (source: https://github.com/r-hub/r-minimal/blob/main/examples/arrow/Dockerfile)
+RUN mkdir -p ~/.R && echo "LDFLAGS+=-fPIC" >> ~/.R/Makevars
+RUN installr -d \
+    -t "make openssl-dev cmake linux-headers apache-arrow-dev" \
+    -a "openssl libarrow_dataset libarrow" arrow@14.0.2.1 
+
+# install R packages used in the preprocessing steps of the ETL
+RUN installr -d readr readxl tidyr dplyr stringr
+
+WORKDIR /etl/
+
+COPY ./etl/ /etl/
