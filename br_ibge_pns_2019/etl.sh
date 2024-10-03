@@ -64,13 +64,13 @@ fetch_microdata(){
 }
 
 fetch_variables_dictionary(){
-    
+
     echo "Fetching the dictionary of variables from $vdict_url..."
     curl ${vdict_url} -o ${raw_data}/vdict.zip
 
     echo '  DONE. Unziping the data dictionary...'
     unzip ${raw_data}/vdict.zip -d ${raw_data}
-    
+
     echo '  DONE. Deleting the downloaded data dictionary zip file...'
     rm -rf ${raw_data}/vdict.zip
 
@@ -81,7 +81,7 @@ parse_variables_dictionary_using_GNU_R(){
     echo 'Parsing the variables dictionary using GNU R'
     R CMD BATCH --quiet --vanilla /tmp/etl/br_ibge_pns_2019/parse_variables_dictionary.R
 
-    echo 'DONE.'    
+    echo 'DONE.'
 }
 
 prepare_microdata_for_data_ingestion(){
@@ -106,7 +106,7 @@ prepare_data_ingestion_sql_query(){
     echo "Preparing SQL script for creating the database schema and tables..."
 
     query=${proc_data}/psql_create_tables.sql
-    
+
     cat > ${query} <<EOF
 -- cria schema ~pns2019~ para a edição 2019 da PNS
           create schema pns2019;
@@ -135,7 +135,7 @@ EOF
 EOF
 
     cat ${proc_data}/create_table_fields >> ${query}
-    
+
     cat >> ${query} <<EOF
 );
 
@@ -147,19 +147,29 @@ EOF
     echo "DONE."
 }
 
+convert_microdata_to_parquet_using_arrow_and_GNU_R(){
+
+    echo 'Converting the processed microdata to .parquet format using GNU R and arrow library...'
+    R CMD BATCH --quiet --vanilla /tmp/etl/br_ibge_pns_2019/convert_microdata_to_parquet_format.R
+
+    echo 'DONE.'
+}
+
 main(){
 
     check_if_dependencies_are_installed
 
     create_temporary_directories
-    
+
     fetch_microdata
-    
+
     fetch_variables_dictionary
 
     parse_variables_dictionary_using_GNU_R
 
     prepare_microdata_for_data_ingestion
+
+    convert_microdata_to_parquet_using_arrow_and_GNU_R
 
     prepare_data_ingestion_sql_query
 }
