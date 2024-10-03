@@ -79,7 +79,8 @@ fetch_variables_dictionary(){
 parse_variables_dictionary_using_GNU_R(){
 
     echo 'Parsing the variables dictionary using GNU R'
-    R CMD BATCH --quiet --vanilla /tmp/etl/br_ibge_pns_2019/parse_variables_dictionary.R
+    cp ./gnur_parse_variables_dictionary.R ${src_dir}/gnur_parse_variables_dictionary.R
+    R CMD BATCH --quiet --vanilla ${src_dir}/gnur_parse_variables_dictionary.R
 
     echo 'DONE.'
 }
@@ -89,14 +90,14 @@ prepare_microdata_for_data_ingestion(){
     echo 'Transforming microdata from fixed width format to delimited file...'
 
     # 'characters' argument from 'cut' function
-    CHARACTERS_ARG=$(cat /tmp/etl/br_ibge_pns_2019/data/cut_characters_argument.txt)
+    CHARACTERS_ARG=$(cat ${proc_data}/cut_characters_argument.txt)
 
     # from fixed width format to pipe (|) delimited text file
     cut \
         --output-delimiter='|' \
         --characters=$CHARACTERS_ARG \
-        /tmp/etl/br_ibge_pns_2019/raw/PNS_2019.txt > \
-        /tmp/etl/br_ibge_pns_2019/data/microdata.txt
+        ${raw_data}/PNS_2019.txt > \
+        ${proc_data}/microdata.txt
 
     echo 'DONE.'
 }
@@ -150,8 +151,8 @@ EOF
 convert_microdata_to_parquet_using_arrow_and_GNU_R(){
 
     echo 'Converting the processed microdata to .parquet format using GNU R and arrow library...'
-    R CMD BATCH --quiet --vanilla /tmp/etl/br_ibge_pns_2019/convert_microdata_to_parquet_format.R
-
+    cp ./gnur_transform_microdata_into_parquet.R ${src_dir}/gnur_transform_microdata_into_parquet.R
+    R CMD BATCH --quiet --vanilla ${src_dir}/gnur_transform_microdata_into_parquet.R
     echo 'DONE.'
 }
 
