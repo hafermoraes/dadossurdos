@@ -2,9 +2,14 @@
 library(arrow)
 library(readr)
 
+src_dir <- '/tmp/etl/br_ibge_pns_2019/'
+raw_data <- paste0(src_dir, 'raw/')
+proc_data <- paste0(src_dir, 'data/')
+
+
 microdata <-
   read_delim_arrow(
-    file = '/tmp/etl/br_ibge_pns_2019/data/microdata.txt',
+    file = paste0(proc_data, 'microdata.txt'),
     delim = '|',
     col_names = FALSE,
     as_data_frame = FALSE
@@ -12,7 +17,7 @@ microdata <-
 
 col_names <-
   read_delim(
-    file = '/tmp/etl/br_ibge_pns_2019/data/col_names.txt',
+    file = paste0(proc_data, 'col_names.txt'),
     delim = '|',
     show_col_types = FALSE
   )
@@ -21,5 +26,5 @@ names(microdata) <- col_names$var
 
 write_parquet(
   microdata,
-  '/tmp/etl/br_ibge_pns_2019/data/microdata.parquet'
+  paste0(proc_data, 'microdata.parquet')
 )

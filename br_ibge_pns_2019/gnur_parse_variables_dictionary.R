@@ -7,9 +7,13 @@ library(readr)    # write_delim
 library(tidyr)    # fill
 library(stringr)  # str_pad, str_flatten, str_replace_all
 
+src_dir <- '/tmp/etl/br_ibge_pns_2019/'
+raw_data <- paste0(src_dir, 'raw/')
+proc_data <- paste0(src_dir, 'data/')
+
 dict <-
   read_excel(
-    path = '/tmp/etl/br_ibge_pns_2019/raw/dicionario_PNS_microdados_2019.xls',
+    path = paste0(raw_data, 'dicionario_PNS_microdados_2019.xls'),
     sheet = 'dicionário pns',
     range = 'A5:G5224',
     col_types = 'text',
@@ -78,7 +82,7 @@ var_dict <-
 var_dict %>%
   select(part, module, var, q_code, q_desc, a_code, a_desc) %>%
   write_delim(
-    file = '/tmp/etl/br_ibge_pns_2019/data/variables_dictionary.txt',
+    file = paste0(proc_data, 'variables_dictionary.txt'),
     delim = '|',
     quote = 'none',
     col_names = TRUE
@@ -92,7 +96,7 @@ var_dict %>%
     args = str_flatten(characters, ",")
   ) %>%
   write_lines(
-    file = '/tmp/etl/br_ibge_pns_2019/data/cut_characters_argument.txt'
+    file = paste0(proc_data, 'cut_characters_argument.txt')
   )
 
 ## nomes das colunas dos microdados (necessário para os arquivos .parquet)
@@ -100,7 +104,7 @@ var_dict %>%
   select(var) %>%
   unique() %>%
   write_delim(
-    file = '/tmp/etl/br_ibge_pns_2019/data/col_names.txt',
+    file = paste0(proc_data, 'col_names.txt'),
     delim = '',
     quote = 'none',
     col_names = TRUE
@@ -113,7 +117,7 @@ var_dict %>%
   select(create_table_fields) %>%
   unique() %>%
   write_delim(
-    file = '/tmp/etl/br_ibge_pns_2019/data/create_table_fields',
+    file = paste0(proc_data, 'create_table_fields'),
     delim='',
     quote = 'none',
     col_names = FALSE
