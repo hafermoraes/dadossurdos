@@ -98,7 +98,7 @@ fetch_variables_dictionary(){
 #+end_src
 
 
-#+begin_src R :tangle /tmp/etl/br_ibge_pns_2019/parse_variables_dictionary.R
+#+begin_src R :tangle ./gnur_parse_variables_dictionary.R
 ## Script de leitura, tratamento e preparação do
 ## dicionário de variáveis da PNS 2019
 
@@ -302,7 +302,7 @@ EOF
 #+end_src
 
 
-#+begin_src R :tangle /tmp/etl/br_ibge_pns_2019/convert_microdata_to_parquet_format.R
+#+begin_src R :tangle ./gnur_transform_microdata_into_parquet.R
 ## Converte microdados do formato texto para o formato parquet usando library(arrow)
 library(arrow)
 library(readr)
