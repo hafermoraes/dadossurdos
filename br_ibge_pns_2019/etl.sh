@@ -3,23 +3,16 @@
 # shell script configs
 set -eu
 
-echo "Extract-Transform Scripts for IBGE/PNS2019\n"
+echo "=microdata= preparation scripts for br-ibge-pns-2019\n"
 
-# microdata (in text format)
-mdata=ftp://ftp.ibge.gov.br/PNS/2019/Microdados/Dados/PNS_2019_20220525.zip
+# urls where microdata and variables dictionary are located
+mdata_url=ftp://ftp.ibge.gov.br/PNS/2019/Microdados/Dados/PNS_2019_20220525.zip
+vdict_url=ftp://ftp.ibge.gov.br/PNS/2019/Microdados/Documentacao/Dicionario_e_input_20220530.zip
 
-# dictionary of variables (needed to parse microdata)
-vdict=ftp://ftp.ibge.gov.br/PNS/2019/Microdados/Documentacao/Dicionario_e_input_20220530.zip
-
-# temporary directory
-data=pns
-tmpdir=/tmp/${data}/raw
-
-# target directory
-tgtdir=/tmp/$data/data
-
-# sql query
-query=/tmp/$data/data/create_tables.sql
+# source and directories where raw and processed data are to be stored
+src_dir=/tmp/etl/br_ibge_pns_2019
+raw_data=${src_dir}/raw
+proc_data=${src_dir}/data
 
 check_if_dependencies_are_installed(){
     i=0
@@ -45,48 +38,48 @@ check_if_dependencies_are_installed(){
 
 create_temporary_directories(){
 
-    echo "Creating temporary directory $tmpdir..."
-    rm -rf ${tmpdir}
-    mkdir -p ${tmpdir}
+    echo "Creating temporary directory for raw data at $raw_data..."
+    rm -rf ${raw_data}
+    mkdir -p ${raw_data}
 
-    echo "DONE.\nCreating temporary directory $tgtdir..."
-    rm -rf ${tgtdir}
-    mkdir -p ${tgtdir}
+    echo "DONE.\nCreating temporary directory for processed data at $proc_data..."
+    rm -rf ${proc_data}
+    mkdir -p ${proc_data}
 
     echo "DONE."
 }
 
 fetch_microdata(){
 
-    echo "Fetching the microdata from $mdata..."
-    curl ${mdata} -o ${tmpdir}/mdata.zip
+    echo "Fetching the =microdata= from $mdata_url..."
+    curl ${mdata_url} -o ${raw_data}/mdata.zip
 
-    echo '  DONE. Unziping the microdata...'
-    unzip ${tmpdir}/mdata.zip -d ${tmpdir}
+    echo '  DONE. Unziping the =microdata=...'
+    unzip ${raw_data}/mdata.zip -d ${raw_data}
 
-    echo '  DONE. Deleting the downloaded microdata zip file...'
-    rm -rf ${tmpdir}/mdata.zip
+    echo '  DONE. Deleting the downloaded =microdata= zip file...'
+    rm -rf ${raw_data}/mdata.zip
     echo 'DONE.'
 
 }
 
 fetch_variables_dictionary(){
     
-    echo "Fetching the dictionary of variables from $vdict..."
-    curl ${vdict} -o ${tmpdir}/vdict.zip
+    echo "Fetching the dictionary of variables from $vdict_url..."
+    curl ${vdict_url} -o ${raw_data}/vdict.zip
 
     echo '  DONE. Unziping the data dictionary...'
-    unzip ${tmpdir}/vdict.zip -d ${tmpdir}
+    unzip ${raw_data}/vdict.zip -d ${raw_data}
     
     echo '  DONE. Deleting the downloaded data dictionary zip file...'
-    rm -rf ${tmpdir}/vdict.zip
+    rm -rf ${raw_data}/vdict.zip
 
 }
 
 parse_variables_dictionary_using_GNU_R(){
 
     echo 'Parsing the variables dictionary using GNU R'
-    Rscript parse_variables_dictionary.R
+    Rscript /tmp/etl/br_ibge_pns_2019/parse_variables_dictionary.R
 
     echo 'DONE.'    
 }
@@ -96,22 +89,23 @@ prepare_microdata_for_data_ingestion(){
     echo 'Transforming microdata from fixed width format to delimited file...'
 
     # 'characters' argument from 'cut' function
-    CHARACTERS_ARG=$(cat /tmp/pns/data/cut_characters)
+    CHARACTERS_ARG=$(cat /tmp/etl/br_ibge_pns_2019/data/cut_characters_argument.txt)
 
     # from fixed width format to pipe (|) delimited text file
     cut \
         --output-delimiter='|' \
         --characters=$CHARACTERS_ARG \
-        /tmp/pns/raw/PNS_2019.txt > \
-        /tmp/pns/data/pns2019_microdata.txt
+        /tmp/etl/br_ibge_pns_2019/raw/PNS_2019.txt > \
+        /tmp/etl/br_ibge_pns_2019/data/microdata.txt
 
     echo 'DONE.'
-
 }
 
 prepare_data_ingestion_sql_query(){
 
     echo "Preparing SQL script for creating the database schema and tables..."
+
+    query=${proc_data}/psql_create_tables.sql
     
     cat > ${query} <<EOF
 -- cria schema ~pns2019~ para a edição 2019 da PNS
@@ -132,7 +126,7 @@ prepare_data_ingestion_sql_query(){
 -- importa dicionário de dados brutos na tabela ~datadict~
 EOF
 
-    echo "copy pns2019.datadict from '${tgtdir}/pns2019_variables_dictionary.txt' delimiter '|' csv; -- dados sem cabeçalho\n" >> ${query}
+    echo "copy pns2019.datadict from '${proc_data}/variables_dictionary.txt' delimiter '|' csv header;\n" >> ${query}
 
     cat >> ${query} <<EOF
 -- microdados separados por variavel
@@ -140,7 +134,7 @@ EOF
            create table pns2019.microdata (
 EOF
 
-    cat ${tgtdir}/create_table_fields >> ${query}
+    cat ${proc_data}/create_table_fields >> ${query}
     
     cat >> ${query} <<EOF
 );
@@ -148,7 +142,7 @@ EOF
 -- importa microdados brutos na tabela microdata
 EOF
 
-    echo "copy pns2019.microdata from '${tgtdir}/pns2019_microdata.txt' delimiter '|' csv; -- microdados sem cabeçalho\n" >> ${query}
+    echo "copy pns2019.microdata from '${proc_data}/microdata.txt' delimiter '|' csv header;\n" >> ${query}
 
     echo "DONE."
 }

@@ -1,5 +1,4 @@
 #+property: header-args:sh  :tangle ./etl.sh
-#+property: header-args:R   :tangle ./parse_variables_dictionary.R
 
 manually tangle to =etl.sh= file with =C-c C-v t=  (=org-babel-tangle=)
 
@@ -9,26 +8,19 @@ manually tangle to =etl.sh= file with =C-c C-v t=  (=org-babel-tangle=)
 # shell script configs
 set -eu
 
-echo "Extract-Transform Scripts for IBGE/PNS2019\n"
+echo "=microdata= preparation scripts for br-ibge-pns-2019\n"
 #+end_src
 
 
 #+begin_src sh
-# microdata (in text format)
-mdata=ftp://ftp.ibge.gov.br/PNS/2019/Microdados/Dados/PNS_2019_20220525.zip
+# urls where microdata and variables dictionary are located
+mdata_url=ftp://ftp.ibge.gov.br/PNS/2019/Microdados/Dados/PNS_2019_20220525.zip
+vdict_url=ftp://ftp.ibge.gov.br/PNS/2019/Microdados/Documentacao/Dicionario_e_input_20220530.zip
 
-# dictionary of variables (needed to parse microdata)
-vdict=ftp://ftp.ibge.gov.br/PNS/2019/Microdados/Documentacao/Dicionario_e_input_20220530.zip
-
-# temporary directory
-data=pns
-tmpdir=/tmp/${data}/raw
-
-# target directory
-tgtdir=/tmp/$data/data
-
-# sql query
-query=/tmp/$data/data/create_tables.sql
+# source and directories where raw and processed data are to be stored
+src_dir=/tmp/etl/br_ibge_pns_2019
+raw_data=${src_dir}/raw
+proc_data=${src_dir}/data
 #+end_src
 
 
@@ -60,13 +52,13 @@ check_if_dependencies_are_installed(){
 #+begin_src sh
 create_temporary_directories(){
 
-    echo "Creating temporary directory $tmpdir..."
-    rm -rf ${tmpdir}
-    mkdir -p ${tmpdir}
+    echo "Creating temporary directory for raw data at $raw_data..."
+    rm -rf ${raw_data}
+    mkdir -p ${raw_data}
 
-    echo "DONE.\nCreating temporary directory $tgtdir..."
-    rm -rf ${tgtdir}
-    mkdir -p ${tgtdir}
+    echo "DONE.\nCreating temporary directory for processed data at $proc_data..."
+    rm -rf ${proc_data}
+    mkdir -p ${proc_data}
 
     echo "DONE."
 }
@@ -76,14 +68,14 @@ create_temporary_directories(){
 #+begin_src sh
 fetch_microdata(){
 
-    echo "Fetching the microdata from $mdata..."
-    curl ${mdata} -o ${tmpdir}/mdata.zip
+    echo "Fetching the =microdata= from $mdata_url..."
+    curl ${mdata_url} -o ${raw_data}/mdata.zip
 
-    echo '  DONE. Unziping the microdata...'
-    unzip ${tmpdir}/mdata.zip -d ${tmpdir}
+    echo '  DONE. Unziping the =microdata=...'
+    unzip ${raw_data}/mdata.zip -d ${raw_data}
 
-    echo '  DONE. Deleting the downloaded microdata zip file...'
-    rm -rf ${tmpdir}/mdata.zip
+    echo '  DONE. Deleting the downloaded =microdata= zip file...'
+    rm -rf ${raw_data}/mdata.zip
     echo 'DONE.'
 
 }
@@ -93,20 +85,20 @@ fetch_microdata(){
 #+begin_src sh
 fetch_variables_dictionary(){
     
-    echo "Fetching the dictionary of variables from $vdict..."
-    curl ${vdict} -o ${tmpdir}/vdict.zip
+    echo "Fetching the dictionary of variables from $vdict_url..."
+    curl ${vdict_url} -o ${raw_data}/vdict.zip
 
     echo '  DONE. Unziping the data dictionary...'
-    unzip ${tmpdir}/vdict.zip -d ${tmpdir}
+    unzip ${raw_data}/vdict.zip -d ${raw_data}
     
     echo '  DONE. Deleting the downloaded data dictionary zip file...'
-    rm -rf ${tmpdir}/vdict.zip
+    rm -rf ${raw_data}/vdict.zip
 
 }
 #+end_src
 
 
-#+begin_src R
+#+begin_src R :tangle /tmp/etl/br_ibge_pns_2019/parse_variables_dictionary.R
 ## Script de leitura, tratamento e preparação do
 ## dicionário de variáveis da PNS 2019
 
@@ -118,7 +110,7 @@ library(stringr)  # str_pad, str_flatten, str_replace_all
 
 dict <-
   read_excel(
-    path = '/tmp/pns/raw/dicionario_PNS_microdados_2019.xls',
+    path = '/tmp/etl/br_ibge_pns_2019/raw/dicionario_PNS_microdados_2019.xls',
     sheet = 'dicionário pns',
     range = 'A5:G5224',
     col_types = 'text',
@@ -166,7 +158,7 @@ var_dict <-
   filter(
     ## ignora linhas de título, parte e módulo da pesquisa
     !grepl('^parte|^variáve|^módulo|caso de mais|variáve', pos, ignore.case = TRUE),
-  ) %>%
+    ) %>%
   mutate(
     var = tolower(var),
     ## delimitação dos campos (início-final) como argumento da função 'cut' chamada via shell
@@ -187,10 +179,10 @@ var_dict <-
 var_dict %>%
   select(part, module, var, q_code, q_desc, a_code, a_desc) %>%
   write_delim(
-    file = '/tmp/pns/data/pns2019_variables_dictionary.txt',
+    file = '/tmp/etl/br_ibge_pns_2019/data/variables_dictionary.txt',
     delim = '|',
     quote = 'none',
-    col_names = FALSE
+    col_names = TRUE
   )
 
 ## argumento 'characters' da função 'cut' para delimitação do microdado
@@ -201,8 +193,20 @@ var_dict %>%
     args = str_flatten(characters, ",")
   ) %>%
   write_lines(
-    file = '/tmp/pns/data/cut_characters'
+    file = '/tmp/etl/br_ibge_pns_2019/data/cut_characters_argument.txt'
   )
+
+## nomes das colunas dos microdados (necessário para os arquivos .parquet)
+var_dict %>%
+  select(var) %>%
+  unique() %>%
+  write_delim(
+    file = '/tmp/etl/br_ibge_pns_2019/data/col_names.txt',
+    delim = '',
+    quote = 'none',
+    col_names = TRUE
+  )
+
 
 ## corpo da 'create table' contendo os nomes de coluna, tipo de dados e comentários com enunciado da pergunta da pns 2019
 var_dict %>%
@@ -210,7 +214,7 @@ var_dict %>%
   select(create_table_fields) %>%
   unique() %>%
   write_delim(
-    file = '/tmp/pns/data/create_table_fields',
+    file = '/tmp/etl/br_ibge_pns_2019/data/create_table_fields',
     delim='',
     quote = 'none',
     col_names = FALSE
@@ -222,7 +226,7 @@ var_dict %>%
 parse_variables_dictionary_using_GNU_R(){
 
     echo 'Parsing the variables dictionary using GNU R'
-    Rscript parse_variables_dictionary.R
+    Rscript /tmp/etl/br_ibge_pns_2019/parse_variables_dictionary.R
 
     echo 'DONE.'    
 }
@@ -235,17 +239,16 @@ prepare_microdata_for_data_ingestion(){
     echo 'Transforming microdata from fixed width format to delimited file...'
 
     # 'characters' argument from 'cut' function
-    CHARACTERS_ARG=$(cat /tmp/pns/data/cut_characters)
+    CHARACTERS_ARG=$(cat /tmp/etl/br_ibge_pns_2019/data/cut_characters_argument.txt)
 
     # from fixed width format to pipe (|) delimited text file
     cut \
         --output-delimiter='|' \
         --characters=$CHARACTERS_ARG \
-        /tmp/pns/raw/PNS_2019.txt > \
-        /tmp/pns/data/pns2019_microdata.txt
+        /tmp/etl/br_ibge_pns_2019/raw/PNS_2019.txt > \
+        /tmp/etl/br_ibge_pns_2019/data/microdata.txt
 
     echo 'DONE.'
-
 }
 #+end_src
 
@@ -254,6 +257,8 @@ prepare_microdata_for_data_ingestion(){
 prepare_data_ingestion_sql_query(){
 
     echo "Preparing SQL script for creating the database schema and tables..."
+
+    query=${proc_data}/psql_create_tables.sql
     
     cat > ${query} <<EOF
 -- cria schema ~pns2019~ para a edição 2019 da PNS
@@ -274,7 +279,7 @@ prepare_data_ingestion_sql_query(){
 -- importa dicionário de dados brutos na tabela ~datadict~
 EOF
 
-    echo "copy pns2019.datadict from '${tgtdir}/pns2019_variables_dictionary.txt' delimiter '|' csv; -- dados sem cabeçalho\n" >> ${query}
+    echo "copy pns2019.datadict from '${proc_data}/variables_dictionary.txt' delimiter '|' csv header;\n" >> ${query}
 
     cat >> ${query} <<EOF
 -- microdados separados por variavel
@@ -282,7 +287,7 @@ EOF
            create table pns2019.microdata (
 EOF
 
-    cat ${tgtdir}/create_table_fields >> ${query}
+    cat ${proc_data}/create_table_fields >> ${query}
     
     cat >> ${query} <<EOF
 );
@@ -290,7 +295,7 @@ EOF
 -- importa microdados brutos na tabela microdata
 EOF
 
-    echo "copy pns2019.microdata from '${tgtdir}/pns2019_microdata.txt' delimiter '|' csv; -- microdados sem cabeçalho\n" >> ${query}
+    echo "copy pns2019.microdata from '${proc_data}/microdata.txt' delimiter '|' csv header;\n" >> ${query}
 
     echo "DONE."
 }
