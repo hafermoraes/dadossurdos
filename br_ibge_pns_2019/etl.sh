@@ -79,7 +79,7 @@ fetch_variables_dictionary(){
 parse_variables_dictionary_using_GNU_R(){
 
     echo 'Parsing the variables dictionary using GNU R'
-    Rscript /tmp/etl/br_ibge_pns_2019/parse_variables_dictionary.R
+    R CMD BATCH --quiet --vanilla /tmp/etl/br_ibge_pns_2019/parse_variables_dictionary.R
 
     echo 'DONE.'    
 }
