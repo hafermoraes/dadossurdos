@@ -14,28 +14,6 @@ src_dir=/tmp/etl/br_ibge_pns_2019
 raw_data=${src_dir}/raw
 proc_data=${src_dir}/data
 
-check_if_dependencies_are_installed(){
-    i=0
-
-    if ! command -v curl >/dev/null 2>&1
-    then
-        echo "please install 'curl' to continue."
-        i=1
-    fi
-
-    if ! command -v unzip >/dev/null 2>&1
-    then
-        echo "please install 'unzip' to continue."
-        i=1
-    fi
-
-    if [ $i -gt 0 ];
-    then
-        echo 'please install the missing dependencies before proceeding.'
-        exit 1
-    fi
-}
-
 create_temporary_directories(){
 
     echo "Creating temporary directory for raw data at $raw_data..."
@@ -52,7 +30,8 @@ create_temporary_directories(){
 fetch_microdata(){
 
     echo "Fetching the =microdata= from $mdata_url..."
-    curl ${mdata_url} -o ${raw_data}/mdata.zip
+    #curl ${mdata_url} -o ${raw_data}/mdata.zip
+    R --quiet --vanilla -e "curl::curl_download( '${mdata_url}', '${raw_data}/mdata.zip' )"
 
     echo '  DONE. Unziping the =microdata=...'
     unzip ${raw_data}/mdata.zip -d ${raw_data}
@@ -66,7 +45,8 @@ fetch_microdata(){
 fetch_variables_dictionary(){
 
     echo "Fetching the dictionary of variables from $vdict_url..."
-    curl ${vdict_url} -o ${raw_data}/vdict.zip
+    # curl ${vdict_url} -o ${raw_data}/vdict.zip
+    R --quiet --vanilla -e "curl::curl_download( '${vdict_url}', '${raw_data}/vdict.zip' )"
 
     echo '  DONE. Unziping the data dictionary...'
     unzip ${raw_data}/vdict.zip -d ${raw_data}
@@ -157,8 +137,6 @@ convert_microdata_to_parquet_using_arrow_and_GNU_R(){
 }
 
 main(){
-
-    check_if_dependencies_are_installed
 
     create_temporary_directories
 
