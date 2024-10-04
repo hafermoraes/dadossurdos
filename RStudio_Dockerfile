@@ -1,0 +1,16 @@
+# build image with:
+#    docker buildx build -t dadossurdos_rstudio -f RStudio_Dockerfile /
+
+# run ETL from within the container with
+#    docker run -it --rm -p 8787:8787 -e PASSWORD=123 -v /tmp/etl/br_ibge_pns_2019/data/microdata.parquet:/tmp/etl/br_ibge_pns_2019/data/microdata.parquet dadossurdos_rstudio
+
+# alternatively with
+#    docker run -it --rm -p 8787:8787 -e PASSWORD=123 dadossurdos_rstudio
+
+FROM rocker/tidyverse:4.4.1
+
+# install arrow
+# RUN Rscript -e "Sys.setenv('NOT_CRAN' = 'true'); install.packages('arrow')"
+
+ENV br_ibge_pns_2019=/tmp/etl/br_ibge_pns_2019/data/microdata.parquet
+COPY $br_ibge_pns_2019 $br_ibge_pns_2019
