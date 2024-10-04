@@ -1,0 +1,56 @@
+
+# former 'RStudio_Dockerfile'
+
+# from the repo's base directory, build image with:
+#    docker buildx build -t dadossurdos_rstudio -f docker/RStudio_Dockerfile .
+
+# run ETL from within the container with
+#    docker run \
+#           -it --rm \
+#           -p 8787:8787 \
+#           -e DISABLE_AUTH=true \
+#           -v /tmp/etl/br_ibge_pns_2019/data/microdata.parquet:/tmp/etl/br_ibge_pns_2019/data/microdata.parquet \
+#           dadossurdos_rstudio
+
+# alternatively with
+#    docker run \
+#          -it --rm \
+#          -p 8787:8787 \
+#          -e DISABLE_AUTH=true \
+#          dadossurdos_rstudio
+
+FROM rocker/tidyverse:4.4.1
+
+# Ingest IBGE/PNS2019 processed data into container
+ENV br_ibge_pns_2019=/tmp/etl/br_ibge_pns_2019/data
+COPY $br_ibge_pns_2019/microdata.parquet $br_ibge_pns_2019/variables_dictionary.txt $br_ibge_pns_2019
+
+
+# ----------------------------------------------------------------------------------------
+
+# former 'ETL_Dockerfile'
+
+# from the repo's base directory, build image with:
+#    docker buildx build -t dadossurdos_etl -f docker/ETL_Dockerfile .
+
+# run ETL from within the container with
+#    docker run -it --rm -v /tmp/:/tmp/ dadossurdos_etl sh -c 'cd /etl/br_ibge_pns_2019 && sh etl.sh'
+
+# Start from a small and minimal R docker image
+FROM rhub/r-minimal:4.5.0
+
+# install curl (download files) and coreutils (for right version of 'cut' command)
+RUN apk add curl coreutils
+
+# install R packages used in the preprocessing steps of the ETL
+RUN installr -d readr readxl tidyr dplyr stringr
+
+# install arrow (source: https://github.com/r-hub/r-minimal/blob/main/examples/arrow/Dockerfile)
+RUN mkdir -p ~/.R && echo "LDFLAGS+=-fPIC" >> ~/.R/Makevars
+RUN installr -d \
+    -t "make openssl-dev cmake linux-headers apache-arrow-dev" \
+    -a "openssl libarrow_dataset libarrow" arrow@14.0.2.1 
+
+WORKDIR /etl/
+
+COPY ./etl/ .
