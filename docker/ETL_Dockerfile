@@ -1,5 +1,5 @@
-# build image with:
-#    docker buildx build -t dadossurdos_etl -f ETL_Dockerfile .
+# from the repo's base directory, build image with:
+#    docker buildx build -t dadossurdos_etl -f docker/ETL_Dockerfile .
 
 # run ETL from within the container with
 #    docker run -it --rm -v /tmp/:/tmp/ dadossurdos_etl sh -c 'cd /etl/br_ibge_pns_2019 && sh etl.sh'
