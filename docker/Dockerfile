@@ -1,3 +1,13 @@
+
+# etl is to be orchestrated from a Makefile using
+#     docker run -it --rm \
+#            -v /tmp/:/tmp/ \
+#            -v $HOME/git/dadossurdos/etl/:/etl/ \
+#            rocker/tidyverse:4.4.1 \
+#            sh -c "cd /etl/br_ibge_pns_2019 && sh etl.sh"
+
+
+
 # from the repo's base directory, build image with:
 #    docker buildx build -t dadossurdos -f ~/git/dadossurdos/docker/Dockerfile /
 
