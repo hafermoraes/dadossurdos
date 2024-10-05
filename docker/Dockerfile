@@ -17,6 +17,8 @@
 # Note: This rocker image contains all needed packages for etl and analyses purposes
 FROM rocker/tidyverse:4.4.1
 
+RUN R --quiet --vanilla -e "install.packages( c( 'survey', 'srvyr' ) )"
+
 WORKDIR /home/rstudio/
 
 ENV host_git_repo=/home/rmoraes/git/dadossurdos
