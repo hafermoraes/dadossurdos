@@ -7,8 +7,8 @@ etl_docker_image=rocker/tidyverse:4.4.1
 br_ibge_pns_2019=/tmp/etl/br_ibge_pns_2019/data/microdata.parquet \
 		 /tmp/etl/br_ibge_pns_2019/data/variables_dictionary.txt
 
-br_igbe_pnadc_2022t3=/tmp/etl/br_igbe_pnadc_2022t3/data/microdata.parquet \
-		     /tmp/etl/br_igbe_pnadc_2022t3/data/variables_dictionary.txt
+br_ibge_pnadc_2022t3=/tmp/etl/br_ibge_pnadc_2022t3/data/microdata.parquet \
+		     /tmp/etl/br_ibge_pnadc_2022t3/data/variables_dictionary.txt
 
 # complete list of targets
 targets=$(br_ibge_pns_2019) $(br_ibge_pnadc_2022t3)
@@ -29,12 +29,12 @@ $(br_ibge_pns_2019): $(etl)/br_ibge_pns_2019/etl.org
 		$(etl_docker_image) \
 		sh -c "cd /etl/br_ibge_pns_2019 && sh etl.sh"
 
-# download and process data from 'br_igbe_pnadc_2022t3'
-$(br_igbe_pnadc_2022t3): $(etl)/br_igbe_pnadc_2022t3/etl.org
+# download and process data from 'br_ibge_pnadc_2022t3'
+$(br_ibge_pnadc_2022t3): $(etl)/br_ibge_pnadc_2022t3/etl.org
 	docker run -it --rm \
 		--volume /tmp/:/tmp/ \
 		--volume $(etl)/:/etl/ \
 		$(etl_docker_image) \
-		sh -c "cd /etl/br_igbe_pnadc_2022t3 && sh etl.sh"
+		sh -c "cd /etl/br_ibge_pnadc_2022t3 && sh etl.sh"
 
 

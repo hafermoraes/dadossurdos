@@ -34,5 +34,5 @@ ENV br_ibge_pns_2019=$data_folder/br_ibge_pns_2019/data
 COPY $br_ibge_pns_2019/microdata.parquet $br_ibge_pns_2019/variables_dictionary.txt $br_ibge_pns_2019/
 
 # IBGE/PNADC2022t3 processed data
-ENV br_igbe_pnadc_2022t3=$data_folder/br_igbe_pnadc_2022t3/data
-COPY $br_igbe_pnadc_2022t3/microdata.parquet $br_igbe_pnadc_2022t3/variables_dictionary.txt $br_igbe_pnadc_2022t3/
+ENV br_ibge_pnadc_2022t3=$data_folder/br_ibge_pnadc_2022t3/data
+COPY $br_ibge_pnadc_2022t3/microdata.parquet $br_ibge_pnadc_2022t3/variables_dictionary.txt $br_ibge_pnadc_2022t3/
