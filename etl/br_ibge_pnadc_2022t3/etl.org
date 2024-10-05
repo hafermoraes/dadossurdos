@@ -1,0 +1,358 @@
+#+property: header-args:sh  :tangle ./etl.sh
+
+manually tangle to =etl.sh= file with =C-c C-v t=  (=org-babel-tangle=)
+
+#+begin_src sh
+#!/bin/bash
+
+# shell script configs
+set -eu
+
+echo "=microdata= preparation scripts for br-ibge-pnadc-2022t3\n"
+#+end_src
+
+
+#+begin_src sh
+# urls where microdata and variables dictionary are located
+base_url=ftp://ftp.ibge.gov.br/
+base_url=${base_url}Trabalho_e_Rendimento/
+base_url=${base_url}Pesquisa_Nacional_por_Amostra_de_Domicilios_continua/
+base_url=${base_url}Anual/
+base_url=${base_url}Microdados/
+base_url=${base_url}Trimestre/
+base_url=${base_url}Trimestre_3
+mdata_url=${base_url}/Dados/PNADC_2022_trimestre3.zip
+vdict_url=${base_url}/Documentacao/dicionario_PNADC_microdados_trimestre3_20240619.xls
+
+# source and directories where raw and processed data are to be stored
+src_dir=/tmp/etl/br_ibge_pnadc_2022t3
+raw_data=${src_dir}/raw
+proc_data=${src_dir}/data
+#+end_src
+
+
+#+begin_src sh
+create_temporary_directories(){
+
+    echo "Creating temporary directory for raw data at $raw_data..."
+    rm -rf ${raw_data}
+    mkdir -p ${raw_data}
+
+    echo "DONE.\nCreating temporary directory for processed data at $proc_data..."
+    rm -rf ${proc_data}
+    mkdir -p ${proc_data}
+
+    echo "DONE."
+}
+#+end_src
+
+
+#+begin_src sh
+fetch_microdata(){
+
+    echo "Fetching the =microdata= from $mdata_url..."
+    R --quiet --vanilla -e "curl::curl_download( '${mdata_url}', '${raw_data}/mdata.zip' )"
+
+    echo '  DONE. Unziping the =microdata=...'
+    unzip ${raw_data}/mdata.zip -d ${raw_data}
+
+    echo '  DONE. Deleting the downloaded =microdata= zip file...'
+    rm -rf ${raw_data}/mdata.zip
+    echo 'DONE.'
+
+}
+#+end_src
+
+
+#+begin_src sh
+fetch_variables_dictionary(){
+
+    echo "Fetching the dictionary of variables from $vdict_url..."
+    R --quiet --vanilla -e "curl::curl_download( '${vdict_url}', '${raw_data}/vdict.xls' )"
+
+    echo '  DONE.'
+
+}
+#+end_src
+
+
+#+begin_src R :tangle ./gnur_parse_variables_dictionary.R
+## Fetch and process microdata and variables dictionary
+## of survey PNADC 2022 T3
+
+library(readxl)   # read_excel
+library(dplyr)    # mutate, filter, as_tibble, rename, fill, unique
+library(readr)    # write_delim
+library(tidyr)    # fill
+library(stringr)  # str_pad, str_flatten, str_replace_all
+
+src_dir <- '/tmp/etl/br_ibge_pnadc_2022t3/'
+raw_data <- paste0(src_dir, 'raw/')
+proc_data <- paste0(src_dir, 'data/')
+
+dict <-
+  read_excel(
+    path = paste0(raw_data, 'vdict.xls'),
+    sheet = 'dicionário pnad contínua ',
+    range = 'A4:H2044',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(
+    pos = 1,
+    len = 2,
+    var = 3,
+    q_code = 4,
+    q_desc = 5,
+    a_code = 6,
+    a_desc = 7,
+    period = 8
+  ) %>%
+  mutate(
+    part = '',
+    .before = 'pos',
+    q_desc = str_remove_all( q_desc, '[\r\n\"\\"]'),
+    a_desc = str_remove_all( a_desc, '[\r\n\"\\"]'),
+    period = str_remove_all( period, '[\r\n\"\\"]')
+  ) %>%
+  fill(pos, len, var, q_code, q_desc, period) %>%
+  as.data.frame()
+
+aux_part <- ''
+
+for (i in seq_len(nrow(dict))){
+  if (grepl('^parte|^variáv', dict[i,'pos'], ignore.case = TRUE)){
+    aux_part <- dict[i,'pos']
+  }
+  dict[i,'part'] <- aux_part
+}
+
+var_dict <-
+  dict %>%
+  filter(
+    ## ignora linhas de título, parte e módulo da pesquisa
+    !grepl('[A-Za-z]+', pos, ignore.case = TRUE),
+    ) %>%
+  mutate(
+    var = tolower(var),
+    ## delimitação dos campos (início-final) como argumento da função 'cut' chamada via shell
+    characters = paste0(pos, "-", as.numeric(pos) + as.numeric(len) -1),
+    ## corpo da chamada de criação da tabela (create table) contendo campo, tipo de dados e comentários
+    create_table_fields = paste0(
+      ## 4 espaços à esquerda
+      ## completa com espaço à direita para garantir comprimento uniforme de 10 caracteres
+      str_pad(string = tolower(var), width = 15, side = 'left', pad = ' '),
+      ## comentários de linha no script sql (tamanho do campo e enunciado da pergunta na pesquisa)
+      ifelse(var == 'v1028200', " text  -- ", " text, -- "),
+      q_desc
+    )
+  ) %>%
+  transmute(part, var, q_code, q_desc, a_code, a_desc, characters, create_table_fields)
+
+## dicionário de variáveis
+var_dict %>%
+  select(part, var, q_code, q_desc, a_code, a_desc) %>%
+  write_delim(
+    file = paste0(proc_data, 'variables_dictionary.txt'),
+    delim = '|',
+    quote = 'none',
+    col_names = TRUE
+  )
+
+## argumento 'characters' da função 'cut' para delimitação do microdado
+var_dict %>%
+  select(characters) %>%
+  unique() %>%
+  summarise(
+    args = str_flatten(characters, ",")
+  ) %>%
+  write_lines(
+    file = paste0(proc_data, 'cut_characters_argument.txt')
+  )
+
+## nomes das colunas dos microdados (necessário para os arquivos .parquet)
+var_dict %>%
+  select(var) %>%
+  unique() %>%
+  write_delim(
+    file = paste0(proc_data, 'col_names.txt'),
+    delim = '',
+    quote = 'none',
+    col_names = TRUE
+  )
+
+
+## corpo da 'create table' contendo os nomes de coluna, tipo de dados e comentários com enunciado da pergunta da pns 2019
+var_dict %>%
+  as_tibble() %>%
+  select(create_table_fields) %>%
+  unique() %>%
+  write_delim(
+    file = paste0(proc_data, 'create_table_fields'),
+    delim='',
+    quote = 'none',
+    col_names = FALSE
+  )
+#+end_src
+
+
+#+begin_src sh
+parse_variables_dictionary_using_GNU_R(){
+
+    echo 'Parsing the variables dictionary using GNU R'
+    cp ./gnur_parse_variables_dictionary.R ${src_dir}/gnur_parse_variables_dictionary.R
+    R CMD BATCH --quiet --vanilla ${src_dir}/gnur_parse_variables_dictionary.R
+
+    echo 'DONE.'
+}
+#+end_src
+
+
+#+begin_src sh
+prepare_microdata_for_data_ingestion(){
+
+    echo 'Transforming microdata from fixed width format to delimited file...'
+
+    # 'characters' argument from 'cut' function
+    CHARACTERS_ARG=$(cat ${proc_data}/cut_characters_argument.txt)
+
+    # from fixed width format to pipe (|) delimited text file
+    cut \
+        --output-delimiter='|' \
+        --characters=$CHARACTERS_ARG \
+        ${raw_data}/PNADC_2022_trimestre3.txt > \
+        ${proc_data}/microdata.txt
+
+    echo 'DONE.'
+}
+#+end_src
+
+
+#+begin_src sh
+prepare_data_ingestion_sql_query(){
+
+    echo "Preparing SQL script for creating the database schema and tables..."
+
+    query=${proc_data}/psql_create_tables.sql
+
+    cat > ${query} <<EOF
+-- cria schema ~pnadc2022t3~ para a edição 2022T3 da PNADC
+          create schema pnadc2022t3;
+
+-- dicionário de dados (explicação de colunas e respostas)
+   drop table if exists pnadc2022t3.datadict;
+           create table pnadc2022t3.datadict (
+                        part text,
+                        module text,
+                        var text,
+                        q_code text,
+                        q_desc text,
+                        a_code text,
+                        a_desc text
+                        );
+
+-- importa dicionário de dados brutos na tabela ~datadict~
+EOF
+
+    echo "copy pnadc2022t3.datadict from '${proc_data}/variables_dictionary.txt' delimiter '|' csv header;\n" >> ${query}
+
+    cat >> ${query} <<EOF
+-- microdados separados por variavel
+   drop table if exists pnadc2022t3.microdata;
+           create table pnadc2022t3.microdata (
+EOF
+
+    cat ${proc_data}/create_table_fields >> ${query}
+
+    cat >> ${query} <<EOF
+);
+
+-- importa microdados brutos na tabela microdata
+EOF
+
+    echo "copy pnadc2022t3.microdata from '${proc_data}/microdata.txt' delimiter '|' csv header;\n" >> ${query}
+
+    echo "DONE."
+}
+#+end_src
+
+
+#+begin_src R :tangle ./gnur_transform_microdata_into_parquet.R
+## Converte microdados do formato texto para o formato parquet usando library(arrow)
+library(arrow)
+library(readr)
+
+src_dir <- '/tmp/etl/br_ibge_pnadc_2022t3/'
+raw_data <- paste0(src_dir, 'raw/')
+proc_data <- paste0(src_dir, 'data/')
+
+
+microdata <-
+  read_delim_arrow(
+    file = paste0(proc_data, 'microdata.txt'),
+    delim = '|',
+    col_names = FALSE,
+    as_data_frame = FALSE
+  )
+
+col_names <-
+  read_delim(
+    file = paste0(proc_data, 'col_names.txt'),
+    delim = '|',
+    show_col_types = FALSE
+  )
+
+names(microdata) <- col_names$var
+
+## microdata %>%
+##   filter(ano==2022) %>%
+##   group_by(s11002) %>%
+##   count(.drop = FALSE) %>%
+##   arrange(s11002) %>%
+##   collect()
+
+write_parquet(
+  microdata,
+  paste0(proc_data, 'microdata.parquet')
+)
+#+end_src
+
+
+#+begin_src sh
+convert_microdata_to_parquet_using_arrow_and_GNU_R(){
+
+    echo 'Converting the processed microdata to .parquet format using GNU R and arrow library...'
+    cp ./gnur_transform_microdata_into_parquet.R ${src_dir}/gnur_transform_microdata_into_parquet.R
+    R CMD BATCH --quiet --vanilla ${src_dir}/gnur_transform_microdata_into_parquet.R
+    echo 'DONE.'
+}
+#+end_src
+
+
+#+begin_src sh
+main(){
+
+    create_temporary_directories
+
+    fetch_microdata
+
+    fetch_variables_dictionary
+
+    parse_variables_dictionary_using_GNU_R
+
+    prepare_microdata_for_data_ingestion
+
+    convert_microdata_to_parquet_using_arrow_and_GNU_R
+
+    prepare_data_ingestion_sql_query
+}
+
+main
+
+exit 0
+#+end_src
+
+
+# Local Variables:
+# eval: (add-hook 'after-save-hook (lambda () (org-babel-tangle) ))
+# End:

@@ -1,0 +1,159 @@
+#!/bin/bash
+
+# shell script configs
+set -eu
+
+echo "=microdata= preparation scripts for br-ibge-pnadc-2022t3\n"
+
+# urls where microdata and variables dictionary are located
+base_url=ftp://ftp.ibge.gov.br/
+base_url=${base_url}Trabalho_e_Rendimento/
+base_url=${base_url}Pesquisa_Nacional_por_Amostra_de_Domicilios_continua/
+base_url=${base_url}Anual/
+base_url=${base_url}Microdados/
+base_url=${base_url}Trimestre/
+base_url=${base_url}Trimestre_3
+mdata_url=${base_url}/Dados/PNADC_2022_trimestre3.zip
+vdict_url=${base_url}/Documentacao/dicionario_PNADC_microdados_trimestre3_20240619.xls
+
+# source and directories where raw and processed data are to be stored
+src_dir=/tmp/etl/br_ibge_pnadc_2022t3
+raw_data=${src_dir}/raw
+proc_data=${src_dir}/data
+
+create_temporary_directories(){
+
+    echo "Creating temporary directory for raw data at $raw_data..."
+    rm -rf ${raw_data}
+    mkdir -p ${raw_data}
+
+    echo "DONE.\nCreating temporary directory for processed data at $proc_data..."
+    rm -rf ${proc_data}
+    mkdir -p ${proc_data}
+
+    echo "DONE."
+}
+
+fetch_microdata(){
+
+    echo "Fetching the =microdata= from $mdata_url..."
+    R --quiet --vanilla -e "curl::curl_download( '${mdata_url}', '${raw_data}/mdata.zip' )"
+
+    echo '  DONE. Unziping the =microdata=...'
+    unzip ${raw_data}/mdata.zip -d ${raw_data}
+
+    echo '  DONE. Deleting the downloaded =microdata= zip file...'
+    rm -rf ${raw_data}/mdata.zip
+    echo 'DONE.'
+
+}
+
+fetch_variables_dictionary(){
+
+    echo "Fetching the dictionary of variables from $vdict_url..."
+    R --quiet --vanilla -e "curl::curl_download( '${vdict_url}', '${raw_data}/vdict.xls' )"
+
+    echo '  DONE.'
+
+}
+
+parse_variables_dictionary_using_GNU_R(){
+
+    echo 'Parsing the variables dictionary using GNU R'
+    cp ./gnur_parse_variables_dictionary.R ${src_dir}/gnur_parse_variables_dictionary.R
+    R CMD BATCH --quiet --vanilla ${src_dir}/gnur_parse_variables_dictionary.R
+
+    echo 'DONE.'
+}
+
+prepare_microdata_for_data_ingestion(){
+
+    echo 'Transforming microdata from fixed width format to delimited file...'
+
+    # 'characters' argument from 'cut' function
+    CHARACTERS_ARG=$(cat ${proc_data}/cut_characters_argument.txt)
+
+    # from fixed width format to pipe (|) delimited text file
+    cut \
+        --output-delimiter='|' \
+        --characters=$CHARACTERS_ARG \
+        ${raw_data}/PNADC_2022_trimestre3.txt > \
+        ${proc_data}/microdata.txt
+
+    echo 'DONE.'
+}
+
+prepare_data_ingestion_sql_query(){
+
+    echo "Preparing SQL script for creating the database schema and tables..."
+
+    query=${proc_data}/psql_create_tables.sql
+
+    cat > ${query} <<EOF
+-- cria schema ~pnadc2022t3~ para a edição 2022T3 da PNADC
+          create schema pnadc2022t3;
+
+-- dicionário de dados (explicação de colunas e respostas)
+   drop table if exists pnadc2022t3.datadict;
+           create table pnadc2022t3.datadict (
+                        part text,
+                        module text,
+                        var text,
+                        q_code text,
+                        q_desc text,
+                        a_code text,
+                        a_desc text
+                        );
+
+-- importa dicionário de dados brutos na tabela ~datadict~
+EOF
+
+    echo "copy pnadc2022t3.datadict from '${proc_data}/variables_dictionary.txt' delimiter '|' csv header;\n" >> ${query}
+
+    cat >> ${query} <<EOF
+-- microdados separados por variavel
+   drop table if exists pnadc2022t3.microdata;
+           create table pnadc2022t3.microdata (
+EOF
+
+    cat ${proc_data}/create_table_fields >> ${query}
+
+    cat >> ${query} <<EOF
+);
+
+-- importa microdados brutos na tabela microdata
+EOF
+
+    echo "copy pnadc2022t3.microdata from '${proc_data}/microdata.txt' delimiter '|' csv header;\n" >> ${query}
+
+    echo "DONE."
+}
+
+convert_microdata_to_parquet_using_arrow_and_GNU_R(){
+
+    echo 'Converting the processed microdata to .parquet format using GNU R and arrow library...'
+    cp ./gnur_transform_microdata_into_parquet.R ${src_dir}/gnur_transform_microdata_into_parquet.R
+    R CMD BATCH --quiet --vanilla ${src_dir}/gnur_transform_microdata_into_parquet.R
+    echo 'DONE.'
+}
+
+main(){
+
+    create_temporary_directories
+
+    fetch_microdata
+
+    fetch_variables_dictionary
+
+    parse_variables_dictionary_using_GNU_R
+
+    prepare_microdata_for_data_ingestion
+
+    convert_microdata_to_parquet_using_arrow_and_GNU_R
+
+    prepare_data_ingestion_sql_query
+}
+
+main
+
+exit 0
