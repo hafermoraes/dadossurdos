@@ -62,6 +62,7 @@ parse_variables_dictionary_using_GNU_R(){
     echo 'Parsing the variables dictionary using GNU R'
     cp ./gnur_parse_variables_dictionary.R ${src_dir}/gnur_parse_variables_dictionary.R
     R CMD BATCH --quiet --vanilla ${src_dir}/gnur_parse_variables_dictionary.R
+    rm *.Rout
 
     echo 'DONE.'
 }
@@ -134,6 +135,8 @@ convert_microdata_to_parquet_using_arrow_and_GNU_R(){
     echo 'Converting the processed microdata to .parquet format using GNU R and arrow library...'
     cp ./gnur_transform_microdata_into_parquet.R ${src_dir}/gnur_transform_microdata_into_parquet.R
     R CMD BATCH --quiet --vanilla ${src_dir}/gnur_transform_microdata_into_parquet.R
+    rm *.Rout
+
     echo 'DONE.'
 }
 
