@@ -20,7 +20,11 @@ all: $(targets)
 # build Rstudio container when all sources are processed
 build: $(targets)
 	docker buildx build -t dadossurdos -f ${HOME}/git/dadossurdos/docker/Dockerfile /
-	docker run -it --rm -d -p 8787:8787 -e DISABLE_AUTH=true dadossurdos
+	docker run -it --rm \
+		--detach \
+		--publish 8787:8787 \
+		--env DISABLE_AUTH=true \
+		dadossurdos
 	@echo "Access RStudio web by visiting http://localhost:8787 ..."
 
 
