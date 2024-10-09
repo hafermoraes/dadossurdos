@@ -124,7 +124,7 @@ aux_coduf <-
   )
 
 ## V0002 Código do Município (5 caracteres)
-aux_codmunicipio <- 
+vdict_municipio <- 
   read_excel(
     path = paste0(
       raw_data,
@@ -145,7 +145,7 @@ aux_codmunicipio <-
   )
 
 ## V1002 Código da Mesorregião (2 caracteres)
-aux_codmesoreg <- 
+vdict_mesoreg <- 
   read_excel(
     path = paste0(
       raw_data,
@@ -167,7 +167,7 @@ aux_codmesoreg <-
   ) 
 
 ## V1003 Código da Microrregião (3 caracteres)
-aux_codmicroreg <- 
+vdict_microreg <- 
   read_excel(
     path = paste0(
       raw_data,
@@ -199,7 +199,7 @@ aux_codmicroreg <-
 ##    https://github.com/ipeaGIT/censobr/blob/3a3fab5e97bc3a4baae3bb3ea5e3154e2651cebf/R/add_labels_families.R#L17
 ##    e foram acessados em 09.10.2024 às 18:35 (horário de Brasília)
 ##
-aux_codregmetrop <-
+vdict_regmetro <-
   tribble(
     ~var,    ~a_code, ~a_desc,
     'v1004',    '01', 'Belém',
@@ -232,6 +232,59 @@ aux_codregmetrop <-
     'v1004',    '28', 'RIDE (Região Integrada de Desenvolvimento do Distrito Federal e Entorno)'
   )
 
+## Unidade da Federação
+##
+##  v6222 Unidade da federação de nascimento
+##  v6252 Unidade da federação de residência anterior
+##  v6262 Unidade da federação de residência em 31 de julho de 2005
+##  v6362 Unidade da federação que frequentava escola (ou creche)
+##  v6602 Em que unidade da federação trabalhava
+vdict_ufs <-
+  expand_grid(
+    var = c('v6222', 'v6252', 'v6262', 'v6362', 'v6602'),
+    aux_coduf %>% select(2,3 )
+  )
+
+## País de nascimento
+##
+##  v6224 Qual é o país estrangeiro de nascimento
+##  v3061 País de residência em 31 de julho de 2010           >>> Base de Emigração
+##  v6256 País de residência anterior
+##  v6266 País de residência em 31 de julho de 2005
+##  v6366 País estrangeiro que frequentava escola (ou creche)
+##  v6606 Em que país estrangeiro trabalhava
+aux_paises <-
+  read_excel(
+    path = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'MigraЗ╞o e Deslocamento_Paises estrangeiros.xls'
+    ),
+    sheet = 'País estrangeiro',
+    range = 'B8:C221',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(nome = 1, cod_7 = 2) %>%
+  na.omit() %>%
+  transmute(
+    a_code = cod_7,
+    a_desc = nome
+  )
+
+vdict_paises <-
+  expand_grid(
+    var = c('v6224', 'v3061', 'v6256', 'v6266', 'v6366', 'v6606'),
+    aux_paises
+  )
+
+## Município
+##
+##  v6254 Município de residência anterior
+##  v6264 Município de residência em 31 de julho de 2005
+##  v6364 Município que frequentava escola (ou creche)
+##  v6604 Em que município trabalhava
 
 
 
