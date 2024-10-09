@@ -116,8 +116,8 @@ vdict_cursograd <-
     col_names = FALSE
   ) %>%
   rename(a_code = 1, a_desc = 2) %>% 
-  na.omit() %>% 
-  filter(str_length(a_code) == 3) 
+  na.omit() ## %>% 
+  ## filter(str_length(a_code) == 3) 
 
 ## v6354 Curso de mestrado
 vdict_cursomestrado <- 
@@ -134,8 +134,8 @@ vdict_cursomestrado <-
     col_names = FALSE
   ) %>%
   rename(a_code = 1, a_desc = 2) %>% 
-  na.omit() %>% 
-  filter(str_length(a_code) == 3) 
+  na.omit() ## %>% 
+  ## filter(str_length(a_code) == 3) 
 
 ## v6356 Curso de doutorado
 vdict_cursodoutorado <- 
@@ -152,8 +152,8 @@ vdict_cursodoutorado <-
     col_names = FALSE
   ) %>%
   rename(a_code = 1, a_desc = 2) %>% 
-  na.omit() %>% 
-  filter(str_length(a_code) == 3) 
+  na.omit() ## %>% 
+  ## filter(str_length(a_code) == 3) 
 
 
 ## v6461 Ocupação
