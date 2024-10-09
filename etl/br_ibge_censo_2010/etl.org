@@ -98,6 +98,97 @@ src_dir <- '/tmp/etl/br_ibge_censo_2010/'
 raw_data <- paste0(src_dir, 'raw/')
 proc_data <- paste0(src_dir, 'data/')
 
+
+## Tabelas auxiliares para o dicionário de variáveis
+
+## V0001 Unidade da Federação (2 caracteres)
+aux_coduf <- 
+  read_excel(
+    path = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Divis╞o Territorial do Brasil/',
+      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
+    ),
+    sheet = 'Município',
+    range = 'A4:B5568',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(cod_2 = 1, uf = 2) %>%
+  unique () %>%
+  transmute(
+    var = 'v0001',
+    a_code = cod_2,
+    a_desc = uf
+  )
+
+## V0002 Código do Município (5 caracteres)
+aux_codmunicipio <- 
+  read_excel(
+    path = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Divis╞o Territorial do Brasil/',
+      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
+    ),
+    sheet = 'Município',
+    range = 'G4:H5568',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(cod_7 = 1, municipio = 2) %>%
+  transmute(
+    var = 'v0002',
+    a_code = substr(cod_7, start = 3, stop = 7),
+    a_desc = municipio
+  )
+
+## V1002 Código da Mesorregião (2 caracteres)
+aux_codmesoreg <- 
+  read_excel(
+    path = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Divis╞o Territorial do Brasil/',
+      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
+    ),
+    sheet = 'Município',
+    range = 'C4:D5568',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(cod_4 = 1, meso = 2) %>%
+  unique () %>%
+  transmute(
+    var = 'v1002',
+    a_code = cod_4,
+    a_desc = meso
+  ) 
+
+## V1003 Código da Microrregião (3 caracteres)
+aux_codmicroreg <- 
+  read_excel(
+    path = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Divis╞o Territorial do Brasil/',
+      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
+    ),
+    sheet = 'Município',
+    range = 'E4:F5568',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(cod_5 = 1, micro = 2) %>%
+  unique () %>%
+  transmute(
+    var = 'v1003',
+    a_code = cod_5,
+    a_desc = micro
+  ) %>% View
+
+
 dict_domi <-
   read_excel(
     path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
