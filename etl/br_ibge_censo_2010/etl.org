@@ -101,7 +101,29 @@ proc_data <- paste0(src_dir, 'data/')
 
 ## Tabelas auxiliares para o dicionário de variáveis
 
-## V1002 Código da Mesorregião (2 caracteres)
+## v6352 Curso superior de graduação
+vdict_cursograd <- 
+  read_excel(
+    path = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'Cursos Superiores_Estrutura 2010.xls'
+    ),
+    sheet = 'Estrutura',
+    range = 'A2:B144',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(a_code = 1, a_desc = 2) %>% 
+  na.omit() %>% 
+  filter(str_length(a_code) == 3) 
+
+## v6354 Curso de mestrado
+## v6356 Curso de doutorado
+
+
+## v1002 Código da Mesorregião (2 caracteres)
 vdict_mesoreg <- 
   read_excel(
     path = paste0(
@@ -123,7 +145,7 @@ vdict_mesoreg <-
     a_desc = meso
   ) 
 
-## V1003 Código da Microrregião (3 caracteres)
+## v1003 Código da Microrregião (3 caracteres)
 vdict_microreg <- 
   read_excel(
     path = paste0(
@@ -145,7 +167,7 @@ vdict_microreg <-
     a_desc = micro
   )
 
-## V1004 Código da Região Metropolitana (2 caracteres)
+## v1004 Código da Região Metropolitana (2 caracteres)
 ##
 ## Observação:
 ##  - embora indicado no dicionário de variáveis oficial do IBGE,
@@ -189,7 +211,7 @@ vdict_regmetro <-
     'v1004',    '28', 'RIDE (Região Integrada de Desenvolvimento do Distrito Federal e Entorno)'
   )
 
-## Unidade da Federação
+## Unidade da Federação (2 caracteres)
 ##
 ##  v0001 Unidade da federação
 ##  v6222 Unidade da federação de nascimento
@@ -223,7 +245,7 @@ vdict_ufs <-
     aux_coduf
   )
 
-## País de nascimento
+## País de nascimento (3 caracteres)
 ##
 ##  v6224 Qual é o país estrangeiro de nascimento
 ##  v3061 País de residência em 31 de julho de 2010           >>> Base de Emigração
@@ -264,7 +286,6 @@ vdict_paises <-
 ##  v6264 Município de residência em 31 de julho de 2005
 ##  v6364 Município que frequentava escola (ou creche)
 ##  v6604 Em que município trabalhava
-
 aux_municipio <- 
   read_excel(
     path = paste0(
