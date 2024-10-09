@@ -220,21 +220,18 @@ vdict_religiao <-
   ) %>%
   as_tibble() %>%
   rename( orig = 1) %>%
+  rowwise() %>%
   mutate(
     orig = str_conv(orig, encoding = 'ISO-8859-1'),
+    space_position = str_locate(orig, ' ')[1],
     a_code = str_extract(string = orig, pattern = '[0-9]+' ),
-    a_desc = str_extract_all(string = orig, pattern = '[:alpha:]+')    
-  ) %>% View
-
-
-%>% names()
-  rename( orig = 1) %>% names()
-  mutate(
-    a_code = str_extract(string )
+    a_desc = substr(orig, start = space_position+1, stop = str_length(orig))
+  ) %>%
+  transmute(
+    var = 'v6121',
+    a_code,
+    a_desc
   )
-
-
-
 
 ## v1002 Código da Mesorregião (2 caracteres)
 vdict_mesoreg <- 
