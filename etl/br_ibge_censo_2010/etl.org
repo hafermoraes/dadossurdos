@@ -156,6 +156,32 @@ vdict_cursodoutorado <-
   filter(str_length(a_code) == 3) 
 
 
+## v6461 Ocupação
+## v6462 Qual era a ocupação que exercia no trabalho que tinha?
+vdict_ocupacao <-
+  read_excel(
+    path = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'OcupaЗ╞o COD 2010.xls'
+    ),
+    sheet = 'CÓDIGO',
+    range = 'A3:B744',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+    rename( a_code = 1, a_desc = 2) %>%
+    na.omit()
+
+
+## v6471 Atividade
+## v6472 Qual era a atividade principal do empreendimento em que tinha esse trabalho?
+
+
+## v6121 Qual é a sua religião ou culto?
+
+
 ## v1002 Código da Mesorregião (2 caracteres)
 vdict_mesoreg <- 
   read_excel(
