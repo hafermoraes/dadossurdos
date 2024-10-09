@@ -158,7 +158,7 @@ vdict_cursodoutorado <-
 
 ## v6461 Ocupação
 ## v6462 Qual era a ocupação que exercia no trabalho que tinha?
-vdict_ocupacao <-
+aux_cbo <-
   read_excel(
     path = paste0(
       raw_data,
@@ -174,10 +174,37 @@ vdict_ocupacao <-
     rename( a_code = 1, a_desc = 2) %>%
     na.omit()
 
+vdict_ocupacao <-
+  expand_grid(
+    var = c('v6461', 'v6462'),
+    aux_cbo
+  )
 
 ## v6471 Atividade
 ## v6472 Qual era a atividade principal do empreendimento em que tinha esse trabalho?
+aux_cnae <- 
+  read_excel(
+    path = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'Atividade CNAE_DOM 2.0 2010.xls'
+    ),
+    sheet = 'CNAE DOM. 2.0 Divulgação',
+    range = 'A3:D352',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>% 
+  rename( secao = 1, divisao = 2, classes = 3, denominacao = 4) %>%
+  fill( secao, divisao) %>%
+  transmute( a_code = classes, a_desc = denominacao) %>%
+  na.omit()
 
+vdict_atividade <-
+  expand_grid(
+    var = c('v6471', 'v6472'),
+    aux_cnae
+  )
 
 ## v6121 Qual é a sua religião ou culto?
 
