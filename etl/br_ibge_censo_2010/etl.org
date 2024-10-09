@@ -120,6 +120,24 @@ vdict_cursograd <-
   filter(str_length(a_code) == 3) 
 
 ## v6354 Curso de mestrado
+vdict_cursomestrado <- 
+  read_excel(
+    path = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'Cursos Mestrado_Estrutura 2010.xls'
+    ),
+    sheet = 'Estrutura',
+    range = 'A2:B135',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(a_code = 1, a_desc = 2) %>% 
+  na.omit() %>% 
+  filter(str_length(a_code) == 3) 
+
+
 ## v6356 Curso de doutorado
 
 
