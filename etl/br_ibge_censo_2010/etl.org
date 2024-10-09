@@ -48,19 +48,17 @@ create_temporary_directories(){
 #+begin_src sh
 fetch_microdata(){
 
-    echo "Fetching the =microdata= from $mdata_url..."
     for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO SC SE SP1 SP2_RM TO; do
 
-        # R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/$uf.zip' )"
-        echo "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/$uf.zip' )"
+        echo "Fetching the =microdata= from $mdata_url/$uf.zip..."
+        R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/$uf.zip' )"
 
-
-        echo '  DONE. Unziping the =microdata=...'
+        echo '  DONE. Unziping the =microdata= of $uf.zip...'
         unzip ${raw_data}/$uf.zip -d ${raw_data}
 
 
-        echo '  DONE. Deleting the downloaded =microdata= zip file...'
-        rm -rf ${raw_data}/mdata.zip
+        echo '  DONE. Deleting the downloaded =microdata= $uf.zip file...'
+        rm -rf ${raw_data}/$uf.zip
 
     done
 
@@ -73,7 +71,13 @@ fetch_microdata(){
 fetch_variables_dictionary(){
 
     echo "Fetching the dictionary of variables from $vdict_url..."
-    R --quiet --vanilla -e "curl::curl_download( '${vdict_url}', '${raw_data}/vdict.xls' )"
+    R --quiet --vanilla -e "curl::curl_download( '${vdict_url}', '${raw_data}/vdict.zip' )"
+
+    echo '  DONE. Unziping the variables dictionary =vdict.zip= file...'
+    unzip ${raw_data}/vdict.zip -d ${raw_data}
+
+    echo '  DONE. Deleting the downloaded =microdata= $uf.zip file...'
+    rm -rf ${raw_data}/vdict.zip
 
     echo '  DONE.'
 
@@ -82,8 +86,7 @@ fetch_variables_dictionary(){
 
 
 #+begin_src R :tangle ./gnur_parse_variables_dictionary.R
-## Fetch and process microdata and variables dictionary
-## of survey PNADC 2022 T3
+## Fetch and process variables dictionary for IBGE Censo 2010
 
 library(readxl)   # read_excel
 library(dplyr)    # mutate, filter, as_tibble, rename, fill, unique
@@ -91,113 +94,34 @@ library(readr)    # write_delim
 library(tidyr)    # fill
 library(stringr)  # str_pad, str_flatten, str_replace_all
 
-src_dir <- '/tmp/etl/br_ibge_pnadc_2022t3/'
+src_dir <- '/tmp/etl/br_ibge_censo_2010/'
 raw_data <- paste0(src_dir, 'raw/')
 proc_data <- paste0(src_dir, 'data/')
 
-dict <-
+dict_domi <-
   read_excel(
-    path = paste0(raw_data, 'vdict.xls'),
-    sheet = 'dicionário pnad contínua ',
-    range = 'A4:H2044',
+    path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
+    sheet = 'DOMI',
+    range = 'A3:L78',
     col_types = 'text',
     col_names = FALSE
-  ) %>%
+  ) %>% 
   rename(
-    pos = 1,
-    len = 2,
-    var = 3,
-    q_code = 4,
-    q_desc = 5,
-    a_code = 6,
-    a_desc = 7,
-    period = 8
+    var = 1,
+    desc = 2,
+    pos_ini = 8,
+    pos_fin = 9,
+    len = 10,
+    dec = 11,
+    tipo = 12
   ) %>%
-  mutate(
-    part = '',
-    .before = 'pos',
-    q_desc = str_remove_all( q_desc, '[\r\n\"\\"]'),
-    a_desc = str_remove_all( a_desc, '[\r\n\"\\"]'),
-    period = str_remove_all( period, '[\r\n\"\\"]')
-  ) %>%
-  fill(pos, len, var, q_code, q_desc, period) %>%
+  select(var, desc, pos_ini, pos_fin, len) %>%
   as.data.frame()
 
-aux_part <- ''
 
-for (i in seq_len(nrow(dict))){
-  if (grepl('^parte|^variáv', dict[i,'pos'], ignore.case = TRUE)){
-    aux_part <- dict[i,'pos']
-  }
-  dict[i,'part'] <- aux_part
-}
+strsplit( dict_domi[1,2], split='\n')
 
-var_dict <-
-  dict %>%
-  filter(
-    ## ignora linhas de título, parte e módulo da pesquisa
-    !grepl('[A-Za-z]+', pos, ignore.case = TRUE),
-    ) %>%
-  mutate(
-    var = tolower(var),
-    ## delimitação dos campos (início-final) como argumento da função 'cut' chamada via shell
-    characters = paste0(pos, "-", as.numeric(pos) + as.numeric(len) -1),
-    ## corpo da chamada de criação da tabela (create table) contendo campo, tipo de dados e comentários
-    create_table_fields = paste0(
-      ## 4 espaços à esquerda
-      ## completa com espaço à direita para garantir comprimento uniforme de 10 caracteres
-      str_pad(string = tolower(var), width = 15, side = 'left', pad = ' '),
-      ## comentários de linha no script sql (tamanho do campo e enunciado da pergunta na pesquisa)
-      ifelse(var == 'v1028200', " text  -- ", " text, -- "),
-      q_desc
-    )
-  ) %>%
-  transmute(part, var, q_code, q_desc, a_code, a_desc, characters, create_table_fields)
-
-## dicionário de variáveis
-var_dict %>%
-  select(part, var, q_code, q_desc, a_code, a_desc) %>%
-  write_delim(
-    file = paste0(proc_data, 'variables_dictionary.txt'),
-    delim = '|',
-    quote = 'none',
-    col_names = TRUE
-  )
-
-## argumento 'characters' da função 'cut' para delimitação do microdado
-var_dict %>%
-  select(characters) %>%
-  unique() %>%
-  summarise(
-    args = str_flatten(characters, ",")
-  ) %>%
-  write_lines(
-    file = paste0(proc_data, 'cut_characters_argument.txt')
-  )
-
-## nomes das colunas dos microdados (necessário para os arquivos .parquet)
-var_dict %>%
-  select(var) %>%
-  unique() %>%
-  write_delim(
-    file = paste0(proc_data, 'col_names.txt'),
-    delim = '',
-    quote = 'none',
-    col_names = TRUE
-  )
-
-
-## corpo da 'create table' contendo os nomes de coluna, tipo de dados e comentários com enunciado da pergunta da pns 2019
-var_dict %>%
-  as_tibble() %>%
-  select(create_table_fields) %>%
-  unique() %>%
-  write_delim(
-    file = paste0(proc_data, 'create_table_fields'),
-    delim='',
-    quote = 'none',
-    col_names = FALSE
-  )
+strsplit( dict_domi[2,2], split='\n')
 #+end_src
 
 
@@ -342,9 +266,9 @@ main(){
 
     create_temporary_directories
 
-    fetch_microdata
+    # fetch_microdata
 
-    # fetch_variables_dictionary
+    fetch_variables_dictionary
 
     # parse_variables_dictionary_using_GNU_R
 
