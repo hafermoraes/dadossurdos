@@ -207,6 +207,33 @@ vdict_atividade <-
   )
 
 ## v6121 Qual é a sua religião ou culto?
+vdict_religiao <-
+  read_lines(
+    file = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'Religi╞o 2010.txt'
+    ),
+    skip = 2,
+    skip_empty_rows = TRUE
+  ) %>%
+  as_tibble() %>%
+  rename( orig = 1) %>%
+  mutate(
+    orig = str_conv(orig, encoding = 'ISO-8859-1'),
+    a_code = str_extract(string = orig, pattern = '[0-9]+' ),
+    a_desc = str_extract_all(string = orig, pattern = '[:alpha:]+')    
+  ) %>% View
+
+
+%>% names()
+  rename( orig = 1) %>% names()
+  mutate(
+    a_code = str_extract(string )
+  )
+
+
 
 
 ## v1002 Código da Mesorregião (2 caracteres)
