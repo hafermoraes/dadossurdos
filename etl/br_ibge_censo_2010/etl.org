@@ -137,8 +137,23 @@ vdict_cursomestrado <-
   na.omit() %>% 
   filter(str_length(a_code) == 3) 
 
-
 ## v6356 Curso de doutorado
+vdict_cursodoutorado <- 
+  read_excel(
+    path = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'Cursos Doutorado_Estrutura 2010.xls'
+    ),
+    sheet = 'Estrutura',
+    range = 'A2:B132',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(a_code = 1, a_desc = 2) %>% 
+  na.omit() %>% 
+  filter(str_length(a_code) == 3) 
 
 
 ## v1002 Código da Mesorregião (2 caracteres)
