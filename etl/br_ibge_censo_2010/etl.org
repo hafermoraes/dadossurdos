@@ -101,27 +101,6 @@ proc_data <- paste0(src_dir, 'data/')
 
 ## Tabelas auxiliares para o dicionário de variáveis
 
-## V0002 Código do Município (5 caracteres)
-vdict_municipio <- 
-  read_excel(
-    path = paste0(
-      raw_data,
-      'DocumentaЗ╞o/',
-      'Divis╞o Territorial do Brasil/',
-      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
-    ),
-    sheet = 'Município',
-    range = 'G4:H5568',
-    col_types = 'text',
-    col_names = FALSE
-  ) %>%
-  rename(cod_7 = 1, municipio = 2) %>%
-  transmute(
-    var = 'v0002',
-    a_code = substr(cod_7, start = 3, stop = 7),
-    a_desc = municipio
-  )
-
 ## V1002 Código da Mesorregião (2 caracteres)
 vdict_mesoreg <- 
   read_excel(
@@ -278,12 +257,39 @@ vdict_paises <-
     aux_paises
   )
 
-## Município
+## Município (5 caracteres)
 ##
+##  v0002 Código do Município
 ##  v6254 Município de residência anterior
 ##  v6264 Município de residência em 31 de julho de 2005
 ##  v6364 Município que frequentava escola (ou creche)
 ##  v6604 Em que município trabalhava
+
+aux_municipio <- 
+  read_excel(
+    path = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Divis╞o Territorial do Brasil/',
+      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
+    ),
+    sheet = 'Município',
+    range = 'G4:H5568',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(cod_7 = 1, municipio = 2) %>%
+  transmute(
+    a_code = substr(cod_7, start = 3, stop = 7),
+    a_desc = municipio
+  )
+
+vdict_municipio <-
+  expand_grid(
+    var = c('v0002', 'v6254', 'v6264', 'v6364', 'v6604'),
+    aux_municipio
+  )
+
 
 
 
