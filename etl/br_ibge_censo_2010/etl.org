@@ -101,28 +101,6 @@ proc_data <- paste0(src_dir, 'data/')
 
 ## Tabelas auxiliares para o dicionário de variáveis
 
-## V0001 Unidade da Federação (2 caracteres)
-aux_coduf <- 
-  read_excel(
-    path = paste0(
-      raw_data,
-      'DocumentaЗ╞o/',
-      'Divis╞o Territorial do Brasil/',
-      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
-    ),
-    sheet = 'Município',
-    range = 'A4:B5568',
-    col_types = 'text',
-    col_names = FALSE
-  ) %>%
-  rename(cod_2 = 1, uf = 2) %>%
-  unique () %>%
-  transmute(
-    var = 'v0001',
-    a_code = cod_2,
-    a_desc = uf
-  )
-
 ## V0002 Código do Município (5 caracteres)
 vdict_municipio <- 
   read_excel(
@@ -234,15 +212,36 @@ vdict_regmetro <-
 
 ## Unidade da Federação
 ##
+##  v0001 Unidade da federação
 ##  v6222 Unidade da federação de nascimento
 ##  v6252 Unidade da federação de residência anterior
 ##  v6262 Unidade da federação de residência em 31 de julho de 2005
 ##  v6362 Unidade da federação que frequentava escola (ou creche)
 ##  v6602 Em que unidade da federação trabalhava
+aux_coduf <- 
+  read_excel(
+    path = paste0(
+      raw_data,
+      'DocumentaЗ╞o/',
+      'Divis╞o Territorial do Brasil/',
+      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
+    ),
+    sheet = 'Município',
+    range = 'A4:B5568',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(cod_2 = 1, uf = 2) %>%
+  unique () %>%
+  transmute(
+    a_code = cod_2,
+    a_desc = uf
+  )
+
 vdict_ufs <-
   expand_grid(
-    var = c('v6222', 'v6252', 'v6262', 'v6362', 'v6602'),
-    aux_coduf %>% select(2,3 )
+    var = c('v0001', 'v6222', 'v6252', 'v6262', 'v6362', 'v6602'),
+    aux_coduf
   )
 
 ## País de nascimento
