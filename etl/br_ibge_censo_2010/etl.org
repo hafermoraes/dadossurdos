@@ -2,6 +2,8 @@
 
 manually tangle to =etl.sh= file with =C-c C-v t=  (=org-babel-tangle=)
 
+* cabeçalho do script =etl.sh= 
+
 #+begin_src sh
 #!/bin/bash
 
@@ -11,6 +13,7 @@ set -eu
 echo "=microdata= preparation scripts for br-ibge-censo-2010\n"
 #+end_src
 
+* variáveis globais usadas no script =etl.sh=
 
 #+begin_src sh
 # urls where microdata and variables dictionary are located
@@ -28,6 +31,7 @@ raw_data=${src_dir}/raw
 proc_data=${src_dir}/data
 #+end_src
 
+* criação de diretórios temporários
 
 #+begin_src sh
 create_temporary_directories(){
@@ -44,6 +48,7 @@ create_temporary_directories(){
 }
 #+end_src
 
+* download dos microdados
 
 #+begin_src sh
 fetch_microdata(){
@@ -56,7 +61,6 @@ fetch_microdata(){
         echo '  DONE. Unziping the =microdata= of $uf.zip...'
         unzip ${raw_data}/$uf.zip -d ${raw_data}
 
-
         echo '  DONE. Deleting the downloaded =microdata= $uf.zip file...'
         rm -rf ${raw_data}/$uf.zip
 
@@ -66,6 +70,7 @@ fetch_microdata(){
 }
 #+end_src
 
+* download do dicionário de variáveis e arquivos auxiliares
 
 #+begin_src sh
 fetch_variables_dictionary(){
@@ -84,6 +89,101 @@ fetch_variables_dictionary(){
 }
 #+end_src
 
+* entendimento do dicionário de variáveis
+
+A coluna =tipo= assume valores =A=, =C= e =N=. Ao que tudo indica,
+- =A= refere-se dados auxiliares, disponíveis em outros arquivos presentes no arquivo compactado =Documentacao.zip=
+- =C= refere-se aos dados categóricos, para os quais o dicionário de variáveis está disponível diretamente no layout (arquivo excel)
+- =N= refere-se provavelmente aos dados numéricos
+
+#+begin_src R :tangle no :eval no
+library(readxl)   # read_excel
+library(dplyr)    # mutate, transmute, filter, rename, bind_rows
+
+src_dir <- '/tmp/etl/br_ibge_censo_2010/'
+raw_data <- paste0(src_dir, 'raw/')
+proc_data <- paste0(src_dir, 'data/')
+
+vdict <-
+  bind_rows(
+    ## Dicionário de variáveis dos microdados de Domicílios
+    read_excel(
+      path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
+      sheet = 'DOMI', range = 'A3:L78', col_types = 'text', col_names = FALSE )
+    %>% mutate(base = 'domi'),
+    ## Dicionário de variáveis dos microdados de Pessoas
+    read_excel(
+      path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
+      sheet = 'PESS', range = 'A3:L246', col_types = 'text', col_names = FALSE )
+    %>% mutate(base = 'pess'),
+    ## Dicionário de variáveis dos microdados de Emigração
+    read_excel(
+      path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
+      sheet = 'EMIG', range = 'A3:L21', col_types = 'text', col_names = FALSE )
+    %>% mutate(base = 'emig'),
+    ## Dicionário de variáveis dos microdados de Mortalidade
+    read_excel(
+      path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
+      sheet = 'MORT', range = 'A3:L21', col_types = 'text', col_names = FALSE )
+    %>% mutate(base = 'mort')
+  ) %>%
+  rename(var = 1, desc = 2, pos_ini = 8, pos_fin = 9, len = 10, dec = 11, tipo = 12) %>%
+  transmute(base, var, desc, pos_ini, pos_fin, len, dec, tipo)
+
+
+## tipo == A
+vdict %>%
+  filter(
+    grepl(pattern = 'a', tipo, ignore.case = TRUE)
+  ) %>%
+  arrange(var) %>%
+  View
+
+
+## tipo == C
+vdict %>%
+  filter(
+    grepl(pattern = 'c', tipo, ignore.case = TRUE)
+  ) %>%
+  arrange(var) %>%
+  View
+
+## tipo == N
+vdict %>%
+  filter(
+    grepl(pattern = 'n', tipo, ignore.case = TRUE)
+  ) %>%
+  arrange(var) %>%
+  View
+
+
+## tipo == C, respostas do tipo sim/não
+vdict %>%
+  filter(
+    grepl(pattern = 'c', tipo, ignore.case = TRUE),
+    grepl(pattern = '1- sim', desc, ignore.case = TRUE),
+    grepl(pattern = '2- não', desc, ignore.case = TRUE)
+  ) %>%
+  arrange(var) %>%
+  View
+
+
+strsplit( vdict[1,2], split='\n')
+
+strsplit( vdict[2,2], split='\n')
+#+end_src
+
+* tratamento das variáveis 
+** unidade da federação (tipo A) v0001/v6222/v6252/v6262/v6362/v6602
+
+As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigração =EMIG= e mortalidade =MORT= compartilham dos mesmos códigos e nomes por extenso referentes à unidade da federação.
+
+- v0001 Unidade da federação
+- v6222 Unidade da federação de nascimento
+- v6252 Unidade da federação de residência anterior
+- v6262 Unidade da federação de residência em 31 de julho de 2005
+- v6362 Unidade da federação que frequentava escola (ou creche)
+- v6602 Em que unidade da federação trabalhava
 
 #+begin_src R :tangle ./gnur_vardict_ufs.R
 ##
@@ -107,7 +207,7 @@ library(readxl)   # read_excel
 library(dplyr)    # transmute, unique, rename,
 library(readr)    # write_lines
 library(glue)     # glue_data
-
+library(tidyr)    # expand_grid
 
 ## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
 ## era o endereço da fonte primária no momento em que este script
@@ -182,6 +282,133 @@ expand_grid(
       'vdict_ufs.txt'
     )
   )
+#+end_src
+
+** código do município (tipo A) 
+
+As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigração =EMIG= e mortalidade =MORT= compartilham dos mesmos códigos e nomes por extenso referentes aos municípios do país.
+
+
+#+begin_src R :tangle ./gnur_vardict_cod_municipio.R
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação das variáveis relacionadas ao código do município,
+## cujo conteúdo nos microdados é formado por 5 caracteres em cada
+## variável a seguir
+##
+##   v0002 Código do Município
+##   v6254 Município de residência anterior
+##   v6264 Município de residência em 31 de julho de 2005
+##   v6364 Município que frequentava escola (ou creche)
+##   v6604 Em que município trabalhava
+##
+## Observações: 1. Originalmente na divisão territorial brasileira, o
+##                 código do município é formado por 7 caracteres.
+##                 Por este motivo não se pode fazer análises corretas
+##                 somente com os 5 caracteres, pois há duplicação
+##                 (exemplo:
+##                   1200054 Assis Brasil no Acre e
+##                   2600054 Abreu e Lima em Pernambuco
+##                 correspondem ambos ao 'código do município' 00054
+##                 )
+##               2. o código de município conforme indicado na divisão
+##                  territorial brasileira é formado, no censo, pelas
+##                  variáveis v0001 e v0002. No exemplo:
+##                   v0001=12 v0002=00054 >> 1200054 Assis Brasil/AC
+##                   v0001=26 v0002=00054 >> 2600054 Abreu e Lima/PE
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_lines
+library(glue)     # glue_data
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 10.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos 
+##             àqueles utilizados na língua portuguesa.
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## dos municípios utilizados no censo demográfico
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Divis╞o Territorial do Brasil/',
+      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
+    ),                   # caminho até o arquivo
+    sheet = 'Município', # aba no qual os dados estão disponíveis
+    range = 'G4:H5568',  # importa somente dados dos municípios
+    col_types = 'text',  # ignora tipos de dados
+    col_names = FALSE    # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_7 = 1,           # primeira coluna traz o código do município (7 caracteres)
+    municipio = 2        # segunda coluna traz o nome do município
+  ) %>%
+  transmute(
+    cod_7,
+    a_code = substr(cod_7, start = 3, stop = 7),
+    a_desc = municipio
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'codmunicipio.txt'
+    ),
+    delim = '|'    
+  )
+
+## Como a codificação do município é comum a diversas variáveis
+## presentes nos microdados, utiliza-se a função 'expand_grid' do
+## pacote 'dplyr' para que seja montada uma tabela contendo todas as
+## combinações de 'var' (o código da variável) e do par formado pelo
+## código (a_code) bem como do nome por extenso (a_desc) do município
+##
+## Esta combinação é então concatenada por meio da função 'glue_data'
+## do pacote 'glue' para salvar em disco o corpo da tabela (tribble)
+## utilizada na construção do dicionário de variáveis de todas
+## as variáveis presentes nos microdados.
+
+## expand_grid(
+##   var = c(
+##     'v0002', #  v0002 código do município
+##     'v6254', #  v6254 município de residência anterior 
+##     'v6264', #  v6264 município de residência em 31 de julho de 2005 
+##     'v6364', #  v6364 município que frequentava escola (ou creche)
+##     'v6604'  #  v6604 em que município trabalhava
+##   ),
+##   input      # pares de código (a_code) e nome (a_desc) dos municípios
+## ) %>%
+##   glue_data(
+##     "'{var}',    '{a_code}', '{a_desc}',"
+##   ) %>%
+##   write_lines(
+##     paste0(
+##       base_dir,
+##       'data/',
+##       'vdict_municipios.txt'
+##     )
+##   )
 #+end_src
 
 
@@ -455,37 +682,6 @@ vdict_paises <-
     aux_paises
   )
 
-## Município (5 caracteres)
-##
-##  v0002 Código do Município
-##  v6254 Município de residência anterior
-##  v6264 Município de residência em 31 de julho de 2005
-##  v6364 Município que frequentava escola (ou creche)
-##  v6604 Em que município trabalhava
-aux_municipio <- 
-  read_excel(
-    path = paste0(
-      raw_data,
-      'DocumentaЗ╞o/',
-      'Divis╞o Territorial do Brasil/',
-      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
-    ),
-    sheet = 'Município',
-    range = 'G4:H5568',
-    col_types = 'text',
-    col_names = FALSE
-  ) %>%
-  rename(cod_7 = 1, municipio = 2) %>%
-  transmute(
-    a_code = substr(cod_7, start = 3, stop = 7),
-    a_desc = municipio
-  )
-
-vdict_municipio <-
-  expand_grid(
-    var = c('v0002', 'v6254', 'v6264', 'v6364', 'v6604'),
-    aux_municipio
-  )
 
 
 
