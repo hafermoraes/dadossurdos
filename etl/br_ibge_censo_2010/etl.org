@@ -250,6 +250,17 @@ input <-
     a_desc = uf
   )
 
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'common_uf.txt'
+    ),
+    delim = '|'
+  )
+
+
 ## Como a codificação da UF é comum a diversas variáveis presentes
 ## nos microdados, utiliza-se a função 'expand_grid' do pacote
 ## 'dplyr' para que seja montada uma tabela contendo todas as
@@ -261,27 +272,27 @@ input <-
 ## do pacote 'glue' para salvar em disco o corpo da tabela (tribble)
 ## utilizada na construção do dicionário de variáveis de todas
 ## as variáveis presentes nos microdados.
-expand_grid(
-  var = c(
-    'v0001', #  v0001 Unidade da federação
-    'v6222', #  v6222 Unidade da federação de nascimento
-    'v6252', #  v6252 Unidade da federação de residência anterior
-    'v6262', #  v6262 Unidade da federação de residência em 31 de julho de 2005
-    'v6362', #  v6362 Unidade da federação que frequentava escola (ou creche)
-    'v6602'  #  v6602 Em que unidade da federação trabalhava
-  ),
-  input      # pares de código (a_code) e nome (a_desc) das UFs
-) %>%
-  glue_data(
-    "'{var}',    '{a_code}', '{a_desc}',"
-  ) %>%
-  write_lines(
-    paste0(
-      base_dir,
-      'data/',
-      'vdict_ufs.txt'
-    )
-  )
+## expand_grid(
+##   var = c(
+##     'v0001', #  v0001 Unidade da federação
+##     'v6222', #  v6222 Unidade da federação de nascimento
+##     'v6252', #  v6252 Unidade da federação de residência anterior
+##     'v6262', #  v6262 Unidade da federação de residência em 31 de julho de 2005
+##     'v6362', #  v6362 Unidade da federação que frequentava escola (ou creche)
+##     'v6602'  #  v6602 Em que unidade da federação trabalhava
+##   ),
+##   input      # pares de código (a_code) e nome (a_desc) das UFs
+## ) %>%
+##   glue_data(
+##     "'{var}',    '{a_code}', '{a_desc}',"
+##   ) %>%
+##   write_lines(
+##     paste0(
+##       base_dir,
+##       'data/',
+##       'vdict_ufs.txt'
+##     )
+##   )
 #+end_src
 
 ** código do município (tipo A)  v0002/v6254/v6264/v6364/v6604
@@ -378,7 +389,7 @@ input %>%
     file = paste0(
       base_dir,
       'data/',
-      'codmunicipio.txt'
+      'common_municipio.txt'
     ),
     delim = '|'    
   )
@@ -416,7 +427,7 @@ input %>%
 ##   )
 #+end_src
 
-** área de ponderação (tipo A)
+** área de ponderação (tipo A) v0011
 
 Agrupamento de setores censitários que permite ao IBGE proteger o sigilo e evitar que sejam identificados os respondentes do censo em setores censitários muito pequenos.
 
@@ -471,8 +482,37 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ** código da mesorregião (tipo A) v1002
 
 #+begin_src R :tangle ./gnur_vardict_mesorregiao.R
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável relacionada ao código da mesorregião
+## cujo conteúdo nos microdados é formado por 2 caracteres 
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 10.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos 
+##             àqueles utilizados na língua portuguesa.
+
 ## v1002 Código da Mesorregião (2 caracteres)
-vdict_mesoreg <- 
+input <- 
   read_excel(
     path = paste0(
       raw_data,
@@ -492,13 +532,53 @@ vdict_mesoreg <-
     a_code = cod_4,
     a_desc = meso
   ) 
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_v1002.txt'
+    ),
+    delim = '|'
+  )
 #+end_src
 
 ** código da microrregião (tipo A) v1003
 
-#+begin_src R :tangle ./gnur_vardict_mesorregiao.R
+#+begin_src R :tangle ./gnur_vardict_microrregiao.R
+
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável relacionada ao código da microrregião
+## cujo conteúdo nos microdados é formado por 3 caracteres 
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 10.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos 
+##             àqueles utilizados na língua portuguesa.
+
 ## v1003 Código da Microrregião (3 caracteres)
-vdict_microreg <- 
+input <- 
   read_excel(
     path = paste0(
       raw_data,
@@ -511,18 +591,58 @@ vdict_microreg <-
     col_types = 'text',
     col_names = FALSE
   ) %>%
-  rename(cod_5 = 1, micro = 2) %>%
+  rename(cod_3 = 1, micro = 2) %>%
   unique () %>%
   transmute(
     var = 'v1003',
-    a_code = cod_5,
+    a_code = cod_3,
     a_desc = micro
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_v1003.txt'
+    ),
+    delim = '|'
   )
 #+end_src
 
 ** código da região metropolitana (tipo A) v1004
 
 #+begin_src R :tangle ./gnur_vardict_mesorregiao.R
+
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável relacionada à região metropolitana cujo
+## conteúdo nos microdados é formado por 2 caracteres 
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 10.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos 
+##             àqueles utilizados na língua portuguesa.
+
 ## v1004 Código da Região Metropolitana (2 caracteres)
 ##
 ## Observação:
@@ -534,7 +654,7 @@ vdict_microreg <-
 ##    https://github.com/ipeaGIT/censobr/blob/3a3fab5e97bc3a4baae3bb3ea5e3154e2651cebf/R/add_labels_families.R#L17
 ##    e foram acessados em 09.10.2024 às 18:35 (horário de Brasília)
 ##
-vdict_regmetro <-
+input <-
   tribble(
     ~var,    ~a_code, ~a_desc,
     'v1004',    '01', 'Belém',
@@ -566,7 +686,22 @@ vdict_regmetro <-
     'v1004',    '27', 'Goiânia',
     'v1004',    '28', 'RIDE (Região Integrada de Desenvolvimento do Distrito Federal e Entorno)'
   )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_v1004.txt'
+    ),
+    delim = '|'
+  )
 #+end_src
+
+** situação do domicílio (tipo C) v1006
+
+
+
 
 
 #+begin_src R :tangle ./gnur_parse_variables_dictionary.R
