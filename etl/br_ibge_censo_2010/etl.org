@@ -479,6 +479,54 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ## ) %>% head()
 #+end_src
 
+** região geográfica (tipo C) v1001
+
+#+begin_src R :tangle ./gnur_vardict_v1001.R
+
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável relacionada à região geográfica, cujo
+## conteúdo nos microdados é formado por 1 caracter
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+
+1- Região norte (uf=11 a 17)
+2- Região nordeste (uf=21 a 29)  
+3- Região sudeste (uf=31 a 33 e 35)
+4- Região sul (uf=41 a 43)
+5- Região centro-oeste (uf=50 a 53)
+
+input <-
+  tribble(
+    ~var,    ~a_code, ~a_desc,
+    'v1001',     '1', 'Região norte',
+    'v1001',     '2', 'Região nordeste',
+    'v1001',     '3', 'Região sudeste',
+    'v1001',     '4', 'Região sul',
+    'v1001',     '5', 'Região centro-oeste',
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_v1001.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
 ** código da mesorregião (tipo A) v1002
 
 #+begin_src R :tangle ./gnur_vardict_v1002.R
