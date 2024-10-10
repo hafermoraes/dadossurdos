@@ -88,6 +88,7 @@ fetch_variables_dictionary(){
 #+begin_src R :tangle ./gnur_vardict_ufs.R
 ##
 ## br_ibge_censo_2010
+##
 ## -------------------------------------------------------------------
 ## Preparação das variáveis relacionadas à Unidade da Federação (UF),
 ## cujo conteúdo é formado por 2 caracteres em cada variável a seguir
@@ -101,13 +102,30 @@ fetch_variables_dictionary(){
 ## -------------------------------------------------------------------
 ##
 
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
 library(readxl)   # read_excel
 library(dplyr)    # transmute, unique, rename,
 library(readr)    # write_lines
 library(glue)     # glue_data
 
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 10.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
 base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos 
+##             àqueles utilizados na língua portuguesa.
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das unidades da federação utilizadas no censo demográfico
 input <-
   read_excel(
     path = paste0(
@@ -116,19 +134,33 @@ input <-
       'DocumentaЗ╞o/',
       'Divis╞o Territorial do Brasil/',
       'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
-    ),
-    sheet = 'Município',
-    range = 'A4:B5568',
-    col_types = 'text',
-    col_names = FALSE
+    ),                   # caminho até o arquivo
+    sheet = 'Município', # aba no qual os dados estão disponíveis
+    range = 'A4:B5568',  # importa somente dados de UF
+    col_types = 'text',  # ignora tipos de dados
+    col_names = FALSE    # ignora nomes de colunas
   ) %>%
-  rename(cod_2 = 1, uf = 2) %>%
-  unique () %>%
+  rename(
+    cod_2 = 1,           # primeira coluna traz o código da uf (2 caracteres)
+    uf = 2               # segunda coluna traz o nome da uf
+  ) %>%
+  unique() %>% # obs: os pares (cod_2, uf) repetem-se muitas vezes no arquivo
   transmute(
     a_code = cod_2,
     a_desc = uf
   )
 
+## Como a codificação da UF é comum a diversas variáveis presentes
+## nos microdados, utiliza-se a função 'expand_grid' do pacote
+## 'dplyr' para que seja montada uma tabela contendo todas as
+## combinações de 'var' (o código da variável) e do par formado pelo
+## código (a_code) bem como do nome por extenso (a_desc) da unidade
+## da federação.
+##
+## Esta combinação é então concatenada por meio da função 'glue_data'
+## do pacote 'glue' para salvar em disco o corpo da tabela (tribble)
+## utilizada na construção do dicionário de variáveis de todas
+## as variáveis presentes nos microdados.
 expand_grid(
   var = c(
     'v0001', #  v0001 Unidade da federação
@@ -138,10 +170,10 @@ expand_grid(
     'v6362', #  v6362 Unidade da federação que frequentava escola (ou creche)
     'v6602'  #  v6602 Em que unidade da federação trabalhava
   ),
-  input
+  input      # pares de código (a_code) e nome (a_desc) das UFs
 ) %>%
   glue_data(
-    "'{var}', '{a_code}', '{a_desc}',"
+    "'{var}',    '{a_code}', '{a_desc}',"
   ) %>%
   write_lines(
     paste0(
