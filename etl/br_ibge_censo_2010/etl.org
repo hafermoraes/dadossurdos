@@ -433,7 +433,7 @@ Agrupamento de setores censitários que permite ao IBGE proteger o sigilo e evit
 
 No momento é impossível ler o arquivo de texto em sistemas *NIX devido provavelmente a questões de codificação do arquivo.
 
-#+begin_src R :tangle ./gnur_vardict_areas_ponderacao.R
+#+begin_src R :tangle ./gnur_vardict_v0011.R
 ##
 ## br_ibge_censo_2010
 ##
@@ -481,7 +481,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 ** código da mesorregião (tipo A) v1002
 
-#+begin_src R :tangle ./gnur_vardict_mesorregiao.R
+#+begin_src R :tangle ./gnur_vardict_v1002.R
 ##
 ## br_ibge_censo_2010
 ##
@@ -546,7 +546,7 @@ input %>%
 
 ** código da microrregião (tipo A) v1003
 
-#+begin_src R :tangle ./gnur_vardict_microrregiao.R
+#+begin_src R :tangle ./gnur_vardict_v1003.R
 
 ##
 ## br_ibge_censo_2010
@@ -612,7 +612,7 @@ input %>%
 
 ** código da região metropolitana (tipo A) v1004
 
-#+begin_src R :tangle ./gnur_vardict_regiao_metropolitana.R
+#+begin_src R :tangle ./gnur_vardict_v1004.R
 
 ##
 ## br_ibge_censo_2010
@@ -687,6 +687,41 @@ input %>%
 
 ** situação do domicílio (tipo C) v1006
 
+#+begin_src R :tangle ./gnur_vardict_v1006.R
+
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável relacionada à situação do domicío, cujo
+## conteúdo nos microdados é formado por 1 caracter
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+input <-
+  tribble(
+    ~var,    ~a_code, ~a_desc,
+    'v1006',     '1', 'Urbana',
+    'v1006',     '2', 'Rural',
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_v1006.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
 
 
 
