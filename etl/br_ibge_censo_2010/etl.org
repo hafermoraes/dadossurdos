@@ -612,7 +612,7 @@ input %>%
 
 ** código da região metropolitana (tipo A) v1004
 
-#+begin_src R :tangle ./gnur_vardict_mesorregiao.R
+#+begin_src R :tangle ./gnur_vardict_regiao_metropolitana.R
 
 ##
 ## br_ibge_censo_2010
@@ -628,20 +628,7 @@ library(dplyr)    # transmute, unique, rename,
 library(readr)    # write_delim
 library(tibble)   # tribble
 
-## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
-## era o endereço da fonte primária no momento em que este script
-## foi programado em 10.10.2024.
-##
-## Este arquivo é então descompactado no diretório salvo na variável
-## 'base_dir' a seguir
-##
 base_dir <- '/tmp/etl/br_ibge_censo_2010/'
-
-## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
-##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
-##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
-##             àqueles utilizados na língua portuguesa.
 
 ## v1004 Código da Região Metropolitana (2 caracteres)
 ##
