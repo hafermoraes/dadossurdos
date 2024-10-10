@@ -85,6 +85,74 @@ fetch_variables_dictionary(){
 #+end_src
 
 
+#+begin_src R :tangle ./gnur_vardict_ufs.R
+##
+## br_ibge_censo_2010
+## -------------------------------------------------------------------
+## Preparação das variáveis relacionadas à Unidade da Federação (UF),
+## cujo conteúdo é formado por 2 caracteres em cada variável a seguir
+##
+##   v0001 Unidade da federação
+##   v6222 Unidade da federação de nascimento
+##   v6252 Unidade da federação de residência anterior
+##   v6262 Unidade da federação de residência em 31 de julho de 2005
+##   v6362 Unidade da federação que frequentava escola (ou creche)
+##   v6602 Em que unidade da federação trabalhava
+## -------------------------------------------------------------------
+##
+
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_lines
+library(glue)     # glue_data
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Divis╞o Territorial do Brasil/',
+      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
+    ),
+    sheet = 'Município',
+    range = 'A4:B5568',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(cod_2 = 1, uf = 2) %>%
+  unique () %>%
+  transmute(
+    a_code = cod_2,
+    a_desc = uf
+  )
+
+expand_grid(
+  var = c(
+    'v0001', #  v0001 Unidade da federação
+    'v6222', #  v6222 Unidade da federação de nascimento
+    'v6252', #  v6252 Unidade da federação de residência anterior
+    'v6262', #  v6262 Unidade da federação de residência em 31 de julho de 2005
+    'v6362', #  v6362 Unidade da federação que frequentava escola (ou creche)
+    'v6602'  #  v6602 Em que unidade da federação trabalhava
+  ),
+  input
+) %>%
+  glue_data(
+    "'{var}', '{a_code}', '{a_desc}',"
+  ) %>%
+  write_lines(
+    paste0(
+      base_dir,
+      'data/',
+      'vdict_ufs.txt'
+    )
+  )
+#+end_src
+
+
 #+begin_src R :tangle ./gnur_parse_variables_dictionary.R
 ## Fetch and process variables dictionary for IBGE Censo 2010
 
@@ -321,40 +389,6 @@ vdict_regmetro <-
     'v1004',    '28', 'RIDE (Região Integrada de Desenvolvimento do Distrito Federal e Entorno)'
   )
 
-## Unidade da Federação (2 caracteres)
-##
-##  v0001 Unidade da federação
-##  v6222 Unidade da federação de nascimento
-##  v6252 Unidade da federação de residência anterior
-##  v6262 Unidade da federação de residência em 31 de julho de 2005
-##  v6362 Unidade da federação que frequentava escola (ou creche)
-##  v6602 Em que unidade da federação trabalhava
-aux_coduf <- 
-  read_excel(
-    path = paste0(
-      raw_data,
-      'DocumentaЗ╞o/',
-      'Divis╞o Territorial do Brasil/',
-      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
-    ),
-    sheet = 'Município',
-    range = 'A4:B5568',
-    col_types = 'text',
-    col_names = FALSE
-  ) %>%
-  rename(cod_2 = 1, uf = 2) %>%
-  unique () %>%
-  transmute(
-    a_code = cod_2,
-    a_desc = uf
-  )
-
-vdict_ufs <-
-  expand_grid(
-    var = c('v0001', 'v6222', 'v6252', 'v6262', 'v6362', 'v6602'),
-    aux_coduf
-  )
-
 ## País de nascimento (3 caracteres)
 ##
 ##  v6224 Qual é o país estrangeiro de nascimento
@@ -443,6 +477,8 @@ dict_domi <-
   ) %>%
   select(var, desc, pos_ini, pos_fin, len) %>%
   as.data.frame()
+
+dict_domi %>% View
 
 
 strsplit( dict_domi[1,2], split='\n')
