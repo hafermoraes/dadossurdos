@@ -771,7 +771,7 @@ input %>%
   )
 #+end_src
 
-** espécia de unidade visitada (tipo C) v4001
+** espécie de unidade visitada (tipo C) v4001
 
 #+begin_src R :tangle ./gnur_vardict_v4001.R
 
@@ -806,6 +806,55 @@ input %>%
       base_dir,
       'data/',
       'vdict_v4001.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+** tipo de espécie  (tipo C) v4002
+
+#+begin_src R :tangle ./gnur_vardict_v4002.R
+
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável relacionada ao tipo de espécie,
+## cujo conteúdo nos microdados é formado por 2 caracteres
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+input <-
+  tribble(
+    ~var,    ~a_code, ~a_desc,
+    'v4002',    '11', 'Casa',
+    'v4002',    '12', 'Casa de vila ou em condomínio',
+    'v4002',    '13', 'Apartamento',
+    'v4002',    '14', 'Habitação em: casa de cômodos, cortiço ou cabeça de porco',
+    'v4002',    '15', 'Oca ou maloca',
+    'v4002',    '51', 'Tenda ou barraca',
+    'v4002',    '52', 'Dentro de estabelecimento',
+    'v4002',    '53', 'Outro (vagão, trailer, gruta, etc)',
+    'v4002',    '61', 'Asilo, orfanato e similares  com morador',
+    'v4002',    '62', 'Hotel, pensão e similares com morador',
+    'v4002',    '63', 'Alojamento de trabalhadores com morador',
+    'v4002',    '64', 'Penitenciária, presídio ou casa de detenção com morador',
+    'v4002',    '65', 'Outro com morador'
+)
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_v4002.txt'
     ),
     delim = '|'
   )
