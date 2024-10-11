@@ -101,6 +101,7 @@ library(readxl)   # read_excel
 library(dplyr)    # mutate, transmute, filter, rename, bind_rows
 library(stringr)  # str_split
 library(tidyr)    # unnest
+library(glue)     # glue
 
 src_dir <- '/tmp/etl/br_ibge_censo_2010/'
 raw_data <- paste0(src_dir, 'raw/')
@@ -173,19 +174,37 @@ vdict %>%
 ## tipo == C
 vdict %>%
   filter(
-    grepl(pattern = 'c', tipo, ignore.case = TRUE),
-    grepl(pattern = 'v0201', var, ignore.case = TRUE)
+    grepl(pattern = 'c', tipo, ignore.case = TRUE)
+    ## grepl(pattern = 'v0201', var, ignore.case = TRUE)
   ) %>% 
   transmute(
-    var,
-    split = str_split( desc, pattern='\n')
+    var = str_to_lower(var),
+    answer = str_split( string = desc, pattern='\n')
   ) %>% 
-  unnest(split) %>%
-  View
+  unnest(answer) %>%
+  rowwise() %>%
+  mutate(
+    sep = str_locate( string = answer, pattern = '-')[1],
+    a_code = substr(answer, start = 1, stop = sep-1 ),
+    a_desc = substr(answer, start = sep + 1, stop = 400),
+    a_code = str_trim(a_code),
+    a_desc = str_trim(a_desc)
+  ) %>%
+  transmute(
+    res = glue("'{var}',  '{a_code}', '{a_desc}',")
+  ) %>%
+  ## na.omit() %>%
+  write_delim(
+    paste0(
+      base_dir,
+      'data/',
+      'typeC_tribble_bodies.txt'
+    ),
+    quote = 'none',
+    delim = '|'
+  )
 
 
-
-strsplit( vdict[2,2], split='\n')
 #+end_src
 
 * tratamento das variáveis 
