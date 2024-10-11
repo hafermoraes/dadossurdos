@@ -98,10 +98,11 @@ A coluna =tipo= assume valores =A=, =C= e =N=. Ao que tudo indica,
 
 #+begin_src R :tangle no :eval no
 library(readxl)   # read_excel
-library(dplyr)    # mutate, transmute, filter, rename, bind_rows
-library(stringr)  # str_split
+library(dplyr)    # mutate, transmute, filter, rename, bind_rows, arrange
+library(stringr)  # str_split, str_to_lower, str_trim, str_locate
 library(tidyr)    # unnest
 library(glue)     # glue
+library(readr)    # write_delim
 
 src_dir <- '/tmp/etl/br_ibge_censo_2010/'
 raw_data <- paste0(src_dir, 'raw/')
@@ -160,22 +161,10 @@ vdict %>%
   View
 
 
-## tipo == C, respostas do tipo sim/não
-vdict %>%
-  filter(
-    grepl(pattern = 'c', tipo, ignore.case = TRUE),
-    grepl(pattern = '1- sim', desc, ignore.case = TRUE),
-    grepl(pattern = '2- não', desc, ignore.case = TRUE)
-  ) %>%
-  arrange(var) %>%
-  View
-
-
 ## tipo == C
 vdict %>%
   filter(
     grepl(pattern = 'c', tipo, ignore.case = TRUE)
-    ## grepl(pattern = 'v0201', var, ignore.case = TRUE)
   ) %>% 
   transmute(
     var = str_to_lower(var),
