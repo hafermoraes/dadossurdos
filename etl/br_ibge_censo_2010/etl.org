@@ -180,14 +180,10 @@ vdict %>%
   ) %>%
   na.omit() %>% 
   transmute(
-    res = glue("'{var}',  '{a_code}', '{a_desc}',")
+    res = glue("'{var}',     '{a_code}', '{a_desc}',")
   ) %>%
   write_delim(
-    paste0(
-      base_dir,
-      'data/',
-      'typeC_tribble_bodies.txt'
-    ),
+    file = glue('{base_dir}/data/typeC_tribble_bodies.txt'),
     quote = 'none',
     delim = '|'
   )
