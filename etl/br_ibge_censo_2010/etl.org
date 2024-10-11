@@ -99,6 +99,8 @@ A coluna =tipo= assume valores =A=, =C= e =N=. Ao que tudo indica,
 #+begin_src R :tangle no :eval no
 library(readxl)   # read_excel
 library(dplyr)    # mutate, transmute, filter, rename, bind_rows
+library(stringr)  # str_split
+library(tidyr)    # unnest
 
 src_dir <- '/tmp/etl/br_ibge_censo_2010/'
 raw_data <- paste0(src_dir, 'raw/')
@@ -168,7 +170,20 @@ vdict %>%
   View
 
 
-strsplit( vdict[1,2], split='\n')
+## tipo == C
+vdict %>%
+  filter(
+    grepl(pattern = 'c', tipo, ignore.case = TRUE),
+    grepl(pattern = 'v0201', var, ignore.case = TRUE)
+  ) %>% 
+  transmute(
+    var,
+    split = str_split( desc, pattern='\n')
+  ) %>% 
+  unnest(split) %>%
+  View
+
+
 
 strsplit( vdict[2,2], split='\n')
 #+end_src
@@ -855,6 +870,48 @@ input %>%
       base_dir,
       'data/',
       'vdict_v4002.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+** domicílio, condição de ocupação  (tipo C) v0201
+
+#+begin_src R :tangle ./gnur_vardict_v0201.R
+
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "domicílio, condição de ocupação",
+## cujo conteúdo nos microdados é formado por 1 caracteres
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+input <-
+  tribble(
+    ~var,    ~a_code, ~a_desc,
+    'v0201',     '1', 'Próprio de algum morador - já pago',
+    'v0201',     '2', 'Próprio de algum morador - ainda pagando',
+    'v0201',     '3', 'Alugado',
+    'v0201',     '4', 'Cedido por empregador',
+    'v0201',     '5', 'Cedido de outra forma',
+    'v0201',     '6', 'Outra condição'
+)
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_v0201.txt'
     ),
     delim = '|'
   )
