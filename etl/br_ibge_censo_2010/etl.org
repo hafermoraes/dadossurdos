@@ -579,7 +579,9 @@ input %>%
   )
 #+end_src
 
-*** código da região metropolitana v1004
+
+** tipo C: variáveis com respostas próprias
+*** código da região metropolitana v1004 (exceção tipo A)
 
 #+begin_src R :tangle ./gnur_vardict_typeA_metro.R
 
@@ -587,8 +589,8 @@ input %>%
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável relacionada à região metropolitana cujo
-## conteúdo nos microdados é formado por 2 caracteres 
+## Preparação da variável "código da região metropolitana"
+## cujo conteúdo nos microdados é formado por 2 caracteres 
 ## -------------------------------------------------------------------
 ##
 
@@ -610,40 +612,37 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ##    https://github.com/ipeaGIT/censobr/blob/3a3fab5e97bc3a4baae3bb3ea5e3154e2651cebf/R/add_labels_families.R#L17
 ##    e foram acessados em 09.10.2024 às 18:35 (horário de Brasília)
 ##
-input <-
-  tribble(
-    ~var,    ~a_code, ~a_desc,
-    'v1004',    '01', 'Belém',
-    'v1004',    '02', 'Grande São Luís',
-    'v1004',    '03', 'Fortaleza',
-    'v1004',    '04', 'Natal',
-    'v1004',    '05', 'Recife',
-    'v1004',    '06', 'Maceió',
-    'v1004',    '07', 'Salvador',
-    'v1004',    '08', 'Belo Horizonte',
-    'v1004',    '09', 'Colar Metropolitano da RM de Belo Horizonte',
-    'v1004',    '10', 'Vale do Aço',
-    'v1004',    '11', 'Colar Metropolitano da RM do Vale do Aço',
-    'v1004',    '12', 'Grande Vitória',
-    'v1004',    '13', 'Rio de Janeiro',
-    'v1004',    '14', 'São Paulo',
-    'v1004',    '15', 'Baixada Santista',
-    'v1004',    '16', 'Campinas',
-    'v1004',    '17', 'Curitiba',
-    'v1004',    '18', 'Londrina',
-    'v1004',    '19', 'Maringá',
-    'v1004',    '20', 'Florianópolis',
-    'v1004',    '21', 'Área de Expansão Metropolitana da RM de Florianópolis',
-    'v1004',    '22', 'Núcleo Metropolitano da RM Vale do Itajaí',
-    'v1004',    '23', 'Área de Expansão Metropolitana da RM Vale do Itajaí',
-    'v1004',    '24', 'Norte/Nordeste Catarinense',
-    'v1004',    '25', 'Área de Expansão Metropolitana da RM Norte/Nordeste Catarinense',
-    'v1004',    '26', 'Porto Alegre',
-    'v1004',    '27', 'Goiânia',
-    'v1004',    '28', 'RIDE (Região Integrada de Desenvolvimento do Distrito Federal e Entorno)'
-  )
-
-input %>%
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v1004',    '01', 'Belém',
+  'v1004',    '02', 'Grande São Luís',
+  'v1004',    '03', 'Fortaleza',
+  'v1004',    '04', 'Natal',
+  'v1004',    '05', 'Recife',
+  'v1004',    '06', 'Maceió',
+  'v1004',    '07', 'Salvador',
+  'v1004',    '08', 'Belo Horizonte',
+  'v1004',    '09', 'Colar Metropolitano da RM de Belo Horizonte',
+  'v1004',    '10', 'Vale do Aço',
+  'v1004',    '11', 'Colar Metropolitano da RM do Vale do Aço',
+  'v1004',    '12', 'Grande Vitória',
+  'v1004',    '13', 'Rio de Janeiro',
+  'v1004',    '14', 'São Paulo',
+  'v1004',    '15', 'Baixada Santista',
+  'v1004',    '16', 'Campinas',
+  'v1004',    '17', 'Curitiba',
+  'v1004',    '18', 'Londrina',
+  'v1004',    '19', 'Maringá',
+  'v1004',    '20', 'Florianópolis',
+  'v1004',    '21', 'Área de Expansão Metropolitana da RM de Florianópolis',
+  'v1004',    '22', 'Núcleo Metropolitano da RM Vale do Itajaí',
+  'v1004',    '23', 'Área de Expansão Metropolitana da RM Vale do Itajaí',
+  'v1004',    '24', 'Norte/Nordeste Catarinense',
+  'v1004',    '25', 'Área de Expansão Metropolitana da RM Norte/Nordeste Catarinense',
+  'v1004',    '26', 'Porto Alegre',
+  'v1004',    '27', 'Goiânia',
+  'v1004',    '28', 'RIDE (Região Integrada de Desenvolvimento do Distrito Federal e Entorno)'
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -654,8 +653,6 @@ input %>%
   )
 #+end_src
 
-
-** tipo C: variáveis com respostas próprias
 *** região geográfica v1001
 
 #+begin_src R :tangle ./gnur_vardict_v1001.R
@@ -663,36 +660,26 @@ input %>%
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável relacionada à região geográfica, cujo
-## conteúdo nos microdados é formado por 1 caracter
+## Preparação da variável "região geográfica"
+## cujo conteúdo nos microdados é formado por 1 caracter
 ## -------------------------------------------------------------------
 ##
 
 ## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
-library(dplyr)    # transmute, unique, rename,
+library(dplyr)    # %>%
 library(readr)    # write_delim
 library(tibble)   # tribble
 
 base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
-
-1- Região norte (uf=11 a 17)
-2- Região nordeste (uf=21 a 29)  
-3- Região sudeste (uf=31 a 33 e 35)
-4- Região sul (uf=41 a 43)
-5- Região centro-oeste (uf=50 a 53)
-
-input <-
-  tribble(
-    ~var,    ~a_code, ~a_desc,
-    'v1001',     '1', 'Região norte',
-    'v1001',     '2', 'Região nordeste',
-    'v1001',     '3', 'Região sudeste',
-    'v1001',     '4', 'Região sul',
-    'v1001',     '5', 'Região centro-oeste',
-  )
-
-input %>%
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v1001',     '1', 'Região norte',
+  'v1001',     '2', 'Região nordeste',
+  'v1001',     '3', 'Região sudeste',
+  'v1001',     '4', 'Região sul',
+  'v1001',     '5', 'Região centro-oeste',
+  )  %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -710,8 +697,8 @@ input %>%
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável relacionada à situação do domicío, cujo
-## conteúdo nos microdados é formado por 1 caracter
+## Preparação da variável "situação do domicío"
+## cujo conteúdo nos microdados é formado por 1 caracter
 ## -------------------------------------------------------------------
 ##
 
@@ -722,14 +709,11 @@ library(tibble)   # tribble
 
 base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
-input <-
-  tribble(
-    ~var,    ~a_code, ~a_desc,
-    'v1006',     '1', 'Urbana',
-    'v1006',     '2', 'Rural',
-  )
-
-input %>%
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v1006',     '1', 'Urbana',
+  'v1006',     '2', 'Rural',
+  ) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -747,7 +731,7 @@ input %>%
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável relacionada à espécie de unidade visitada,
+## Preparação da variável "espécie de unidade visitada"
 ## cujo conteúdo nos microdados é formado por 2 caracteres
 ## -------------------------------------------------------------------
 ##
@@ -759,16 +743,13 @@ library(tibble)   # tribble
 
 base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
-input <-
-  tribble(
-    ~var,    ~a_code, ~a_desc,
-    'v4001',    '01', 'Domicílio particular permanente ocupado ',
-    'v4001',    '02', 'Domicílio particular permanente ocupado sem entrevista realizada ',
-    'v4001',    '05', 'Domicílio particular improvisado ocupado ',
-    'v4001',    '06', 'Domicílio coletivo com morador'
-  )
-
-input %>%
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v4001',    '01', 'Domicílio particular permanente ocupado',
+  'v4001',    '02', 'Domicílio particular permanente ocupado sem entrevista realizada',
+  'v4001',    '05', 'Domicílio particular improvisado ocupado',
+  'v4001',    '06', 'Domicílio coletivo com morador'
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -787,7 +768,7 @@ input %>%
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável relacionada ao tipo de espécie,
+## Preparação da variável "tipo de espécie"
 ## cujo conteúdo nos microdados é formado por 2 caracteres
 ## -------------------------------------------------------------------
 ##
@@ -799,25 +780,22 @@ library(tibble)   # tribble
 
 base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
-input <-
-  tribble(
-    ~var,    ~a_code, ~a_desc,
-    'v4002',    '11', 'Casa',
-    'v4002',    '12', 'Casa de vila ou em condomínio',
-    'v4002',    '13', 'Apartamento',
-    'v4002',    '14', 'Habitação em: casa de cômodos, cortiço ou cabeça de porco',
-    'v4002',    '15', 'Oca ou maloca',
-    'v4002',    '51', 'Tenda ou barraca',
-    'v4002',    '52', 'Dentro de estabelecimento',
-    'v4002',    '53', 'Outro (vagão, trailer, gruta, etc)',
-    'v4002',    '61', 'Asilo, orfanato e similares  com morador',
-    'v4002',    '62', 'Hotel, pensão e similares com morador',
-    'v4002',    '63', 'Alojamento de trabalhadores com morador',
-    'v4002',    '64', 'Penitenciária, presídio ou casa de detenção com morador',
-    'v4002',    '65', 'Outro com morador'
-)
-
-input %>%
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v4002',    '11', 'Casa',
+  'v4002',    '12', 'Casa de vila ou em condomínio',
+  'v4002',    '13', 'Apartamento',
+  'v4002',    '14', 'Habitação em: casa de cômodos, cortiço ou cabeça de porco',
+  'v4002',    '15', 'Oca ou maloca',
+  'v4002',    '51', 'Tenda ou barraca',
+  'v4002',    '52', 'Dentro de estabelecimento',
+  'v4002',    '53', 'Outro (vagão, trailer, gruta, etc)',
+  'v4002',    '61', 'Asilo, orfanato e similares  com morador',
+  'v4002',    '62', 'Hotel, pensão e similares com morador',
+  'v4002',    '63', 'Alojamento de trabalhadores com morador',
+  'v4002',    '64', 'Penitenciária, presídio ou casa de detenção com morador',
+  'v4002',    '65', 'Outro com morador'
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -848,18 +826,15 @@ library(tibble)   # tribble
 
 base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
-input <-
-  tribble(
-    ~var,    ~a_code, ~a_desc,
-    'v0201',     '1', 'Próprio de algum morador - já pago',
-    'v0201',     '2', 'Próprio de algum morador - ainda pagando',
-    'v0201',     '3', 'Alugado',
-    'v0201',     '4', 'Cedido por empregador',
-    'v0201',     '5', 'Cedido de outra forma',
-    'v0201',     '6', 'Outra condição'
-)
-
-input %>%
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0201',     '1', 'Próprio de algum morador - já pago',
+  'v0201',     '2', 'Próprio de algum morador - ainda pagando',
+  'v0201',     '3', 'Alugado',
+  'v0201',     '4', 'Cedido por empregador',
+  'v0201',     '5', 'Cedido de outra forma',
+  'v0201',     '6', 'Outra condição',
+  ) %>%
   write_delim(
     file = paste0(
       base_dir,
