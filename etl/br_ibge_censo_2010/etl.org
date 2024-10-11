@@ -143,7 +143,6 @@ vdict %>%
   arrange(var) %>%
   View
 
-
 ## tipo == C
 vdict %>%
   filter(
@@ -179,10 +178,10 @@ vdict %>%
     a_code = str_trim(a_code),
     a_desc = str_trim(a_desc)
   ) %>%
+  na.omit() %>% 
   transmute(
     res = glue("'{var}',  '{a_code}', '{a_desc}',")
   ) %>%
-  ## na.omit() %>%
   write_delim(
     paste0(
       base_dir,
@@ -192,12 +191,11 @@ vdict %>%
     quote = 'none',
     delim = '|'
   )
-
-
 #+end_src
 
 * tratamento das variáveis 
-** unidade da federação (tipo A) v0001/v6222/v6252/v6262/v6362/v6602
+** tipo A: variáveis que compartilham as mesmas opções de resposta
+*** unidade da federação v0001/v6222/v6252/v6262/v6362/v6602
 
 As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigração =EMIG= e mortalidade =MORT= compartilham dos mesmos códigos e nomes por extenso referentes à unidade da federação.
 
@@ -208,7 +206,7 @@ As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigra�
 - v6362 Unidade da federação que frequentava escola (ou creche)
 - v6602 Em que unidade da federação trabalhava
 
-#+begin_src R :tangle ./gnur_vardict_ufs.R
+#+begin_src R :tangle ./gnur_vardict_typeA_uf.R
 ##
 ## br_ibge_censo_2010
 ##
@@ -318,7 +316,7 @@ input %>%
 ##   )
 #+end_src
 
-** código do município (tipo A)  v0002/v6254/v6264/v6364/v6604
+*** município v0002/v6254/v6264/v6364/v6604
 
 As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigração =EMIG= e mortalidade =MORT= compartilham dos mesmos códigos e nomes por extenso referentes aos municípios do país.
 
@@ -328,7 +326,7 @@ As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigra�
 - v6364 Município que frequentava escola (ou creche)
 - v6604 Em que município trabalhava
 
-#+begin_src R :tangle ./gnur_vardict_municipios.R
+#+begin_src R :tangle ./gnur_vardict_typeA_municipio.R
 ##
 ## br_ibge_censo_2010
 ##
@@ -450,109 +448,9 @@ input %>%
 ##   )
 #+end_src
 
-** área de ponderação (tipo A) v0011
+*** código da mesorregião v1002
 
-Agrupamento de setores censitários que permite ao IBGE proteger o sigilo e evitar que sejam identificados os respondentes do censo em setores censitários muito pequenos.
-
-No momento é impossível ler o arquivo de texto em sistemas *NIX devido provavelmente a questões de codificação do arquivo.
-
-#+begin_src R :tangle ./gnur_vardict_v0011.R
-##
-## br_ibge_censo_2010
-##
-## -------------------------------------------------------------------
-## Preparação da variável relacionada à área de ponderação
-## cujo conteúdo nos microdados é formado por 13 caracteres 
-## -------------------------------------------------------------------
-##
-
-## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
-library(dplyr)    # transmute, unique, rename,
-library(readr)    # write_lines
-
-## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
-## era o endereço da fonte primária no momento em que este script
-## foi programado em 10.10.2024.
-##
-## Este arquivo é então descompactado no diretório salvo na variável
-## 'base_dir' a seguir
-##
-base_dir <- '/tmp/etl/br_ibge_censo_2010/'
-
-## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
-##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
-##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
-##             àqueles utilizados na língua portuguesa.
-
-## o tibble 'input' guarda os pares formados pela área de ponderação e
-## pelos setores censitários
-## input <-
-##   read_delim(
-##     file = paste0(
-##       base_dir,
-##       'raw/',
-##       'DocumentaЗ╞o/',
-##       '╡reas\ de\ PonderaЗ╞o/',
-##       'ComposiЗ╞o\ das\ ╡reas\ de\ PonderaЗ╞o.txt'
-##     ),
-##     skip= 1,
-##     locale = locale(encoding = "windows-1252"),
-##     delim = "\t"
-## ) %>% head()
-#+end_src
-
-** região geográfica (tipo C) v1001
-
-#+begin_src R :tangle ./gnur_vardict_v1001.R
-
-##
-## br_ibge_censo_2010
-##
-## -------------------------------------------------------------------
-## Preparação da variável relacionada à região geográfica, cujo
-## conteúdo nos microdados é formado por 1 caracter
-## -------------------------------------------------------------------
-##
-
-## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
-library(dplyr)    # transmute, unique, rename,
-library(readr)    # write_delim
-library(tibble)   # tribble
-
-base_dir <- '/tmp/etl/br_ibge_censo_2010/'
-
-
-1- Região norte (uf=11 a 17)
-2- Região nordeste (uf=21 a 29)  
-3- Região sudeste (uf=31 a 33 e 35)
-4- Região sul (uf=41 a 43)
-5- Região centro-oeste (uf=50 a 53)
-
-input <-
-  tribble(
-    ~var,    ~a_code, ~a_desc,
-    'v1001',     '1', 'Região norte',
-    'v1001',     '2', 'Região nordeste',
-    'v1001',     '3', 'Região sudeste',
-    'v1001',     '4', 'Região sul',
-    'v1001',     '5', 'Região centro-oeste',
-  )
-
-input %>%
-  write_delim(
-    file = paste0(
-      base_dir,
-      'data/',
-      'vdict_v1001.txt'
-    ),
-    delim = '|'
-  )
-#+end_src
-
-** código da mesorregião (tipo A) v1002
-
-#+begin_src R :tangle ./gnur_vardict_v1002.R
+#+begin_src R :tangle ./gnur_vardict_typeA_meso.R
 ##
 ## br_ibge_censo_2010
 ##
@@ -615,9 +513,9 @@ input %>%
   )
 #+end_src
 
-** código da microrregião (tipo A) v1003
+*** código da microrregião v1003
 
-#+begin_src R :tangle ./gnur_vardict_v1003.R
+#+begin_src R :tangle ./gnur_vardict_typeA_micro.R
 
 ##
 ## br_ibge_censo_2010
@@ -681,9 +579,9 @@ input %>%
   )
 #+end_src
 
-** código da região metropolitana (tipo A) v1004
+*** código da região metropolitana v1004
 
-#+begin_src R :tangle ./gnur_vardict_v1004.R
+#+begin_src R :tangle ./gnur_vardict_typeA_metro.R
 
 ##
 ## br_ibge_censo_2010
@@ -756,10 +654,58 @@ input %>%
   )
 #+end_src
 
-** situação do domicílio (tipo C) v1006
+
+** tipo C: variáveis com respostas próprias
+*** região geográfica v1001
+
+#+begin_src R :tangle ./gnur_vardict_v1001.R
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável relacionada à região geográfica, cujo
+## conteúdo nos microdados é formado por 1 caracter
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+
+1- Região norte (uf=11 a 17)
+2- Região nordeste (uf=21 a 29)  
+3- Região sudeste (uf=31 a 33 e 35)
+4- Região sul (uf=41 a 43)
+5- Região centro-oeste (uf=50 a 53)
+
+input <-
+  tribble(
+    ~var,    ~a_code, ~a_desc,
+    'v1001',     '1', 'Região norte',
+    'v1001',     '2', 'Região nordeste',
+    'v1001',     '3', 'Região sudeste',
+    'v1001',     '4', 'Região sul',
+    'v1001',     '5', 'Região centro-oeste',
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_v1001.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** situação do domicílio v1006
 
 #+begin_src R :tangle ./gnur_vardict_v1006.R
-
 ##
 ## br_ibge_censo_2010
 ##
@@ -794,10 +740,9 @@ input %>%
   )
 #+end_src
 
-** espécie de unidade visitada (tipo C) v4001
+*** espécie de unidade visitada v4001
 
 #+begin_src R :tangle ./gnur_vardict_v4001.R
-
 ##
 ## br_ibge_censo_2010
 ##
@@ -834,7 +779,7 @@ input %>%
   )
 #+end_src
 
-** tipo de espécie  (tipo C) v4002
+*** tipo de espécie v4002
 
 #+begin_src R :tangle ./gnur_vardict_v4002.R
 
@@ -883,7 +828,7 @@ input %>%
   )
 #+end_src
 
-** domicílio, condição de ocupação  (tipo C) v0201
+*** domicílio, condição de ocupação v0201
 
 #+begin_src R :tangle ./gnur_vardict_v0201.R
 
