@@ -105,7 +105,7 @@ Ao que tudo indica,
 
 O bloco de código a seguir em linguagem GNR R não é exportado (tangle) nem executado pois presta-se unicamente ao entendimento de como funciona o dicionário de variáveis do censo.
 
-#+begin_src R :tangle no :eval no
+#+begin_src R :tangle ./gnur_vdict_understanding.R
 ## entendimento do dicionário de variáveis do censo demográfico brasileiro de 2010 (br_ibge_censo_2010)
 
 library(readxl)   # read_excel
@@ -1441,6 +1441,123 @@ tribble(
   )
 #+end_src
 
+*** v0202 material predominante, paredes externas
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0202.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0202.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "material predominante, paredes externas"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0202',     '1', 'Alvenaria com revestimento',
+  'v0202',     '2', 'Alvenaria sem revestimento',
+  'v0202',     '3', 'Madeira apropriada para construção (aparelhada)',
+  'v0202',     '4', 'Taipa revestida',
+  'v0202',     '5', 'Taipa não revestida',
+  'v0202',     '6', 'Madeira aproveitada',
+  'v0202',     '7', 'Palha',
+  'v0202',     '8', 'Outro material',
+  'v0202',     '9', 'Sem parede',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_v0202.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v0205 banheiros de uso exclusivo, número 
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0205.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0205.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável ""
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0205',     '0', 'Zero banheiros',
+  'v0205',     '1', 'Um banheiro',
+  'v0205',     '2', 'Dois banheiros',
+  'v0205',     '3', 'Três banheiros',
+  'v0205',     '4', 'Quatro banheiros',
+  'v0205',     '5', 'Cinco banheiros',
+  'v0205',     '6', 'Seis banheiros',
+  'v0205',     '7', 'Sete banheiros',
+  'v0205',     '8', 'Oito banheiros',
+  'v0205',     '9', 'Nove ou mais banheiros',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_v0205.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v 
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável ""
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_v.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
 
 * TODO...
 
