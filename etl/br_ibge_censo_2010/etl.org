@@ -515,6 +515,100 @@ input %>%
 ##   )
 #+end_src
 
+*** país v3061/v6224/v6256/v6266/v6366/v6606
+
+As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigração =EMIG= e mortalidade =MORT= compartilham dos mesmos códigos e nomes por extenso referentes ao país.
+
+- v3061 país de residência em 31 de julho de 2010
+- v6224 qual é o país estrangeiro de nascimento 
+- v6256 país de residência anterior
+- v6266 país de residência em 31 de julho de 2005
+- v6366 país estrangeiro que frequentava escola (ou creche)
+- v6606 em que país estrangeiro trabalhava
+
+#+begin_src R :tangle ./gnur_vardict_typeA_pais.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_pais.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação das variáveis relacionadas ao país,
+## cujo conteúdo nos microdados é formado por 7 caracteres em cada
+## variável a seguir
+##
+##   v3061 país de residência em 31 de julho de 2010
+##   v6224 qual é o país estrangeiro de nascimento 
+##   v6256 país de residência anterior
+##   v6266 país de residência em 31 de julho de 2005
+##   v6366 país estrangeiro que frequentava escola (ou creche)
+##   v6606 em que país estrangeiro trabalhava
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_lines
+library(glue)     # glue_data
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 12.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos 
+##             àqueles utilizados na língua portuguesa.
+
+
+## País de nascimento (7 caracteres)
+##
+##  v6224 Qual é o país estrangeiro de nascimento
+##  v3061 País de residência em 31 de julho de 2010           >>> Base de Emigração
+##  v6256 País de residência anterior
+##  v6266 País de residência em 31 de julho de 2005
+##  v6366 País estrangeiro que frequentava escola (ou creche)
+##  v6606 Em que país estrangeiro trabalhava
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'MigraЗ╞o e Deslocamento_Paises estrangeiros.xls'
+    ),
+    sheet = 'País estrangeiro',
+    range = 'B8:C221',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(nome = 1, cod_7 = 2) %>%
+  na.omit() %>%
+  transmute(
+    a_code = cod_7,
+    a_desc = nome
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'typeA_common_pais.txt'
+    ),
+    delim = '|'    
+  )
+#+end_src
+
+
 *** código da mesorregião v1002
 
 #+begin_src R :tangle ./gnur_vardict_typeA_meso.R
@@ -743,7 +837,7 @@ library(readr)    # write_delim
 
 ## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
 ## era o endereço da fonte primária no momento em que este script
-## foi programado em 10.10.2024.
+## foi programado em 12.10.2024.
 ##
 ## Este arquivo é então descompactado no diretório salvo na variável
 ## 'base_dir' a seguir
@@ -799,7 +893,7 @@ input %>%
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável "curso superior de graduação"
+## Preparação da variável "curso de mestrado"
 ## cujo conteúdo nos microdados é formado por 3 caracteres 
 ## -------------------------------------------------------------------
 ##
@@ -853,6 +947,74 @@ input %>%
       base_dir,
       'data/',
       'vdict_v6354.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** curso de doutorado v6356
+
+#+begin_src R :tangle ./gnur_vardict_typeA_curso_dout.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_curso_dout.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "curso de doutorado"
+## cujo conteúdo nos microdados é formado por 3 caracteres 
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 12.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos 
+##             àqueles utilizados na língua portuguesa.
+
+## v6356 Curso de doutorado
+input <- 
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'Cursos Doutorado_Estrutura 2010.xls'
+    ),
+    sheet = 'Estrutura',
+    range = 'A2:B132',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(a_code = 1, a_desc = 2) %>%
+  na.omit() %>% 
+  transmute(
+    var = 'v6356',
+    a_code,
+    a_desc
+  )
+
+input %>% 
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_v6356.txt'
     ),
     delim = '|'
   )
@@ -1080,23 +1242,6 @@ proc_data <- paste0(src_dir, 'data/')
 ## Tabelas auxiliares para o dicionário de variáveis
 
 
-## v6356 Curso de doutorado
-vdict_cursodoutorado <- 
-  read_excel(
-    path = paste0(
-      raw_data,
-      'DocumentaЗ╞o/',
-      'Anexos Auxiliares/',
-      'Cursos Doutorado_Estrutura 2010.xls'
-    ),
-    sheet = 'Estrutura',
-    range = 'A2:B132',
-    col_types = 'text',
-    col_names = FALSE
-  ) %>%
-  rename(a_code = 1, a_desc = 2) %>% 
-  na.omit() ## %>% 
-  ## filter(str_length(a_code) == 3) 
 
 
 ## v6461 Ocupação
@@ -1117,12 +1262,6 @@ aux_cbo <-
     rename( a_code = 1, a_desc = 2) %>%
     na.omit()
 
-vdict_ocupacao <-
-  expand_grid(
-    var = c('v6461', 'v6462'),
-    aux_cbo
-  )
-
 ## v6471 Atividade
 ## v6472 Qual era a atividade principal do empreendimento em que tinha esse trabalho?
 aux_cnae <- 
@@ -1142,12 +1281,6 @@ aux_cnae <-
   fill( secao, divisao) %>%
   transmute( a_code = classes, a_desc = denominacao) %>%
   na.omit()
-
-vdict_atividade <-
-  expand_grid(
-    var = c('v6471', 'v6472'),
-    aux_cnae
-  )
 
 ## v6121 Qual é a sua religião ou culto?
 vdict_religiao <-
@@ -1176,40 +1309,6 @@ vdict_religiao <-
     a_desc
   )
 
-
-## País de nascimento (3 caracteres)
-##
-##  v6224 Qual é o país estrangeiro de nascimento
-##  v3061 País de residência em 31 de julho de 2010           >>> Base de Emigração
-##  v6256 País de residência anterior
-##  v6266 País de residência em 31 de julho de 2005
-##  v6366 País estrangeiro que frequentava escola (ou creche)
-##  v6606 Em que país estrangeiro trabalhava
-aux_paises <-
-  read_excel(
-    path = paste0(
-      raw_data,
-      'DocumentaЗ╞o/',
-      'Anexos Auxiliares/',
-      'MigraЗ╞o e Deslocamento_Paises estrangeiros.xls'
-    ),
-    sheet = 'País estrangeiro',
-    range = 'B8:C221',
-    col_types = 'text',
-    col_names = FALSE
-  ) %>%
-  rename(nome = 1, cod_7 = 2) %>%
-  na.omit() %>%
-  transmute(
-    a_code = cod_7,
-    a_desc = nome
-  )
-
-vdict_paises <-
-  expand_grid(
-    var = c('v6224', 'v3061', 'v6256', 'v6266', 'v6366', 'v6606'),
-    aux_paises
-  )
 
 
 
