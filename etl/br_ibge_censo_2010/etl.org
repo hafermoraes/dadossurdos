@@ -3167,16 +3167,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0649 quantas pessoas empregava nesse trabalho
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0649.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0649.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "quantas pessoas empregava nesse trabalho"
 ## -------------------------------------------------------------------
 ##
 
@@ -3189,12 +3189,14 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0649',     '1', '1 a 5 pessoas',
+  'v0649',     '2', '6 ou mais pessoas',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0649.txt'
     ),
     delim = '|'
   )
