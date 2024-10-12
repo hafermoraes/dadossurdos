@@ -3240,16 +3240,18 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0651 no trabalho principal, qual era o rendimento bruto (ou a retirada) mensal que ganhava habitualmente em julho de 2010
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0651.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0651.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "no trabalho principal, qual era o
+## rendimento bruto (ou a retirada) mensal que ganhava habitualmente
+## em julho de 2010"
 ## -------------------------------------------------------------------
 ##
 
@@ -3262,12 +3264,15 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0651',     '0', 'Não tem',
+  'v0651',     '1', 'Em dinheiro, produtos ou mercadorias',
+  'v0651',     '2', 'Somente em benefícios',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0651.txt'
     ),
     delim = '|'
   )
