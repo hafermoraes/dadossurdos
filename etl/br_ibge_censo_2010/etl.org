@@ -3704,16 +3704,17 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0668 qual foi o mês e o ano que este(a) filho(a) faleceu
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0668.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0668.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "qual foi o mês e o ano que este(a)
+## filho(a) faleceu"
 ## -------------------------------------------------------------------
 ##
 
@@ -3726,12 +3727,14 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0668',     '1', 'Sabe o mês e ano ou somente o ano',
+  'v0668',     '2', 'Não sabe',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0668.txt'
     ),
     delim = '|'
   )
