@@ -2997,16 +2997,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0639 natureza da união
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0639.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0639.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "natureza da união"
 ## -------------------------------------------------------------------
 ##
 
@@ -3019,12 +3019,16 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0639',     '1', 'Casamento civil e religioso',
+  'v0639',     '2', 'Só casamento civil',
+  'v0639',     '3', 'Só casamento religioso',
+  'v0639',     '4', 'União consensual',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0639.txt'
     ),
     delim = '|'
   )
