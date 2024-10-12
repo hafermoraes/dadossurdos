@@ -96,8 +96,10 @@ fetch_variables_dictionary(){
 
 * entendimento do dicionário de variáveis
 
-A coluna =tipo= assume valores =A=, =C= e =N=. Ao que tudo indica,
-- =A= refere-se a dados auxiliares, disponíveis em outros arquivos presentes no arquivo compactado =Documentacao.zip=, para variáveis como /área de ponderação/, /código de municípios/, /códigos de cursos superiores (graduação, mestrado e doutorado)/ entre outras.
+A coluna =tipo= assume valores =A=, =C= e =N=.
+
+Ao que tudo indica,
+- =A= refere-se aos dados auxiliares, disponíveis em outros arquivos presentes no arquivo compactado =Documentacao.zip=, para variáveis como /área de ponderação/, /código de municípios/, /códigos de cursos superiores (graduação, mestrado e doutorado)/ entre outras.
 - =C= refere-se aos dados categóricos, para os quais o dicionário de variáveis está disponível diretamente no layout (arquivo excel)
 - =N= refere-se provavelmente aos dados numéricos, para os quais não é necessário um dicionário de variáveis já que a variável está pronta para uso, sendo somente necessário convertê-la para o tipo de dados (inteiro, data, número decimal, etc...) necessário para análises
 
@@ -108,7 +110,7 @@ O bloco de código a seguir em linguagem GNR R não é exportado (tangle) nem ex
 
 library(readxl)   # read_excel
 library(dplyr)    # mutate, transmute, filter, rename, bind_rows, arrange
-glibrary(stringr)  # str_split, str_to_lower, str_trim, str_locate
+library(stringr)  # str_split, str_to_lower, str_trim, str_locate
 library(tidyr)    # unnest
 library(glue)     # glue
 library(readr)    # write_delim
@@ -180,19 +182,6 @@ vdict %>%
   ) %>%
   arrange(var) %>%
   View
-
-
-## tipo == C, respostas Sim/Não
-vdict %>%
-  filter(
-    grepl(pattern = 'c', tipo, ignore.case = TRUE),
-    grepl(pattern = '1- sim', desc, ignore.case = TRUE),
-    grepl(pattern = '2- não', desc, ignore.case = TRUE),
-  ) %>%
-  arrange(var) %>%
-  View
-
-
 
 
 ## tipo == C
@@ -271,7 +260,7 @@ vdict %>%
 
 * tratamento das variáveis 
 ** tipo A: variáveis que compartilham as mesmas opções de resposta
-*** unidade da federação v0001/v6222/v6252/v6262/v6362/v6602
+*** v0001/v6222/v6252/v6262/v6362/v6602 unidade da federação
 
 As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigração =EMIG= e mortalidade =MORT= compartilham dos mesmos códigos e nomes por extenso referentes à unidade da federação.
 
@@ -394,7 +383,7 @@ input %>%
 ##   )
 #+end_src
 
-*** município v0002/v6254/v6264/v6364/v6604
+*** v0002/v6254/v6264/v6364/v6604 município
 
 As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigração =EMIG= e mortalidade =MORT= compartilham dos mesmos códigos e nomes por extenso referentes aos municípios do país.
 
@@ -528,7 +517,7 @@ input %>%
 ##   )
 #+end_src
 
-*** país v3061/v6224/v6256/v6266/v6366/v6606
+*** v3061/v6224/v6256/v6266/v6366/v6606 país
 
 As seguintes variáveis das bases de pessoas =PESS= e emigração =EMIG= compartilham dos mesmos códigos e nomes por extenso referentes ao país.
 
@@ -621,7 +610,7 @@ input %>%
   )
 #+end_src
 
-*** código da mesorregião v1002
+*** v1002 código da mesorregião
 
 #+begin_src R :tangle ./gnur_vardict_typeA_meso.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_meso.R
@@ -688,7 +677,7 @@ input %>%
   )
 #+end_src
 
-*** código da microrregião v1003
+*** v1003 código da microrregião
 
 #+begin_src R :tangle ./gnur_vardict_typeA_micro.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_micro.R
@@ -755,7 +744,7 @@ input %>%
   )
 #+end_src
 
-*** código da região metropolitana v1004
+*** v1004 código da região metropolitana
 
 #+begin_src R :tangle ./gnur_vardict_typeA_metro.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_metro.R
@@ -828,7 +817,7 @@ tribble(
   )
 #+end_src
 
-*** curso superior de graduação v6352
+*** v6352 curso superior de graduação
 
 #+begin_src R :tangle ./gnur_vardict_typeA_curso_grad.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_curso_grad.R
@@ -896,7 +885,7 @@ input %>%
   )
 #+end_src
 
-*** curso de mestrado v6354
+*** v6354 curso de mestrado
 
 #+begin_src R :tangle ./gnur_vardict_typeA_curso_mestr.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_curso_mestr.R
@@ -964,7 +953,7 @@ input %>%
   )
 #+end_src
 
-*** curso de doutorado v6356
+*** v6356 curso de doutorado
 
 #+begin_src R :tangle ./gnur_vardict_typeA_curso_dout.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_curso_dout.R
@@ -1032,7 +1021,7 @@ input %>%
   )
 #+end_src
 
-*** ocupação v6461/v6462
+*** v6461/v6462 ocupação
 
 As seguintes variáveis da base de pessoas =PESS= compartilham dos mesmos códigos e nomes por extenso referentes à ocupação
 
@@ -1103,7 +1092,7 @@ input %>%
   )
 #+end_src
 
-*** atividade v6471/v6472
+*** v6471/v6472 atividade
 
 As seguintes variáveis da base de pessoas =PESS= compartilham dos mesmos códigos e nomes por extenso referentes à atividade
 
@@ -1179,7 +1168,7 @@ input %>%
   )
 #+end_src
 
-*** religião v6121
+*** v6121 religião
 
 #+begin_src R :tangle ./gnur_vardict_typeA_religiao.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_religiao.R
@@ -1257,7 +1246,7 @@ input %>%
 
 
 ** tipo C: variáveis com respostas próprias
-*** região geográfica v1001
+*** v1001 região geográfica
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v1001.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v1001.R
@@ -1295,7 +1284,7 @@ tribble(
   )
 #+end_src
 
-*** situação do domicílio v1006
+*** v1006 situação do domicílio
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v1006.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v1006.R
@@ -1330,7 +1319,7 @@ tribble(
   )
 #+end_src
 
-*** espécie de unidade visitada v4001
+*** v4001 espécie de unidade visitada
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v4001.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v4001.R
@@ -1367,7 +1356,7 @@ tribble(
   )
 #+end_src
 
-*** tipo de espécie v4002
+*** v4002 tipo de espécie
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v4002.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v4002.R
@@ -1413,7 +1402,7 @@ tribble(
   )
 #+end_src
 
-*** domicílio, condição de ocupação v0201
+*** v0201 domicílio, condição de ocupação
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0201.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0201.R
