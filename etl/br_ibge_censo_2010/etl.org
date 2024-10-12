@@ -127,32 +127,40 @@ vdict <-
       sheet = 'DOMI',
       range = 'A3:L78',
       col_types = 'text',
-      col_names = FALSE ) %>%  mutate(base = 'domi'),
+      col_names = FALSE
+    ) %>%
+    mutate(base = 'domi'),
     ## Dicionário de variáveis dos microdados de Pessoas
     read_excel(
       path = layout_xls_file,
       sheet = 'PESS',
       range = 'A3:L246',
       col_types = 'text',
-      col_names = FALSE ) %>% mutate(base = 'pess'),
+      col_names = FALSE
+    ) %>%
+    mutate(base = 'pess'),
     ## Dicionário de variáveis dos microdados de Emigração
     read_excel(
       path = layout_xls_file,
       sheet = 'EMIG',
       range = 'A3:L21',
       col_types = 'text',
-      col_names = FALSE ) %>% mutate(base = 'emig'),
+      col_names = FALSE
+    ) %>%
+    mutate(base = 'emig'),
     ## Dicionário de variáveis dos microdados de Mortalidade
     read_excel(
       path = layout_xls_file,
       sheet = 'MORT',
       range = 'A3:L21',
       col_types = 'text',
-      col_names = FALSE ) %>% mutate(base = 'mort')
+      col_names = FALSE
+    ) %>%
+    mutate(base = 'mort')
   ) %>%
   ## Troca dos nomes de colunas
   rename(
-    var = 1, desc = 2, pos_ini = 8, pos_fin = 9, len = 10, dec = 11, tipo = 12
+    var = 1, desc = 2, pos_ini = 8, pos_fin = 9, int_part = 10, dec_part = 11, tipo = 12
   ) %>%
   ## remove as quebras de linha da coluna 'tipo'
   mutate(
@@ -160,7 +168,7 @@ vdict <-
   ) %>%
   ## seleção somente das colunas necessárias para análise
   select(
-    base, var, desc, pos_ini, pos_fin, len, dec, tipo
+    base, var, desc, pos_ini, pos_fin, int_part, dec_part, tipo
   )
 
 
@@ -277,6 +285,26 @@ vdict %>%
     delim = '|',
     col_names = FALSE
   )
+
+
+
+vdict %>%
+  rowwise() %>%
+  mutate(
+    newline_pos = str_locate( string = desc, pattern = '\n')[1],
+    substr_stop_arg = ifelse( is.na(newline_pos), str_length(desc), newline_pos)
+  ) %>% 
+  transmute(
+    base,
+    q_code = var,
+    q_desc = substr( desc, start = 1, stop = substr_stop_arg - 0),
+    q_desc = str_remove_all(string = q_desc, pattern = ':|\n'),
+    pos_ini,
+    pos_fin,
+    ## int_part, # parte inteira 
+    ## dec_part = ifelse( is.na(dec_part), 0, dec_part), # parte decimal
+    ## cut_args = paste0( pos_ini, '-', as.numeric(pos_ini) + as.numeric(int_part) + as.numeric(dec_part) -1 )
+  ) %>% View
 #+end_src
 
 * tratamento das variáveis 
