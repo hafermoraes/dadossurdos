@@ -3887,16 +3887,17 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v6920 situação de ocupação na semana de referência
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v6920.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6920.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "situação de ocupação na semana de
+## referência"
 ## -------------------------------------------------------------------
 ##
 
@@ -3909,12 +3910,14 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v6920',     '1', 'Ocupadas',
+  'v6920',     '2', 'Não ocupadas',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v6920.txt'
     ),
     delim = '|'
   )
