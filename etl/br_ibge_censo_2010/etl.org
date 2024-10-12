@@ -1386,6 +1386,9 @@ tribble(
   ## m0701 marca de imputação na v0701
   'm0701',     '1', 'Sim',
   'm0701',     '2', 'Não',
+  ## sabe ler e escrever
+  'v0627',     '1', 'Sim',
+  'v0627',     '2', 'Não',
 
   ) %>%
   write_delim(
@@ -2628,16 +2631,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0628 frequenta escola ou creche
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0628.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0628.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "frequenta escola ou creche"
 ## -------------------------------------------------------------------
 ##
 
@@ -2650,12 +2653,16 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0628',     '1', 'Sim, pública',
+  'v0628',     '2', 'Sim, particular',
+  'v0628',     '3', 'Não, já frequentou',
+  'v0628',     '4', 'Não, nunca frequentou',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0628.txt'
     ),
     delim = '|'
   )
