@@ -1244,6 +1244,40 @@ input %>%
   )
 #+end_src
 
+** tipo C: variáveis que compartilham respostas Sim/Não
+*** typeC Sim/Não 
+
+#+begin_src R :tangle ./gnur_vardict_typeC_SimNao.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_SimNao.R
+##
+##
+## br_ibge_censo_2010
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  ## v0206 sanitário ou buraco para dejeções, existência
+  'v0206',     '1', 'Sim',
+  'v0206',     '2', 'Não',
+  
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_common_simnao.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
 
 ** tipo C: variáveis com respostas próprias
 *** v1001 região geográfica
@@ -1526,16 +1560,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0207 esgotamento sanitário, tipo 
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0207.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0207.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "esgotamento sanitário, tipo"
 ## -------------------------------------------------------------------
 ##
 
@@ -1548,12 +1582,18 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0207',     '1', 'Rede geral de esgoto ou pluvial',
+  'v0207',     '2', 'Fossa séptica',
+  'v0207',     '3', 'Fossa rudimentar',
+  'v0207',     '4', 'Vala',
+  'v0207',     '5', 'Rio, lago ou mar',
+  'v0207',     '6', 'Outro',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0207.txt'
     ),
     delim = '|'
   )
