@@ -1718,16 +1718,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0211 energia elétrica, existência 
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0211.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0211.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "energia elétrica, existência"
 ## -------------------------------------------------------------------
 ##
 
@@ -1740,12 +1740,15 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0211',     '1', 'Sim, de companhia distribuidora',
+  'v0211',     '2', 'Sim, de outras fontes',
+  'v0211',     '3', 'Não existe energia elétrica',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0211.txt'
     ),
     delim = '|'
   )
