@@ -292,18 +292,21 @@ vdict %>%
   rowwise() %>%
   mutate(
     newline_pos = str_locate( string = desc, pattern = '\n')[1],
-    substr_stop_arg = ifelse( is.na(newline_pos), str_length(desc), newline_pos)
-  ) %>% 
+    substr_stop_arg = ifelse( is.na(newline_pos), str_length(desc), newline_pos),
+    q_desc = substr( desc, start = 1, stop = substr_stop_arg - 0),
+    q_desc = str_remove_all(string = q_desc, pattern = ':|\n')
+  ) %>%
+  ungroup() %>%
   transmute(
     base,
     q_code = var,
-    q_desc = substr( desc, start = 1, stop = substr_stop_arg - 0),
-    q_desc = str_remove_all(string = q_desc, pattern = ':|\n'),
+    q_desc = str_to_lower(q_desc),
     pos_ini,
     pos_fin,
-    ## int_part, # parte inteira 
-    ## dec_part = ifelse( is.na(dec_part), 0, dec_part), # parte decimal
-    ## cut_args = paste0( pos_ini, '-', as.numeric(pos_ini) + as.numeric(int_part) + as.numeric(dec_part) -1 )
+    int_part, # parte inteira 
+    dec_part = ifelse( is.na(dec_part), 0, dec_part), # parte decimal
+    cut_args = paste0( pos_ini, '-', as.numeric(pos_ini) + as.numeric(int_part) + as.numeric(dec_part) -1 ),
+    check = paste0(pos_ini,'-',pos_fin) == cut_args
   ) %>% View
 #+end_src
 
