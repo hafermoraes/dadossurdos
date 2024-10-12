@@ -1426,6 +1426,9 @@ tribble(
   ## v0661 retorna do trabalho para casa diariamente
   'v0661',     '1', 'Sim',
   'v0661',     '2', 'Não',
+  ## v0664 existência de filho tido nascido vivo no período de referência de 12 meses anteriores a 31/07/2010
+  'v6664',     '1', 'Sim',
+  'v6664',     '0', 'Não',
 
 
   ) %>%
@@ -3664,16 +3667,17 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0667 este(a) filho(a) estava vivo(a) em 31 de julho de 2010
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0667.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0667.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "este(a) filho(a) estava vivo(a) em 31 de
+## julho de 2010"
 ## -------------------------------------------------------------------
 ##
 
@@ -3686,12 +3690,15 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0667',     '1', 'Sim',
+  'v0667',     '2', 'Não',
+  'v0667',     '9', 'Não sabe',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0667.txt'
     ),
     delim = '|'
   )
