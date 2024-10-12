@@ -121,30 +121,45 @@ layout_xls_file <- paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Am
 
 vdict <-
   bind_rows( # Agregação dos dicionários de variáveis de cada base do censo
-    read_excel(    # Dicionário de variáveis dos microdados de Domicílios
+    ## Dicionário de variáveis dos microdados de Domicílios
+    read_excel(
       path = layout_xls_file,
-      sheet = 'DOMI', range = 'A3:L78', col_types = 'text', col_names = FALSE )
-    %>% mutate(base = 'domi'),
-    read_excel(    # Dicionário de variáveis dos microdados de Pessoas
+      sheet = 'DOMI',
+      range = 'A3:L78',
+      col_types = 'text',
+      col_names = FALSE ) %>%  mutate(base = 'domi'),
+    ## Dicionário de variáveis dos microdados de Pessoas
+    read_excel(
       path = layout_xls_file,
-      sheet = 'PESS', range = 'A3:L246', col_types = 'text', col_names = FALSE )
-    %>% mutate(base = 'pess'),
-    read_excel(    # Dicionário de variáveis dos microdados de Emigração
+      sheet = 'PESS',
+      range = 'A3:L246',
+      col_types = 'text',
+      col_names = FALSE ) %>% mutate(base = 'pess'),
+    ## Dicionário de variáveis dos microdados de Emigração
+    read_excel(
       path = layout_xls_file,
-      sheet = 'EMIG', range = 'A3:L21', col_types = 'text', col_names = FALSE )
-    %>% mutate(base = 'emig'),
-    read_excel(    # Dicionário de variáveis dos microdados de Mortalidade
+      sheet = 'EMIG',
+      range = 'A3:L21',
+      col_types = 'text',
+      col_names = FALSE ) %>% mutate(base = 'emig'),
+    ## Dicionário de variáveis dos microdados de Mortalidade
+    read_excel(
       path = layout_xls_file,
-      sheet = 'MORT', range = 'A3:L21', col_types = 'text', col_names = FALSE )
-    %>% mutate(base = 'mort')
+      sheet = 'MORT',
+      range = 'A3:L21',
+      col_types = 'text',
+      col_names = FALSE ) %>% mutate(base = 'mort')
   ) %>%
-  rename( # Troca dos nomes de colunas
+  ## Troca dos nomes de colunas
+  rename(
     var = 1, desc = 2, pos_ini = 8, pos_fin = 9, len = 10, dec = 11, tipo = 12
   ) %>%
+  ## remove as quebras de linha da coluna 'tipo'
   mutate(
     tipo = str_remove_all(string = tipo, pattern = '\n')
   ) %>%
-  select( # seleção somente das colunas necessárias para análise
+  ## seleção somente das colunas necessárias para análise
+  select(
     base, var, desc, pos_ini, pos_fin, len, dec, tipo
   )
 
@@ -186,7 +201,7 @@ vdict_typeN <-
   filter(
     grepl(pattern = 'n', tipo, ignore.case = TRUE)
   ) %>%
-  arrange(var) 
+  arrange(var)
 
 
 ## tipo == C
@@ -205,14 +220,14 @@ vdict_typeN <-
 vdict %>%
   filter(
     grepl(pattern = 'c', tipo, ignore.case = TRUE)
-  ) %>% 
+  ) %>%
   transmute(
     ## converte 'var' para somente letras minúsculas
     var = str_to_lower(var),
     ## cria, na coluna 'answer', a lista formada pelos conteúdos
     ## entre as quebras de linha \n presentes dentro da célula da
     ## coluna 'desc'
-    answer = str_split( string = desc, pattern='\n') # 
+    answer = str_split( string = desc, pattern='\n') #
   ) %>%
   ## cada conteúdo entre as quebras de linha \n nas células da
   ## coluna 'answer' torna-se uma linha própria e repete o
