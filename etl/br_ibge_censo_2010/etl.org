@@ -1266,6 +1266,39 @@ tribble(
   ## v0206 sanitário ou buraco para dejeções, existência
   'v0206',     '1', 'Sim',
   'v0206',     '2', 'Não',
+  ## v0213 rádio, existência
+  'v0213',     '1', 'Sim',
+  'v0213',     '2', 'Não',
+  ## v0214 televisão, existência
+  'v0214',     '1', 'Sim',
+  'v0214',     '2', 'Não',
+  ## v0215 máquina de lavar roupa, existência
+  'v0215',     '1', 'Sim',
+  'v0215',     '2', 'Não',
+  ## v0216 geladeira, existência
+  'v0216',     '1', 'Sim',
+  'v0216',     '2', 'Não',
+  ## v0217 telefone celular, existência
+  'v0217',     '1', 'Sim',
+  'v0217',     '2', 'Não',
+  ## v0218 telefone fixo, existência
+  'v0218',     '1', 'Sim',
+  'v0218',     '2', 'Não',
+  ## v0219 microcomputador, existência
+  'v0219',     '1', 'Sim',
+  'v0219',     '2', 'Não',
+  ## v0220 microcomputador com acesso à internet, existência
+  'v0220',     '1', 'Sim',
+  'v0220',     '2', 'Não',
+  ## v0221 motocicleta para uso particular, existência
+  'v0221',     '1', 'Sim',
+  'v0221',     '2', 'Não',
+  ## v0222 automóvel para uso particular, existência
+  'v0222',     '1', 'Sim',
+  'v0222',     '2', 'Não',
+  ## v0301 alguma pessoa que morava com você(s) estava morando em outro país em 31 de julho de 2010
+  'v0301',     '1', 'Sim',
+  'v0301',     '2', 'Não',
   
   ) %>%
   write_delim(
