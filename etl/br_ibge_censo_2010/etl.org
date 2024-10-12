@@ -2224,16 +2224,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0613 registro de nascimento
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0613.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0613.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "registro de nascimento"
 ## -------------------------------------------------------------------
 ##
 
@@ -2246,12 +2246,18 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0613',     '1', 'Do cartório',
+  'v0613',     '2', 'Declaração de nascido vivo (DNV) do hospital ou da maternidade',
+  'v0613',     '3', 'Registro administrativo de nascimento indígena (RANI)',
+  'v0613',     '4', 'Não tem',
+  'v0613',     '5', 'Não sabe',
+  'v0613',     '9', 'Ignorado',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0613.txt'
     ),
     delim = '|'
   )
