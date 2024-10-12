@@ -270,6 +270,8 @@ As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigra�
 - v6602 Em que unidade da federação trabalhava
 
 #+begin_src R :tangle ./gnur_vardict_typeA_uf.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_uf.R
+##
 ##
 ## br_ibge_censo_2010
 ##
@@ -339,7 +341,7 @@ input %>%
     file = paste0(
       base_dir,
       'data/',
-      'common_uf.txt'
+      'typeA_common_uf.txt'
     ),
     delim = '|'
   )
@@ -390,6 +392,8 @@ As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigra�
 - v6604 Em que município trabalhava
 
 #+begin_src R :tangle ./gnur_vardict_typeA_municipio.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_municipio.R
+##
 ##
 ## br_ibge_censo_2010
 ##
@@ -473,7 +477,7 @@ input %>%
     file = paste0(
       base_dir,
       'data/',
-      'common_municipio.txt'
+      'typeA_common_municipio.txt'
     ),
     delim = '|'    
   )
@@ -514,6 +518,8 @@ input %>%
 *** código da mesorregião v1002
 
 #+begin_src R :tangle ./gnur_vardict_typeA_meso.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_meso.R
+##
 ##
 ## br_ibge_censo_2010
 ##
@@ -579,7 +585,8 @@ input %>%
 *** código da microrregião v1003
 
 #+begin_src R :tangle ./gnur_vardict_typeA_micro.R
-
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_micro.R
+##
 ##
 ## br_ibge_censo_2010
 ##
@@ -642,12 +649,11 @@ input %>%
   )
 #+end_src
 
-
-** tipo C: variáveis com respostas próprias
-*** código da região metropolitana v1004 (exceção tipo A)
+*** código da região metropolitana v1004
 
 #+begin_src R :tangle ./gnur_vardict_typeA_metro.R
-
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_metro.R
+##
 ##
 ## br_ibge_censo_2010
 ##
@@ -716,9 +722,13 @@ tribble(
   )
 #+end_src
 
+
+** tipo C: variáveis com respostas próprias
 *** região geográfica v1001
 
-#+begin_src R :tangle ./gnur_vardict_v1001.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v1001.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v1001.R
+##
 ##
 ## br_ibge_censo_2010
 ##
@@ -755,7 +765,9 @@ tribble(
 
 *** situação do domicílio v1006
 
-#+begin_src R :tangle ./gnur_vardict_v1006.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v1006.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v1006.R
+##
 ##
 ## br_ibge_censo_2010
 ##
@@ -789,7 +801,9 @@ tribble(
 
 *** espécie de unidade visitada v4001
 
-#+begin_src R :tangle ./gnur_vardict_v4001.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v4001.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v4001.R
+##
 ##
 ## br_ibge_censo_2010
 ##
@@ -825,8 +839,9 @@ tribble(
 
 *** tipo de espécie v4002
 
-#+begin_src R :tangle ./gnur_vardict_v4002.R
-
+#+begin_src R :tangle ./gnur_vardict_typeC_v4002.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v4002.R
+##
 ##
 ## br_ibge_censo_2010
 ##
@@ -871,8 +886,9 @@ tribble(
 
 *** domicílio, condição de ocupação v0201
 
-#+begin_src R :tangle ./gnur_vardict_v0201.R
-
+#+begin_src R :tangle ./gnur_vardict_typeC_v0201.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0201.R
+##
 ##
 ## br_ibge_censo_2010
 ##
