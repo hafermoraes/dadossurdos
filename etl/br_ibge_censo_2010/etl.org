@@ -1,22 +1,31 @@
 #+property: header-args:sh  :tangle ./etl.sh
 
-manually tangle to =etl.sh= file with =C-c C-v t=  (=org-babel-tangle=)
+* orquestração do processo de extração, tratamento e carga dos dados brutos do censo demográfico brasileiro de 2010
+
+Este arquivo -- =etl.org= -- é a base de geração dos códigos nas linguagens *shell* e *GNU R* usadas no tratamento das informações dos microdados.
+
+Arquivos com extensão *.org* correspondem ao modo Org no editor de texto GNU Emacs.
+
+Em cada bloco de código a seguir pode haver a opção denominada *tangle*, que é responsável por realizar a exportação do conteúdo dos scripts em arquivos locais.
+Blocos de código na linguagem *shell* são exportados no arquivo =./etl.sh= que é o script que orquestra a totalidade dos passos necessários para baixar, tratar e disponibilizar os microdados e o dicionário de variáveis.
+
+O comando tangle no editor GNU Emacs pode ser executado com a combinação de teclas =C-c C-v t=, que equivale a executar o comando =org-babel-tangle=.
 
 * cabeçalho do script =etl.sh= 
 
 #+begin_src sh
 #!/bin/bash
 
-# shell script configs
-set -eu
+# (https://askubuntu.com/a/1455039)
+set -eu 
 
-echo "=microdata= preparation scripts for br-ibge-censo-2010\n"
+echo "extração e preparação dos microdados para =br-ibge-censo-2010=\n"
 #+end_src
 
 * variáveis globais usadas no script =etl.sh=
 
 #+begin_src sh
-# urls where microdata and variables dictionary are located
+# endereço na internet no qual estão armazenados os microdados e o dicionário de variáveis
 base_url=ftp://ftp.ibge.gov.br
 base_url=${base_url}/Censos
 base_url=${base_url}/Censo_Demografico_2010
@@ -25,7 +34,7 @@ base_url=${base_url}/Microdados
 mdata_url=${base_url}
 vdict_url=${base_url}/Documentacao.zip
 
-# source and directories where raw and processed data are to be stored
+# diretórios nos quais serão armazenados os dados brutos (raw) e tratados (data)
 src_dir=/tmp/etl/br_ibge_censo_2010
 raw_data=${src_dir}/raw
 proc_data=${src_dir}/data
@@ -36,15 +45,14 @@ proc_data=${src_dir}/data
 #+begin_src sh
 create_temporary_directories(){
 
-    echo "Creating temporary directory for raw data at $raw_data..."
+    echo "Criando diretórios temporários para dados brutos em $raw_data..."
     rm -rf ${raw_data}
     mkdir -p ${raw_data}
 
-    echo "DONE.\nCreating temporary directory for processed data at $proc_data..."
+    echo "Criando diretórios temporários para dados tratados em $proc_data..."
     rm -rf ${proc_data}
     mkdir -p ${proc_data}
 
-    echo "DONE."
 }
 #+end_src
 
@@ -55,18 +63,17 @@ fetch_microdata(){
 
     for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO SC SE SP1 SP2_RM TO; do
 
-        echo "Fetching the =microdata= from $mdata_url/$uf.zip..."
+        echo "Baixando os microdados de $mdata_url/$uf.zip..."
         R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/$uf.zip' )"
 
-        echo '  DONE. Unziping the =microdata= of $uf.zip...'
+        echo 'Descompactando os microdados do arquivo $uf.zip...'
         unzip ${raw_data}/$uf.zip -d ${raw_data}
 
-        echo '  DONE. Deleting the downloaded =microdata= $uf.zip file...'
+        echo 'Removendo da pasta temporária o arquivo compactado $uf.zip...'
         rm -rf ${raw_data}/$uf.zip
 
     done
 
-    echo 'DONE.'
 }
 #+end_src
 
@@ -75,16 +82,14 @@ fetch_microdata(){
 #+begin_src sh
 fetch_variables_dictionary(){
 
-    echo "Fetching the dictionary of variables from $vdict_url..."
+    echo "Baixando o dicionário de variáveis de $vdict_url..."
     R --quiet --vanilla -e "curl::curl_download( '${vdict_url}', '${raw_data}/vdict.zip' )"
 
-    echo '  DONE. Unziping the variables dictionary =vdict.zip= file...'
+    echo 'Descompactando o dicionário de variáveis do arquivo =vdict.zip=...'
     unzip ${raw_data}/vdict.zip -d ${raw_data}
 
-    echo '  DONE. Deleting the downloaded =microdata= $uf.zip file...'
+    echo 'Removendo da pasta temporária o arquivo compactado =vdict.zip= file...'
     rm -rf ${raw_data}/vdict.zip
-
-    echo '  DONE.'
 
 }
 #+end_src
@@ -92,11 +97,15 @@ fetch_variables_dictionary(){
 * entendimento do dicionário de variáveis
 
 A coluna =tipo= assume valores =A=, =C= e =N=. Ao que tudo indica,
-- =A= refere-se dados auxiliares, disponíveis em outros arquivos presentes no arquivo compactado =Documentacao.zip=
+- =A= refere-se a dados auxiliares, disponíveis em outros arquivos presentes no arquivo compactado =Documentacao.zip=, para variáveis como /área de ponderação/, /código de municípios/, /códigos de cursos superiores (graduação, mestrado e doutorado)/ entre outras.
 - =C= refere-se aos dados categóricos, para os quais o dicionário de variáveis está disponível diretamente no layout (arquivo excel)
-- =N= refere-se provavelmente aos dados numéricos
+- =N= refere-se provavelmente aos dados numéricos, para os quais não é necessário um dicionário de variáveis já que a variável está pronta para uso, sendo somente necessário convertê-la para o tipo de dados (inteiro, data, número decimal, etc...) necessário para análises
+
+O bloco de código a seguir em linguagem GNR R não é exportado (tangle) nem executado pois presta-se unicamente ao entendimento de como funciona o dicionário de variáveis do censo.
 
 #+begin_src R :tangle no :eval no
+## entendimento do dicionário de variáveis do censo demográfico brasileiro de 2010 (br_ibge_censo_2010)
+
 library(readxl)   # read_excel
 library(dplyr)    # mutate, transmute, filter, rename, bind_rows, arrange
 library(stringr)  # str_split, str_to_lower, str_trim, str_locate
@@ -109,33 +118,38 @@ raw_data <- paste0(src_dir, 'raw/')
 proc_data <- paste0(src_dir, 'data/')
 
 vdict <-
-  bind_rows(
-    ## Dicionário de variáveis dos microdados de Domicílios
-    read_excel(
+  bind_rows( # Agregação dos dicionários de variáveis de cada base do censo
+    read_excel(    # Dicionário de variáveis dos microdados de Domicílios
       path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
       sheet = 'DOMI', range = 'A3:L78', col_types = 'text', col_names = FALSE )
     %>% mutate(base = 'domi'),
-    ## Dicionário de variáveis dos microdados de Pessoas
-    read_excel(
+    read_excel(    # Dicionário de variáveis dos microdados de Pessoas
       path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
       sheet = 'PESS', range = 'A3:L246', col_types = 'text', col_names = FALSE )
     %>% mutate(base = 'pess'),
-    ## Dicionário de variáveis dos microdados de Emigração
-    read_excel(
+    read_excel(    # Dicionário de variáveis dos microdados de Emigração
       path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
       sheet = 'EMIG', range = 'A3:L21', col_types = 'text', col_names = FALSE )
     %>% mutate(base = 'emig'),
-    ## Dicionário de variáveis dos microdados de Mortalidade
-    read_excel(
+    read_excel(    # Dicionário de variáveis dos microdados de Mortalidade
       path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
       sheet = 'MORT', range = 'A3:L21', col_types = 'text', col_names = FALSE )
     %>% mutate(base = 'mort')
   ) %>%
-  rename(var = 1, desc = 2, pos_ini = 8, pos_fin = 9, len = 10, dec = 11, tipo = 12) %>%
-  transmute(base, var, desc, pos_ini, pos_fin, len, dec, tipo)
+  rename( # Troca dos nomes de colunas
+    var = 1, desc = 2, pos_ini = 8, pos_fin = 9, len = 10, dec = 11, tipo = 12
+  ) %>%
+  select( # seleção somente das colunas necessárias para análise
+    base, var, desc, pos_ini, pos_fin, len, dec, tipo
+  )
 
 
 ## tipo == A
+##      refere-se a dados auxiliares, disponíveis em outros arquivos
+##      presentes no arquivo compactado =Documentacao.zip=, para
+##      variáveis como área de ponderação, código de municípios,
+##      códigos de cursos superiores (graduação, mestrado e doutorado)
+##      entre outras.
 vdict %>%
   filter(
     grepl(pattern = 'a', tipo, ignore.case = TRUE)
@@ -144,6 +158,9 @@ vdict %>%
   View
 
 ## tipo == C
+##      refere-se aos dados categóricos, para os quais o dicionário
+##      de variáveis está disponível diretamente no layout
+##      (arquivo excel)
 vdict %>%
   filter(
     grepl(pattern = 'c', tipo, ignore.case = TRUE)
@@ -152,6 +169,11 @@ vdict %>%
   View
 
 ## tipo == N
+##      refere-se provavelmente aos dados numéricos, para os quais
+##      não é necessário um dicionário de variáveis já que a variável
+##      está pronta para uso, sendo somente necessário convertê-la
+##      para o tipo de dados (inteiro, data, número decimal, etc...)
+##      necessário para análises
 vdict %>%
   filter(
     grepl(pattern = 'n', tipo, ignore.case = TRUE)
@@ -161,27 +183,72 @@ vdict %>%
 
 
 ## tipo == C
+##      Observações:
+##        1. variáveis do tipo C no dicionário de variáveis trazem,
+##           na grande maioria dos casos, os códigos e as respostas
+##           por escrito dentro de uma mesma célula, com quebras de
+##           linha -- caracter \n -- no conteúdo da célula.
+##        2. é necessário portanto tratar os dados para separar o
+##           enunciado da questão do censo, geralmente a primeira
+##           na célula, da lista de respostas (código e resposta por
+##           escrito).
+##        3. o código a seguir gera o conteúdo, ou corpo, da função
+##           tribble que traz o dicionário de variáveis tratado
+##           para todas as variáveis do tipo =C=
 vdict %>%
   filter(
     grepl(pattern = 'c', tipo, ignore.case = TRUE)
   ) %>% 
   transmute(
+    ## converte 'var' para somente letras minúsculas
     var = str_to_lower(var),
-    answer = str_split( string = desc, pattern='\n')
-  ) %>% 
+    ## cria, na coluna 'answer', a lista formada pelos conteúdos
+    ## entre as quebras de linha \n presentes dentro da célula da
+    ## coluna 'desc'
+    answer = str_split( string = desc, pattern='\n') # 
+  ) %>%
+  ## cada conteúdo entre as quebras de linha \n nas células da
+  ## coluna 'answer' torna-se uma linha própria e repete o
+  ## conteúdo da coluna 'var'
   unnest(answer) %>%
+  ## o conjunto de alterações a seguir precisa ocorrer no nível
+  ## das linhas da tabela, por isso é necessário explicitamente
+  ## chamar o comando rowwise()
   rowwise() %>%
+  ## tratamento das respostas de questões do tipo =C=
   mutate(
+    ## as respostas têm o código e o conteúdo por escrito
+    ## separados pelo hífen, então a coluna 'sep' traz a posição
+    ## do caracter '-' no string contida na coluna 'answer'
+    ## exemplo: se o conteúdo de 'answer' fosse
+    ##   "01 - teste"
+    ## a função str_locate( string = answer, pattern = '-')[1]
+    ## retorna 4, pois o hífen está na quarta posição
     sep = str_locate( string = answer, pattern = '-')[1],
+    ## a_code, o código da resposta, está antes do hífen
     a_code = substr(answer, start = 1, stop = sep-1 ),
-    a_desc = substr(answer, start = sep + 1, stop = 400),
+    ## e a_desc, a resposta por escrito, depois do hífen
+    a_desc = substr(answer, start = sep + 1, stop = str_length(answer)),
+    ## remove espaços redundantes de ambas as novas variáveis
+    ## tratadas 'a_code' e 'a_desc'
     a_code = str_trim(a_code),
     a_desc = str_trim(a_desc)
   ) %>%
-  na.omit() %>% 
+  ## NAs são introduzidos geralmente nas linhas de enunciados
+  ## da pergunta já que elas não contém o caracter '-' separando
+  ## código e resposta por escrito.
+  ## essas linhas são portanto ignoradas com o comando na.omit()
+  na.omit() %>%
+  ## com os dados tratados, o corpo da função tribble, contendo
+  ## as colunas 'var', 'a_code' e 'a_desc' é construído seguindo
+  ## o padrão
+  ##      'var', 'a_code', 'a_desc',
   transmute(
     res = glue("'{var}',     '{a_code}', '{a_desc}',")
   ) %>%
+  ## e escrito em disco, como arquivo de texte delimitado por
+  ## pipe, caracter '|', para uso posterior diretamente na longa
+  ## seção de variáveis tratadas do tipo =C=
   write_delim(
     file = glue('{base_dir}/data/typeC_tribble_bodies.txt'),
     quote = 'none',
