@@ -1415,7 +1415,14 @@ tribble(
   ##       (inclusive caça e extração vegetal)
   'v0644',     '1', 'Sim',
   'v0644',     '2', 'Não',
-
+  ## v0654 no período de 02 a 31 de julho de 2010, tomou alguma
+  ##       providência, de fato, para conseguir  trabalho?
+  'v0654',     '1', 'Sim',
+  'v0654',     '2', 'Não',
+  ## v0655 se tivesse conseguido trabalho, estaria disponível
+  ##       para assumi-lo na semana de 25 a 31 de julho de 2010?
+  'v0655',     '1', 'Sim',
+  'v0655',     '2', 'Não',
 
 
   ) %>%
