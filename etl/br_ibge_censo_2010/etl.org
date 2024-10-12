@@ -2593,16 +2593,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0626 residência em 31 de julho de 2005
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0626.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0626.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "residência em 31 de julho de 2005"
 ## -------------------------------------------------------------------
 ##
 
@@ -2615,12 +2615,14 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0626',     '1', 'UF/Município',
+  'v0626',     '2', 'País estrangeiro',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0626.txt'
     ),
     delim = '|'
   )
