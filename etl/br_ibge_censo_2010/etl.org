@@ -1601,8 +1601,8 @@ tribble(
 
 *** v0208 abastecimento de água, forma 
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0208.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0208.R
 ##
 ##
 ## br_ibge_censo_2010
