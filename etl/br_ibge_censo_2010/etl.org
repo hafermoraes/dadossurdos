@@ -1305,7 +1305,88 @@ tribble(
   ##       crianças recém-nascidas e idosos)
   'v0701',     '1', 'Sim',
   'v0701',     '2', 'Não',
-  
+  ## m0201 marca de imputação na v0201
+  'm0201',     '1', 'Sim',
+  'm0201',     '2', 'Não',
+  ## m2011 marca de imputação na v2011
+  'm2011',     '1', 'Sim',
+  'm2011',     '2', 'Não',
+  ## m0202 marca de imputação na v0202
+  'm0202',     '1', 'Sim',
+  'm0202',     '2', 'Não',
+  ## m0203 marca de imputação na v0203
+  'm0203',     '1', 'Sim',
+  'm0203',     '2', 'Não',
+  ## m0204 marca de imputação na v0204
+  'm0204',     '1', 'Sim',
+  'm0204',     '2', 'Não',
+  ## m0205 marca de imputação na v0205
+  'm0205',     '1', 'Sim',
+  'm0205',     '2', 'Não',
+  ## m0206 marca de imputação na v0206
+  'm0206',     '1', 'Sim',
+  'm0206',     '2', 'Não',
+  ## m0207 marca de imputação na v0207
+  'm0207',     '1', 'Sim',
+  'm0207',     '2', 'Não',
+  ## m0208 marca de imputação na v0208
+  'm0208',     '1', 'Sim',
+  'm0208',     '2', 'Não',
+  ## m0209 marca de imputação na v0209
+  'm0209',     '1', 'Sim',
+  'm0209',     '2', 'Não',
+  ## m0210 marca de imputação na v0210
+  'm0210',     '1', 'Sim',
+  'm0210',     '2', 'Não',
+  ## m0211 marca de imputação na v0211
+  'm0211',     '1', 'Sim',
+  'm0211',     '2', 'Não',
+  ## m0212 marca de imputação na v0212
+  'm0212',     '1', 'Sim',
+  'm0212',     '2', 'Não',
+  ## m0213 marca de imputação na v0213
+  'm0213',     '1', 'Sim',
+  'm0213',     '2', 'Não',
+  ## m0214 marca de imputação na v0214
+  'm0214',     '1', 'Sim',
+  'm0214',     '2', 'Não',
+  ## m0215 marca de imputação na v0215
+  'm0215',     '1', 'Sim',
+  'm0215',     '2', 'Não',
+  ## m0216 marca de imputação na v0216
+  'm0216',     '1', 'Sim',
+  'm0216',     '2', 'Não',
+  ## m0217 marca de imputação na v0217
+  'm0217',     '1', 'Sim',
+  'm0217',     '2', 'Não',
+  ## m0218 marca de imputação na v0218
+  'm0218',     '1', 'Sim',
+  'm0218',     '2', 'Não',
+  ## m0219 marca de imputação na v0219
+  'm0219',     '1', 'Sim',
+  'm0219',     '2', 'Não',
+  ## m0220 marca de imputação na v0220
+  'm0220',     '1', 'Sim',
+  'm0220',     '2', 'Não',
+  ## m0221 marca de imputação na v0221
+  'm0221',     '1', 'Sim',
+  'm0221',     '2', 'Não',
+  ## m0222 marca de imputação na v0222
+  'm0222',     '1', 'Sim',
+  'm0222',     '2', 'Não',
+  ## m0301 marca de imputação na v0301
+  'm0301',     '1', 'Sim',
+  'm0301',     '2', 'Não',
+  ## m0401 marca de imputação na v0401
+  'm0401',     '1', 'Sim',
+  'm0401',     '2', 'Não',
+  ## m0402 marca de imputação na v0402
+  'm0402',     '1', 'Sim',
+  'm0402',     '2', 'Não',
+  ## m0701 marca de imputação na v0701
+  'm0701',     '1', 'Sim',
+  'm0701',     '2', 'Não',
+
   ) %>%
   write_delim(
     file = paste0(
