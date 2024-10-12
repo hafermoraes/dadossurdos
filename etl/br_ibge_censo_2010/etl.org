@@ -1296,9 +1296,15 @@ tribble(
   ## v0222 automóvel para uso particular, existência
   'v0222',     '1', 'Sim',
   'v0222',     '2', 'Não',
-  ## v0301 alguma pessoa que morava com você(s) estava morando em outro país em 31 de julho de 2010
+  ## v0301 alguma pessoa que morava com você(s) estava
+  ##       morando em outro país em 31 de julho de 2010
   'v0301',     '1', 'Sim',
   'v0301',     '2', 'Não',
+  ## v0701 de agosto de 2009 a julho de 2010, faleceu
+  ##       alguma pessoa que morava com você(s) (inclusive
+  ##       crianças recém-nascidas e idosos)
+  'v0701',     '1', 'Sim',
+  'v0701',     '2', 'Não',
   
   ) %>%
   write_delim(
