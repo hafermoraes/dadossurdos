@@ -1824,16 +1824,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0402 a responsabilidade pelo domicílio é de 
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0402.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0402.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "a responsabilidade pelo domicílio é de"
 ## -------------------------------------------------------------------
 ##
 
@@ -1846,12 +1846,15 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0402',     '1', 'Apenas um morador',
+  'v0402',     '2', 'Mais de um morador',
+  'v0402',     '9', 'Ignorado',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0402.txt'
     ),
     delim = '|'
   )
