@@ -2378,16 +2378,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0617 deficiência mental/intelectual permanente
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0617.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0617.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "deficiência mental/intelectual permanente"
 ## -------------------------------------------------------------------
 ##
 
@@ -2400,12 +2400,15 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0617',     '1', 'Sim',
+  'v0617',     '2', 'Não',
+  'v0617',     '9', 'Ignorado',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0617.txt'
     ),
     delim = '|'
   )
