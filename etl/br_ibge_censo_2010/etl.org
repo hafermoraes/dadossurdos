@@ -4495,7 +4495,7 @@ tribble(
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "mês e ano de falecimento"
 ## -------------------------------------------------------------------
 ##
 
@@ -4532,16 +4532,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0704 sexo da pessoa falecida
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0704.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0704.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "sexo da pessoa falecida"
 ## -------------------------------------------------------------------
 ##
 
@@ -4554,12 +4554,15 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0704',     '1', 'Masculino',
+  'v0704',     '2', 'Feminino',
+  'v0704',     '9', 'Ignorado',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0704.txt'
     ),
     delim = '|'
   )
