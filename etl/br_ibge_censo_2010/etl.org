@@ -1395,6 +1395,26 @@ tribble(
   ## v0634 conclusão deste curso
   'v0634',     '1', 'Sim',
   'v0634',     '2', 'Não',
+  ## v0641 na semana de 25 a 31/07/10, durante pelo menos
+  ##       1 hora, trabalhou ganhando em dinheiro, produtos,
+  ##       mercadorias ou benefícios
+  'v0641',     '1', 'Sim',
+  'v0641',     '2', 'Não',
+  ## v0642 na semana de 25 a 31/07/10, tinha trabalho remunerado
+  ##       do qual estava temporariamente afastado(a)
+  'v0642',     '1', 'Sim',
+  'v0642',     '2', 'Não',
+  ## v0643 na semana de 25 a 31/07/10, durante pelo menos 1 hora,
+  ##       ajudou sem qualquer pagamento no trabalho remunerado
+  ##       de morador do domicílio
+  'v0643',     '1', 'Sim',
+  'v0643',     '2', 'Não',
+  ## v0644 na semana de 25 a 31/07/10, durante pelo menos 1 hora,
+  ##       trabalhou na plantação, criação de animais ou pesca,
+  ##       somente para alimentação dos moradores do domicílio
+  ##       (inclusive caça e extração vegetal)
+  'v0644',     '1', 'Sim',
+  'v0644',     '2', 'Não',
 
 
 
