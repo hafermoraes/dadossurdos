@@ -3202,16 +3202,18 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0650 era contribuinte de instituto de previdência oficial em algum trabalho que tinha na semana de 25 a 31 de julho de 2010
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0650.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0650.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "era contribuinte de instituto de
+## previdência oficial em algum trabalho que tinha na semana de 25 a
+## 31 de julho de 2010"
 ## -------------------------------------------------------------------
 ##
 
@@ -3224,12 +3226,15 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0650',     '1', 'Sim, no trabalho principal',
+  'v0650',     '2', 'Sim, em outro trabalho',
+  'v0650',     '3', 'Não',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0650.txt'
     ),
     delim = '|'
   )
