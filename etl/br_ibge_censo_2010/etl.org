@@ -2960,16 +2960,17 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0637 vive em companhia de cônjuge ou companheiro(a)
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0637.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0637.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "vive em companhia de cônjuge ou
+## companheiro(a)"
 ## -------------------------------------------------------------------
 ##
 
@@ -2982,12 +2983,15 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0637',     '1', 'Sim',
+  'v0637',     '2', 'Não, mas viveu',
+  'v0637',     '3', 'Não, nunca viveu',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0637.txt'
     ),
     delim = '|'
   )
