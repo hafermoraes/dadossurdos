@@ -1392,6 +1392,10 @@ tribble(
   ## v0632 conclusão de outro curso superior de graduação
   'v0632',     '1', 'Sim',
   'v0632',     '2', 'Não',
+  ## v0634 conclusão deste curso
+  'v0634',     '1', 'Sim',
+  'v0634',     '2', 'Não',
+
 
 
   ) %>%
@@ -2845,16 +2849,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0635 espécie do curso mais elevado concluído
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0635.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0635.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "espécie do curso mais elevado concluído"
 ## -------------------------------------------------------------------
 ##
 
@@ -2867,12 +2871,15 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0635',     '1', 'Superior de graduação',
+  'v0635',     '2', 'Mestrado',
+  'v0635',     '3', 'Doutorado',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0635.txt'
     ),
     delim = '|'
   )
