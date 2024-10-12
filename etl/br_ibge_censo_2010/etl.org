@@ -288,7 +288,8 @@ vdict %>%
 
 
 
-vdict %>%
+cut_args_aux <- 
+  vdict %>%
   rowwise() %>%
   mutate(
     newline_pos = str_locate( string = desc, pattern = '\n')[1],
@@ -307,7 +308,43 @@ vdict %>%
     dec_part = ifelse( is.na(dec_part), 0, dec_part), # parte decimal
     cut_args = paste0( pos_ini, '-', as.numeric(pos_ini) + as.numeric(int_part) + as.numeric(dec_part) -1 ),
     check = paste0(pos_ini,'-',pos_fin) == cut_args
-  ) %>% View
+  )
+
+cut_args_aux %>%
+  filter(base == 'domi') %>%
+  summarise(
+    args = str_flatten(cut_args, ',')
+  ) %>%
+  write_lines(
+    file = '/tmp/domi_cut_args.txt'
+  )
+
+cut_args_aux %>%
+  filter(base == 'pess') %>%
+  summarise(
+    args = str_flatten(cut_args, ',')
+  ) %>%
+  write_lines(
+    file = '/tmp/pess_cut_args.txt'
+  )
+
+cut_args_aux %>%
+  filter(base == 'emig') %>%
+  summarise(
+    args = str_flatten(cut_args, ',')
+  ) %>%
+  write_lines(
+    file = '/tmp/emig_cut_args.txt'
+  )
+
+cut_args_aux %>%
+  filter(base == 'mort') %>%
+  summarise(
+    args = str_flatten(cut_args, ',')
+  ) %>%
+  write_lines(
+    file = '/tmp/mort_cut_args.txt'
+  )
 #+end_src
 
 * tratamento das variáveis 
