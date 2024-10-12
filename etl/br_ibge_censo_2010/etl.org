@@ -2301,16 +2301,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0615 dificuldade permanente de ouvir
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0615.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0615.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "dificuldade permanente de ouvir"
 ## -------------------------------------------------------------------
 ##
 
@@ -2323,12 +2323,17 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0615',     '1', 'Sim, não consegue de modo algum',
+  'v0615',     '2', 'Sim, grande dificuldade',
+  'v0615',     '3', 'Sim, alguma dificuldade',
+  'v0615',     '4', 'Não, nenhuma dificuldade',
+  'v0615',     '9', 'Ignorado',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0615.txt'
     ),
     delim = '|'
   )
