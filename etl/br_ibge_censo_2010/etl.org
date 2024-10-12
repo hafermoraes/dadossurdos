@@ -103,8 +103,6 @@ Ao que tudo indica,
 - =C= refere-se aos dados categóricos, para os quais o dicionário de variáveis está disponível diretamente no layout (arquivo excel)
 - =N= refere-se provavelmente aos dados numéricos, para os quais não é necessário um dicionário de variáveis já que a variável está pronta para uso, sendo somente necessário convertê-la para o tipo de dados (inteiro, data, número decimal, etc...) necessário para análises
 
-O bloco de código a seguir em linguagem GNR R não é exportado (tangle) nem executado pois presta-se unicamente ao entendimento de como funciona o dicionário de variáveis do censo.
-
 #+begin_src R :tangle ./gnur_vdict_understanding.R
 ## entendimento do dicionário de variáveis do censo demográfico brasileiro de 2010 (br_ibge_censo_2010)
 
@@ -119,27 +117,32 @@ src_dir <- '/tmp/etl/br_ibge_censo_2010/'
 raw_data <- paste0(src_dir, 'raw/')
 proc_data <- paste0(src_dir, 'data/')
 
+layout_xls_file <- paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls')
+
 vdict <-
   bind_rows( # Agregação dos dicionários de variáveis de cada base do censo
     read_excel(    # Dicionário de variáveis dos microdados de Domicílios
-      path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
+      path = layout_xls_file,
       sheet = 'DOMI', range = 'A3:L78', col_types = 'text', col_names = FALSE )
     %>% mutate(base = 'domi'),
     read_excel(    # Dicionário de variáveis dos microdados de Pessoas
-      path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
+      path = layout_xls_file,
       sheet = 'PESS', range = 'A3:L246', col_types = 'text', col_names = FALSE )
     %>% mutate(base = 'pess'),
     read_excel(    # Dicionário de variáveis dos microdados de Emigração
-      path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
+      path = layout_xls_file,
       sheet = 'EMIG', range = 'A3:L21', col_types = 'text', col_names = FALSE )
     %>% mutate(base = 'emig'),
     read_excel(    # Dicionário de variáveis dos microdados de Mortalidade
-      path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
+      path = layout_xls_file,
       sheet = 'MORT', range = 'A3:L21', col_types = 'text', col_names = FALSE )
     %>% mutate(base = 'mort')
   ) %>%
   rename( # Troca dos nomes de colunas
     var = 1, desc = 2, pos_ini = 8, pos_fin = 9, len = 10, dec = 11, tipo = 12
+  ) %>%
+  mutate(
+    tipo = str_remove_all(string = tipo, pattern = '\n')
   ) %>%
   select( # seleção somente das colunas necessárias para análise
     base, var, desc, pos_ini, pos_fin, len, dec, tipo
@@ -152,23 +155,25 @@ vdict <-
 ##      variáveis como área de ponderação, código de municípios,
 ##      códigos de cursos superiores (graduação, mestrado e doutorado)
 ##      entre outras.
-vdict %>%
+vdict_typeA <-
+  vdict %>%
   filter(
     grepl(pattern = 'a', tipo, ignore.case = TRUE)
   ) %>%
-  arrange(var) %>%
-  View
+  arrange(var)
+
 
 ## tipo == C
 ##      refere-se aos dados categóricos, para os quais o dicionário
 ##      de variáveis está disponível diretamente no layout
 ##      (arquivo excel)
-vdict %>%
+vdict_typeC <-
+  vdict %>%
   filter(
     grepl(pattern = 'c', tipo, ignore.case = TRUE)
   ) %>%
-  arrange(var) %>%
-  View
+  arrange(var)
+
 
 ## tipo == N
 ##      refere-se provavelmente aos dados numéricos, para os quais
@@ -176,12 +181,12 @@ vdict %>%
 ##      está pronta para uso, sendo somente necessário convertê-la
 ##      para o tipo de dados (inteiro, data, número decimal, etc...)
 ##      necessário para análises
-vdict %>%
+vdict_typeN <-
+  vdict %>%
   filter(
     grepl(pattern = 'n', tipo, ignore.case = TRUE)
   ) %>%
-  arrange(var) %>%
-  View
+  arrange(var) 
 
 
 ## tipo == C
@@ -252,9 +257,10 @@ vdict %>%
   ## pipe, caracter '|', para uso posterior diretamente na longa
   ## seção de variáveis tratadas do tipo =C=
   write_delim(
-    file = glue('{src_dir}/data/typeC_tribble_bodies.txt'),
+    file = glue('{proc_data}/typeC_tribble_bodies.txt'),
     quote = 'none',
-    delim = '|'
+    delim = '|',
+    col_names = FALSE
   )
 #+end_src
 
