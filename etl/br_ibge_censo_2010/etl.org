@@ -2150,16 +2150,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v6040 forma de declaração da idade
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v6040.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6040.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "forma de declaração da idade"
 ## -------------------------------------------------------------------
 ##
 
@@ -2172,12 +2172,14 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v6040',     '1', 'Data de nascimento',
+  'v6040',     '2', 'Idade declarada',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v6040.txt'
     ),
     delim = '|'
   )
