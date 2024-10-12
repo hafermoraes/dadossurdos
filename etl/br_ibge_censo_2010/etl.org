@@ -2885,16 +2885,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v6400 nível de instrução
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v6400.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6400.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "nível de instrução"
 ## -------------------------------------------------------------------
 ##
 
@@ -2907,12 +2907,17 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v6400',     '1', 'Sem instrução e fundamental incompleto',
+  'v6400',     '2', 'Fundamental completo e médio incompleto',
+  'v6400',     '3', 'Médio completo e superior incompleto',
+  'v6400',     '4', 'Superior completo',
+  'v6400',     '5', 'Não determinado',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v6400.txt'
     ),
     delim = '|'
   )
