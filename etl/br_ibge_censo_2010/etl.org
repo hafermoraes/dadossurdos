@@ -608,7 +608,6 @@ input %>%
   )
 #+end_src
 
-
 *** código da mesorregião v1002
 
 #+begin_src R :tangle ./gnur_vardict_typeA_meso.R
@@ -1020,6 +1019,79 @@ input %>%
   )
 #+end_src
 
+*** ocupação v6461/v6462
+
+As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigração =EMIG= e mortalidade =MORT= compartilham dos mesmos códigos e nomes por extenso referentes à ocupação.
+
+- v6461 Ocupação
+- v6462 Qual era a ocupação que exercia no trabalho que tinha?
+
+#+begin_src R :tangle ./gnur_vardict_typeA_ocupacao.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_ocupacao.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação das variáveis relacionadas ao país,
+## cujo conteúdo nos microdados é formado por 7 caracteres em cada
+## variável a seguir
+##
+##   v6461 Ocupação
+##   v6462 Qual era a ocupação que exercia no trabalho que tinha?
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_lines
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 12.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos 
+##             àqueles utilizados na língua portuguesa.
+
+##   v6461 Ocupação
+##   v6462 Qual era a ocupação que exercia no trabalho que tinha?
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'OcupaЗ╞o COD 2010.xls'
+    ),
+    sheet = 'CÓDIGO',
+    range = 'A3:B744',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename( a_code = 1, a_desc = 2) %>%
+  na.omit() 
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'typeA_common_ocupacao.txt'
+    ),
+    delim = '|'    
+  )
+#+end_src
+
 
 ** tipo C: variáveis com respostas próprias
 *** região geográfica v1001
@@ -1242,26 +1314,6 @@ proc_data <- paste0(src_dir, 'data/')
 ## Tabelas auxiliares para o dicionário de variáveis
 
 
-
-
-## v6461 Ocupação
-## v6462 Qual era a ocupação que exercia no trabalho que tinha?
-aux_cbo <-
-  read_excel(
-    path = paste0(
-      raw_data,
-      'DocumentaЗ╞o/',
-      'Anexos Auxiliares/',
-      'OcupaЗ╞o COD 2010.xls'
-    ),
-    sheet = 'CÓDIGO',
-    range = 'A3:B744',
-    col_types = 'text',
-    col_names = FALSE
-  ) %>%
-    rename( a_code = 1, a_desc = 2) %>%
-    na.omit()
-
 ## v6471 Atividade
 ## v6472 Qual era a atividade principal do empreendimento em que tinha esse trabalho?
 aux_cnae <- 
@@ -1309,37 +1361,6 @@ vdict_religiao <-
     a_desc
   )
 
-
-
-
-
-
-dict_domi <-
-  read_excel(
-    path = paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls'),
-    sheet = 'DOMI',
-    range = 'A3:L78',
-    col_types = 'text',
-    col_names = FALSE
-  ) %>% 
-  rename(
-    var = 1,
-    desc = 2,
-    pos_ini = 8,
-    pos_fin = 9,
-    len = 10,
-    dec = 11,
-    tipo = 12
-  ) %>%
-  select(var, desc, pos_ini, pos_fin, len) %>%
-  as.data.frame()
-
-dict_domi %>% View
-
-
-strsplit( dict_domi[1,2], split='\n')
-
-strsplit( dict_domi[2,2], split='\n')
 #+end_src
 
 
