@@ -3740,16 +3740,17 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0669 quantos filhos e filhas nascidos mortos teve até 31 de julho de 2010
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0669.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0669.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "quantos filhos e filhas nascidos mortos
+## teve até 31 de julho de 2010"
 ## -------------------------------------------------------------------
 ##
 
@@ -3762,12 +3763,15 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0669',     '1', 'Teve filho nascido morto',
+  'v0669',     '2', 'Não teve filho nascido morto',
+  'v0669',     '3', 'Não sabe',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0669.txt'
     ),
     delim = '|'
   )
