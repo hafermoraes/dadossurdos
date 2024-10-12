@@ -2185,16 +2185,16 @@ tribble(
   )
 #+end_src
 
-*** v 
+*** v0606 cor ou raça
 
-#+begin_src R :tangle ./gnur_vardict_typeC_v.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_.R
+#+begin_src R :tangle ./gnur_vardict_typeC_v0606.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0606.R
 ##
 ##
 ## br_ibge_censo_2010
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável ""
+## Preparação da variável "cor ou raça"
 ## -------------------------------------------------------------------
 ##
 
@@ -2207,12 +2207,18 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 
 tribble(
   ~var,    ~a_code, ~a_desc,
+  'v0606',     '1', 'Branca',
+  'v0606',     '2', 'Preta',
+  'v0606',     '3', 'Amarela',
+  'v0606',     '4', 'Parda',
+  'v0606',     '5', 'Indígena',
+  'v0606',     '9', 'Ignorado',
   ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_v.txt'
+      'vdict_v0606.txt'
     ),
     delim = '|'
   )
