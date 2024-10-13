@@ -366,7 +366,7 @@ cut_qdesc_aux %>%
     args = str_flatten(cut_character_args, ',')
   ) %>%
   write_lines(
-    file = '/tmp/domi_cut_args.txt'
+    file = glue('{proc_data}/cut_character_args_domi.txt')
   )
 
 ## exporta os argumentos 'character' da função 'cut' de linha
@@ -377,7 +377,7 @@ cut_qdesc_aux %>%
     args = str_flatten(cut_character_args, ',')
   ) %>%
   write_lines(
-    file = '/tmp/pess_cut_args.txt'
+    file = glue('{proc_data}/cut_character_args_pess.txt')
   )
 
 ## exporta os argumentos 'character' da função 'cut' de linha
@@ -388,7 +388,7 @@ cut_qdesc_aux %>%
     args = str_flatten(cut_character_args, ',')
   ) %>%
   write_lines(
-    file = '/tmp/emig_cut_args.txt'
+    file = glue('{proc_data}/cut_character_args_emig.txt')
   )
 
 ## exporta os argumentos 'character' da função 'cut' de linha
@@ -399,7 +399,7 @@ cut_qdesc_aux %>%
     args = str_flatten(cut_character_args, ',')
   ) %>%
   write_lines(
-    file = '/tmp/mort_cut_args.txt'
+    file = glue('{proc_data}/cut_character_args_mort.txt')
   )
 #+end_src
 
