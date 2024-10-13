@@ -288,59 +288,115 @@ vdict %>%
 
 
 
-cut_args_aux <- 
+cut_qdesc_aux <-
+  ## tabela auxiliar para determinação de
+  ##  1. argumentos da ferramenta de linha de commando 'cut' usada
+  ##     para 'recortar' as colunas dos microdados, transformando
+  ##     o arquivo do tipo 'largura fixa' para o tipo 'delimitado'
+  ##  2. enunciados de questões (q_desc), ignorando as demais
+  ##     informações da célula 'desc' como quebras de linhas, bem
+  ##     como códigos e nomes por escrito das respostas
   vdict %>%
+  ## é necessário 'ativar' o modo rowwise() para que o próximo
+  ## bloco (mutate) opere no nível de linhas. Logo em seguida o
+  ## modo rowwise() será 'desativado' com o comando 'ungroup()'
   rowwise() %>%
   mutate(
+    ## identificando a posição da quebra de linha '\n' na string
+    ## e salvando-a na coluna 'newline_pos'
     newline_pos = str_locate( string = desc, pattern = '\n')[1],
+    ## criando a variável 'substr_stop_arg' para guardar a posição
+    ## de parada a ser usada na função substr(). Isso é necessário
+    ## já que a str_locate() devolve NA nos casos em que a string
+    ## 'desc' não contém a quebra de linha '\n'. Nesses casos, a
+    ## 'substr_stop_arg' retorna o comprimento da string 'desc'
     substr_stop_arg = ifelse( is.na(newline_pos), str_length(desc), newline_pos),
-    q_desc = substr( desc, start = 1, stop = substr_stop_arg - 0),
-    q_desc = str_remove_all(string = q_desc, pattern = ':|\n')
-  ) %>%
+    ## a nova variável 'q_desc' guarda então somente o enunciado
+    ## da pergunta do censo, ignorando todo o resto do conteúdo da
+    ## célula.
+    q_desc = substr( desc, start = 1, stop = substr_stop_arg),
+    ## adicionalmente em alguns casos é necessário remover os
+    ## caracteres ':' e '\n' remanescentes de enunciados de
+    ## questões do censo
+    q_desc = str_remove_all(string = q_desc, pattern = ':|\n'),
+    ## e converter a 'q_desc' para letras minúsculas
+    q_desc = str_to_lower(q_desc),
+    ) %>%
+  ## 'desativa' o modo de operação linha-a-linha do comando
+  ## rowwise() 'ativado' acima.
   ungroup() %>%
+  ## seleciona as colunas relevantes para os próximos passos
+  ## de exportação dos argumentos do comando 'cut' bem como
+  ## da expoertação dos enunciados tratados das questões do
+  ## censo
   transmute(
     base,
+    ## renomeia 'var' para 'q_code', o código da variável
     q_code = var,
-    q_desc = str_to_lower(q_desc),
+    q_desc,
     pos_ini,
     pos_fin,
-    int_part, # parte inteira 
-    dec_part = ifelse( is.na(dec_part), 0, dec_part), # parte decimal
-    cut_args = paste0( pos_ini, '-', as.numeric(pos_ini) + as.numeric(int_part) + as.numeric(dec_part) -1 ),
-    check = paste0(pos_ini,'-',pos_fin) == cut_args
+    ## quantos dígitos tem a parte inteira da variável cujo
+    ## tipo é N?
+    int_part,
+    ## quantas casas decimais tem a parte decimal da variável
+    ## cujo tipo é N?
+    ##   Note: quando (1) o tipo da variável é A ou C e (2) a
+    ##         variável do tipo N é inteira, a variável 'dec'
+    ##         no dicionário de variáveis original do IBGE
+    ##         é indefinida e no GNU R tem o valor NA. Nestes
+    ##         casos substitui-se NA pelo número zero (0).
+    dec_part = ifelse( is.na(dec_part), 0, dec_part),
+    ## qual é a extensão de cada variável nos microdados? Em
+    ## outras palavras, de qual a qual caracter estão as
+    ## respostas de cada variável do censo?
+    cut_character_args = paste0(
+      pos_ini,
+      '-',
+      as.numeric(pos_ini) + as.numeric(int_part) + as.numeric(dec_part) -1
+    ),
+    check = paste0(pos_ini,'-',pos_fin) == cut_character_args
   )
 
-cut_args_aux %>%
+## exporta os argumentos 'character' da função 'cut' de linha
+## de comando para a 'base de domicílios'
+cut_qdesc_aux %>%
   filter(base == 'domi') %>%
   summarise(
-    args = str_flatten(cut_args, ',')
+    args = str_flatten(cut_character_args, ',')
   ) %>%
   write_lines(
     file = '/tmp/domi_cut_args.txt'
   )
 
-cut_args_aux %>%
+## exporta os argumentos 'character' da função 'cut' de linha
+## de comando para a 'base de pessoas'
+cut_qdesc_aux %>%
   filter(base == 'pess') %>%
   summarise(
-    args = str_flatten(cut_args, ',')
+    args = str_flatten(cut_character_args, ',')
   ) %>%
   write_lines(
     file = '/tmp/pess_cut_args.txt'
   )
 
-cut_args_aux %>%
+## exporta os argumentos 'character' da função 'cut' de linha
+## de comando para a 'base de emigrantes'
+cut_qdesc_aux %>%
   filter(base == 'emig') %>%
   summarise(
-    args = str_flatten(cut_args, ',')
+    args = str_flatten(cut_character_args, ',')
   ) %>%
   write_lines(
     file = '/tmp/emig_cut_args.txt'
   )
 
-cut_args_aux %>%
+## exporta os argumentos 'character' da função 'cut' de linha
+## de comando para a 'base de mortalidade'
+cut_qdesc_aux %>%
   filter(base == 'mort') %>%
   summarise(
-    args = str_flatten(cut_args, ',')
+    args = str_flatten(cut_character_args, ',')
   ) %>%
   write_lines(
     file = '/tmp/mort_cut_args.txt'
