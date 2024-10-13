@@ -302,6 +302,8 @@ cut_qdesc_aux <-
   ## modo rowwise() será 'desativado' com o comando 'ungroup()'
   rowwise() %>%
   mutate(
+    ## converte 'var' para somente letras minúsculas
+    var = str_to_lower(var),
     ## identificando a posição da quebra de linha '\n' na string
     ## e salvando-a na coluna 'newline_pos'
     newline_pos = str_locate( string = desc, pattern = '\n')[1],
@@ -358,8 +360,12 @@ cut_qdesc_aux <-
     check = paste0(pos_ini,'-',pos_fin) == cut_character_args
   )
 
-## exporta os argumentos 'character' da função 'cut' de linha
-## de comando para a 'base de domicílios'
+
+## ----------------------------------------------------------
+##  base de domicílios
+## ----------------------------------------------------------
+##
+## exporta os argumentos 'character' da função 'cut'
 cut_qdesc_aux %>%
   filter(base == 'domi') %>%
   summarise(
@@ -368,9 +374,24 @@ cut_qdesc_aux %>%
   write_lines(
     file = glue('{proc_data}/cut_character_args_domi.txt')
   )
+##
+## exporta o código e enunciado da questão
+cut_qdesc_aux %>%
+  select(base, q_code, q_desc) %>%
+  filter( base == 'domi') %>%
+  write_delim(
+    file = glue('{proc_data}/vdict_qdesc_domi.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
 
-## exporta os argumentos 'character' da função 'cut' de linha
-## de comando para a 'base de pessoas'
+
+
+## ----------------------------------------------------------
+##  base de pessoas
+## ----------------------------------------------------------
+##
+## exporta os argumentos 'character' da função 'cut'
 cut_qdesc_aux %>%
   filter(base == 'pess') %>%
   summarise(
@@ -379,9 +400,23 @@ cut_qdesc_aux %>%
   write_lines(
     file = glue('{proc_data}/cut_character_args_pess.txt')
   )
+##
+## exporta o código e enunciado da questão
+cut_qdesc_aux %>%
+  select(base, q_code, q_desc) %>%
+  filter( base == 'pess') %>%
+  write_delim(
+    file = glue('{proc_data}/vdict_qdesc_pess.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
 
-## exporta os argumentos 'character' da função 'cut' de linha
-## de comando para a 'base de emigrantes'
+
+## ----------------------------------------------------------
+##  base de emigrantes
+## ----------------------------------------------------------
+##
+## exporta os argumentos 'character' da função 'cut'
 cut_qdesc_aux %>%
   filter(base == 'emig') %>%
   summarise(
@@ -390,9 +425,23 @@ cut_qdesc_aux %>%
   write_lines(
     file = glue('{proc_data}/cut_character_args_emig.txt')
   )
+##
+## exporta o código e enunciado da questão
+cut_qdesc_aux %>%
+  select(base, q_code, q_desc) %>%
+  filter( base == 'emig') %>%
+  write_delim(
+    file = glue('{proc_data}/vdict_qdesc_emig.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
 
-## exporta os argumentos 'character' da função 'cut' de linha
-## de comando para a 'base de mortalidade'
+
+## ----------------------------------------------------------
+##  base de mortalidade
+## ----------------------------------------------------------
+##
+## exporta os argumentos 'character' da função 'cut'
 cut_qdesc_aux %>%
   filter(base == 'mort') %>%
   summarise(
@@ -400,6 +449,16 @@ cut_qdesc_aux %>%
   ) %>%
   write_lines(
     file = glue('{proc_data}/cut_character_args_mort.txt')
+  )
+##
+## exporta o código e enunciado da questão
+cut_qdesc_aux %>%
+  select(base, q_code, q_desc) %>%
+  filter( base == 'mort') %>%
+  write_delim(
+    file = glue('{proc_data}/vdict_qdesc_mort.txt'),
+    delim = '|',
+    col_names = TRUE
   )
 #+end_src
 
