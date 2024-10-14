@@ -103,8 +103,8 @@ Ao que tudo indica,
 - =C= refere-se aos dados categóricos, para os quais o dicionário de variáveis está disponível diretamente no layout (arquivo excel)
 - =N= refere-se provavelmente aos dados numéricos, para os quais não é necessário um dicionário de variáveis já que a variável está pronta para uso, sendo somente necessário convertê-la para o tipo de dados (inteiro, data, número decimal, etc...) necessário para análises
 
-#+begin_src R :tangle ./gnur_vdict_understanding.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vdict_understanding.R
+#+begin_src R :tangle ./gnur_vardict_understanding.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_understanding.R
 ##
 ## entendimento do dicionário de variáveis do censo demográfico brasileiro de 2010 (br_ibge_censo_2010)
 
@@ -854,7 +854,8 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 input <- 
   read_excel(
     path = paste0(
-      raw_data,
+      base_dir,
+      'raw/',
       'DocumentaЗ╞o/',
       'Divis╞o Territorial do Brasil/',
       'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
@@ -921,7 +922,8 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 input <- 
   read_excel(
     path = paste0(
-      raw_data,
+      base_dir,
+      'raw/',
       'DocumentaЗ╞o/',
       'Divis╞o Territorial do Brasil/',
       'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
@@ -4800,12 +4802,16 @@ proc_data <- paste0(src_dir, 'data/')
 #+begin_src sh
 parse_variables_dictionary_using_GNU_R(){
 
-    echo 'Parsing the variables dictionary using GNU R'
-    cp ./gnur_parse_variables_dictionary.R ${src_dir}/gnur_parse_variables_dictionary.R
-    R CMD BATCH --quiet --vanilla ${src_dir}/gnur_parse_variables_dictionary.R
+    echo 'Prepara o dicionário de variáveis e tratamento dos microdados usando o GNU R'
+
+    for r_script in ./gnur_vardict*.R
+    do
+        echo "Executando $r_script..."
+        R CMD BATCH --quiet --vanilla $r_script
+    done
+    
     rm *.Rout
 
-    echo 'DONE.'
 }
 #+end_src
 
@@ -4826,55 +4832,6 @@ prepare_microdata_for_data_ingestion(){
         ${proc_data}/microdata.txt
 
     echo 'DONE.'
-}
-#+end_src
-
-
-#+begin_src sh
-prepare_data_ingestion_sql_query(){
-
-    echo "Preparing SQL script for creating the database schema and tables..."
-
-    query=${proc_data}/psql_create_tables.sql
-
-    cat > ${query} <<EOF
--- cria schema ~pnadc2022t3~ para a edição 2022T3 da PNADC
-          create schema pnadc2022t3;
-
--- dicionário de dados (explicação de colunas e respostas)
-   drop table if exists pnadc2022t3.datadict;
-           create table pnadc2022t3.datadict (
-                        part text,
-                        module text,
-                        var text,
-                        q_code text,
-                        q_desc text,
-                        a_code text,
-                        a_desc text
-                        );
-
--- importa dicionário de dados brutos na tabela ~datadict~
-EOF
-
-    echo "copy pnadc2022t3.datadict from '${proc_data}/variables_dictionary.txt' delimiter '|' csv header;\n" >> ${query}
-
-    cat >> ${query} <<EOF
--- microdados separados por variavel
-   drop table if exists pnadc2022t3.microdata;
-           create table pnadc2022t3.microdata (
-EOF
-
-    cat ${proc_data}/create_table_fields >> ${query}
-
-    cat >> ${query} <<EOF
-);
-
--- importa microdados brutos na tabela microdata
-EOF
-
-    echo "copy pnadc2022t3.microdata from '${proc_data}/microdata.txt' delimiter '|' csv header;\n" >> ${query}
-
-    echo "DONE."
 }
 #+end_src
 
@@ -4942,13 +4899,12 @@ main(){
 
     fetch_variables_dictionary
 
-    # parse_variables_dictionary_using_GNU_R
+    parse_variables_dictionary_using_GNU_R
 
     # prepare_microdata_for_data_ingestion
 
     # convert_microdata_to_parquet_using_arrow_and_GNU_R
 
-    # prepare_data_ingestion_sql_query
 }
 
 main
