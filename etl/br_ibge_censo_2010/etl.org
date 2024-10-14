@@ -4734,7 +4734,7 @@ library(tidyr)    # expand_grid
 base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 proc_data <- paste0(base_dir, 'data/')
 
-vdict_right <- data.frame()
+vdict_right <- tibble()
 
 ## UF
 vdict_right <-
@@ -4845,8 +4845,36 @@ vdict_right <-
   ) # bind_rows
 
 
+list_typeA <- list.files( path = proc_data, pattern = 'vdict_typeA_v')
+for (i in seq_along(list_typeA)){
+  vdict_right <-
+    bind_rows(
+      vdict_right,
+      read_delim(
+        file = paste0( proc_data, list_typeA[i]),
+        delim = '|',
+        col_types = cols(.default = 'c')
+      )
+    )
+}
 
+list_typeC <- list.files( path = proc_data, pattern = 'vdict_typeC_v')
+for (i in seq_along(list_typeC)){
+  vdict_right <-
+    bind_rows(
+      vdict_right,
+      read_delim(
+        file = paste0( proc_data, list_typeC[i]),
+        delim = '|',
+        col_types = cols(.default = 'c')
+      )
+    )
+}
 
+## vdict_right %>% 
+##   select(var, a_code) %>%
+##   unique() %>%
+##   count(var, a_code, n = n(), sort=TRUE) %>% View
 #+end_src
 
 
