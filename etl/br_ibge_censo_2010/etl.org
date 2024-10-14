@@ -4734,7 +4734,25 @@ library(tidyr)    # expand_grid
 base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 proc_data <- paste0(base_dir, 'data/')
 
+## Cria tabela vazia para preenchimento incremental posterior
+## com o dicionário de variáveis formado pelas colunas
+##   - var, o código da variável
+##   - a_code, o código da resposta
+##   - a_desc, a resposta por extenso
 vdict_right <- tibble()
+
+## Aqui começa uma longa construção da tabela vdict_right,
+## contra a qual será feita um left join. Essa tabela
+## vdict_right tem por objetivo guardar as combinações
+## de var, a_code e a_desc, descritas acima. Estas são
+## as variáveis e respostas tratadas em scripts próprios.
+## O processo consiste em ler o arquivo do disco e fazer
+## a escrita incremental (append) na tabela vdict_right.
+
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+## Primeiro bloco de variáveis: tipo A, com respostas
+## comuns a diferentes variáveis.
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ## UF
 vdict_right <-
@@ -4798,7 +4816,6 @@ vdict_right <-
     ) # expand_grid
   ) # bind_rows
 
-
 ## Ocupação
 vdict_right <-
   bind_rows(
@@ -4833,6 +4850,11 @@ vdict_right <-
     ) # expand_grid
   ) # bind_rows
 
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+## Segundo bloco de variáveis: tipo C, com respostas
+## comuns a diferentes variáveis.
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 ## Variáveis com respostas comuns Sim/Nao do tipo C
 vdict_right <-
   bind_rows(
@@ -4844,6 +4866,12 @@ vdict_right <-
       )
   ) # bind_rows
 
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+## Terceiro bloco de variáveis: tipo A, com respostas
+## próprias de cada variável. Há diversos arquivos
+## individuais que são iterados, lidos em memória e
+## o conteúdo é incrementado à tabela vdict_right.
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 list_typeA <- list.files( path = proc_data, pattern = 'vdict_typeA_v')
 for (i in seq_along(list_typeA)){
@@ -4858,6 +4886,13 @@ for (i in seq_along(list_typeA)){
     )
 }
 
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+## Último bloco de variáveis: tipo C, com respostas
+## próprias de cada variável. Igualmente, há diversos
+## arquivos individuais que são iterados, lidos em
+## memória e o conteúdo é incrementado à tabela
+## vdict_right.
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 list_typeC <- list.files( path = proc_data, pattern = 'vdict_typeC_v')
 for (i in seq_along(list_typeC)){
   vdict_right <-
@@ -4871,18 +4906,73 @@ for (i in seq_along(list_typeC)){
     )
 }
 
-vdict_domi_left <-
-  read_delim(
-    file = paste0(proc_data, 'vdict_qdesc_domi.txt'),
-    delim = '|',
-    col_types = cols(.default = 'c')
-  )
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+## Dicionário tratado de variáveis
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-vdict_domi_left %>%
+## Base de domicílios
+read_delim(
+  file = paste0(proc_data, 'vdict_qdesc_domi.txt'),
+  delim = '|',
+  col_types = cols(.default = 'c')
+)  %>%
   left_join(
     vdict_right,
     by = c("q_code" = "var")
-  ) %>% View
+  ) %>%
+  write_delim(
+    file = './vdict_domi.txt',
+    delim = '|',
+    col_names = TRUE
+  )
+
+## Base de Pessoas
+read_delim(
+  file = paste0(proc_data, 'vdict_qdesc_pess.txt'),
+  delim = '|',
+  col_types = cols(.default = 'c')
+)  %>%
+  left_join(
+    vdict_right,
+    by = c("q_code" = "var")
+  ) %>%
+  write_delim(
+    file = './vdict_pess.txt',
+    delim = '|',
+    col_names = TRUE
+  )
+
+## Base de Emigração
+read_delim(
+  file = paste0(proc_data, 'vdict_qdesc_emig.txt'),
+  delim = '|',
+  col_types = cols(.default = 'c')
+)  %>%
+  left_join(
+    vdict_right,
+    by = c("q_code" = "var")
+  ) %>%
+  write_delim(
+    file = './vdict_emig.txt',
+    delim = '|',
+    col_names = TRUE
+  )
+
+## Base de Mortalidade
+read_delim(
+  file = paste0(proc_data, 'vdict_qdesc_mort.txt'),
+  delim = '|',
+  col_types = cols(.default = 'c')
+)  %>%
+  left_join(
+    vdict_right,
+    by = c("q_code" = "var")
+  ) %>%
+  write_delim(
+    file = './vdict_mort.txt',
+    delim = '|',
+    col_names = TRUE
+  )
 
 
 ## vdict_right %>% 
