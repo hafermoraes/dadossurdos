@@ -4871,6 +4871,20 @@ for (i in seq_along(list_typeC)){
     )
 }
 
+vdict_domi_left <-
+  read_delim(
+    file = paste0(proc_data, 'vdict_qdesc_domi.txt'),
+    delim = '|',
+    col_types = cols(.default = 'c')
+  )
+
+vdict_domi_left %>%
+  left_join(
+    vdict_right,
+    by = c("q_code" = "var")
+  ) %>% View
+
+
 ## vdict_right %>% 
 ##   select(var, a_code) %>%
 ##   unique() %>%
