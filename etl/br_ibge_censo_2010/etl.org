@@ -56,27 +56,6 @@ create_temporary_directories(){
 }
 #+end_src
 
-* download dos microdados
-
-#+begin_src sh
-fetch_microdata(){
-
-    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO SC SE SP1 SP2_RM TO; do
-
-        echo "Baixando os microdados de $mdata_url/$uf.zip..."
-        R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/$uf.zip' )"
-
-        echo 'Descompactando os microdados do arquivo $uf.zip...'
-        unzip ${raw_data}/$uf.zip -d ${raw_data}
-
-        echo 'Removendo da pasta temporária o arquivo compactado $uf.zip...'
-        rm -rf ${raw_data}/$uf.zip
-
-    done
-
-}
-#+end_src
-
 * download do dicionário de variáveis e arquivos auxiliares
 
 #+begin_src sh
@@ -4921,7 +4900,7 @@ read_delim(
     by = c("q_code" = "var")
   ) %>%
   write_delim(
-    file = './vdict_domi.txt',
+    file = paste0(proc_data, 'vdict_domi.txt'),
     delim = '|',
     col_names = TRUE
   )
@@ -4937,7 +4916,7 @@ read_delim(
     by = c("q_code" = "var")
   ) %>%
   write_delim(
-    file = './vdict_pess.txt',
+    file = paste0(proc_data, 'vdict_pess.txt'),
     delim = '|',
     col_names = TRUE
   )
@@ -4953,7 +4932,7 @@ read_delim(
     by = c("q_code" = "var")
   ) %>%
   write_delim(
-    file = './vdict_emig.txt',
+    file = paste0(proc_data, 'vdict_emig.txt'),
     delim = '|',
     col_names = TRUE
   )
@@ -4969,16 +4948,10 @@ read_delim(
     by = c("q_code" = "var")
   ) %>%
   write_delim(
-    file = './vdict_mort.txt',
+    file = paste0(proc_data, 'vdict_mort.txt'),
     delim = '|',
     col_names = TRUE
   )
-
-
-## vdict_right %>% 
-##   select(var, a_code) %>%
-##   unique() %>%
-##   count(var, a_code, n = n(), sort=TRUE) %>% View
 #+end_src
 
 
@@ -4987,34 +4960,14 @@ parse_variables_dictionary_using_GNU_R(){
 
     echo 'Prepara o dicionário de variáveis e tratamento dos microdados usando o GNU R'
 
-    for r_script in ./gnur_vardict*.R
+    for gnur_script in ./gnur_vardict*.R
     do
-        echo "Executando $r_script..."
-        R CMD BATCH --quiet --vanilla $r_script
+        echo "Executando $gnur_script..."
+        R CMD BATCH --quiet --vanilla $gnur_script
     done
     
     rm *.Rout
 
-}
-#+end_src
-
-
-#+begin_src sh
-prepare_microdata_for_data_ingestion(){
-
-    echo 'Transforming microdata from fixed width format to delimited file...'
-
-    # 'characters' argument from 'cut' function
-    CHARACTERS_ARG=$(cat ${proc_data}/cut_characters_argument.txt)
-
-    # from fixed width format to pipe (|) delimited text file
-    cut \
-        --output-delimiter='|' \
-        --characters=$CHARACTERS_ARG \
-        ${raw_data}/PNADC_2022_trimestre3.txt > \
-        ${proc_data}/microdata.txt
-
-    echo 'DONE.'
 }
 #+end_src
 
@@ -5059,6 +5012,47 @@ write_parquet(
 )
 #+end_src
 
+* download dos microdados
+
+#+begin_src sh
+fetch_microdata(){
+
+    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO; do
+
+        echo "Baixando os microdados de $mdata_url/$uf.zip..."
+        R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/$uf.zip' )"
+
+        echo 'Descompactando os microdados do arquivo $uf.zip...'
+        unzip ${raw_data}/$uf.zip -d ${raw_data}
+
+        echo 'Removendo da pasta temporária o arquivo compactado $uf.zip...'
+        rm -rf ${raw_data}/$uf.zip
+
+    done
+
+}
+#+end_src
+
+
+#+begin_src sh
+prepare_microdata_for_data_ingestion(){
+
+    echo 'Transforming microdata from fixed width format to delimited file...'
+
+    # 'characters' argument from 'cut' function
+    CHARACTERS_ARG=$(cat ${proc_data}/cut_characters_argument.txt)
+
+    # from fixed width format to pipe (|) delimited text file
+    cut \
+        --output-delimiter='|' \
+        --characters=$CHARACTERS_ARG \
+        ${raw_data}/PNADC_2022_trimestre3.txt > \
+        ${proc_data}/microdata.txt
+
+    echo 'DONE.'
+}
+#+end_src
+
 
 #+begin_src sh
 convert_microdata_to_parquet_using_arrow_and_GNU_R(){
@@ -5078,11 +5072,12 @@ main(){
 
     create_temporary_directories
 
-    # fetch_microdata
 
     fetch_variables_dictionary
 
     parse_variables_dictionary_using_GNU_R
+
+    fetch_microdata
 
     # prepare_microdata_for_data_ingestion
 
