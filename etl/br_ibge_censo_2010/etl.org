@@ -5025,17 +5025,39 @@ prepare_microdata_for_data_ingestion(){
 ** TODO conversão dos microdados em formato parquet
 
 #+begin_src R :tangle ./gnur_transform_microdata_into_parquet.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_transform_microdata_into_parquet.R
+##
 ## Converte microdados do formato texto para o formato parquet usando library(arrow)
+
 library(arrow)  # read_delim_arrow, write_parquet
 library(readr)  # read_delim
 library(glue)   # glue
 
+## pasta na qual estão alocadas as base tratadas em formato
+## texto delimitadas por pipe '|'
 src_dir <- '/tmp/etl/br_ibge_censo_2010/'
 proc_data <- paste0(src_dir, 'data')
 
+## Censo 2010 possui 4 arquivos por estado:
+##  - domi, base de domicílios
+##  - pess, base de pessoas
+##  - emig, base de emigração
+##  - mort, base de mortalidade
+##
 base <- c("domi", "pess", "emig", "mort")
 
+## o próximo bloco de código
+##   1. itera cada elemento do vetor 'base'
+##   2. lê o microdado delimitado por '|' via pacote 'arrow'
+##   3. lê a tabela com código e enunciado das variáveis
+##   4. renomeia as colunas dos microdados em formato arrow
+##   5. salva em disco o microdado em formato 'parquet',
+##      responsável pela redução do tamanho físico do
+##      microdado.
 for (b in base){
+  ## leitura dos microdados delimitados por '|' via
+  ## pacote 'arrow'. Nota: os dados são lidos sem nome
+  ## de colunas, o que será corrigido no próximo trecho.
   microdata_pipe_delimited <-
     read_delim_arrow(
       file = glue('{proc_data}/microdata_{b}.txt'),
@@ -5043,28 +5065,22 @@ for (b in base){
       col_names = FALSE,
       as_data_frame = FALSE
     )
-
+  ## leitura dos códigos e enunciados de variáveis para
+  ## renomear colunas dos dados lidos via pacote 'arrow'
+  ## no passo anterior
   col_names <-
     read_delim( 
       file = glue('{proc_data}/vdict_qdesc_{b}.txt'),
       delim = '|',
       show_col_types = FALSE
     )
-
-  names(microdata) <- col_names$q_code
-
-  ## microdata %>%
-  ##   filter(ano==2022) %>%
-  ##   group_by(s11002) %>%
-  ##   count(.drop = FALSE) %>%
-  ##   arrange(s11002) %>%
-  ##   collect()
-
+  names(microdata_pipe_delimited) <- col_names$q_code
+  ## escrita dos dados em formato 'parquet' para redução
+  ## do tamanho físico do arquivo na pasta de destino
   write_parquet(
-    microdata, 
+    microdata_pipe_delimited, 
     sink = glue('{proc_data}/microdata_{b}.parquet')
   )
-  
 }
 
 #+end_src
