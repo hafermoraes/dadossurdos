@@ -11,13 +11,13 @@ Blocos de código na linguagem *shell* são exportados no arquivo =./etl.sh= que
 
 O comando tangle no editor GNU Emacs pode ser executado com a combinação de teclas =C-c C-v t=, que equivale a executar o comando =org-babel-tangle=.
 
-* cabeçalho do script =etl.sh= 
+* cabeçalho do script =etl.sh=
 
 #+begin_src sh
 #!/bin/bash
 
 # (https://askubuntu.com/a/1455039)
-set -eu 
+set -eu
 
 echo "extração e preparação dos microdados para =br-ibge-censo-2010=\n"
 #+end_src
@@ -443,7 +443,7 @@ cut_qdesc_aux %>%
   )
 #+end_src
 
-* tratamento das variáveis 
+* tratamento das variáveis
 ** tipo A: variáveis que compartilham as mesmas opções de resposta
 *** v0001/v6222/v6252/v6262/v6362/v6602 unidade da federação
 
@@ -494,7 +494,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
 ##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
 ##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
+##             codificação de origem e ficam com caracteres externos
 ##             àqueles utilizados na língua portuguesa.
 
 ## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
@@ -596,7 +596,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
 ##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
 ##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
+##             codificação de origem e ficam com caracteres externos
 ##             àqueles utilizados na língua portuguesa.
 
 ## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
@@ -632,7 +632,7 @@ input %>%
       'data/',
       'vdict_typeA_common_municipio.txt'
     ),
-    delim = '|'    
+    delim = '|'
   )
 #+end_src
 
@@ -641,7 +641,7 @@ input %>%
 As seguintes variáveis das bases de pessoas =PESS= e emigração =EMIG= compartilham dos mesmos códigos e nomes por extenso referentes ao país.
 
 - v3061 país de residência em 31 de julho de 2010
-- v6224 qual é o país estrangeiro de nascimento 
+- v6224 qual é o país estrangeiro de nascimento
 - v6256 país de residência anterior
 - v6266 país de residência em 31 de julho de 2005
 - v6366 país estrangeiro que frequentava escola (ou creche)
@@ -659,7 +659,7 @@ As seguintes variáveis das bases de pessoas =PESS= e emigração =EMIG= compart
 ## variável a seguir
 ##
 ##   v3061 país de residência em 31 de julho de 2010
-##   v6224 qual é o país estrangeiro de nascimento 
+##   v6224 qual é o país estrangeiro de nascimento
 ##   v6256 país de residência anterior
 ##   v6266 país de residência em 31 de julho de 2005
 ##   v6366 país estrangeiro que frequentava escola (ou creche)
@@ -685,7 +685,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
 ##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
 ##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
+##             codificação de origem e ficam com caracteres externos
 ##             àqueles utilizados na língua portuguesa.
 
 
@@ -725,7 +725,7 @@ input %>%
       'data/',
       'vdict_typeA_common_pais.txt'
     ),
-    delim = '|'    
+    delim = '|'
   )
 #+end_src
 
@@ -767,7 +767,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
 ##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
 ##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
+##             codificação de origem e ficam com caracteres externos
 ##             àqueles utilizados na língua portuguesa.
 
 ##   v6461 Ocupação
@@ -787,7 +787,7 @@ input <-
     col_names = FALSE
   ) %>%
   rename( a_code = 1, a_desc = 2) %>%
-  na.omit() 
+  na.omit()
 
 input %>%
   write_delim(
@@ -796,7 +796,7 @@ input %>%
       'data/',
       'vdict_typeA_common_ocupacao.txt'
     ),
-    delim = '|'    
+    delim = '|'
   )
 #+end_src
 
@@ -840,7 +840,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
 ##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
 ##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
+##             codificação de origem e ficam com caracteres externos
 ##             àqueles utilizados na língua portuguesa.
 
 
@@ -859,7 +859,7 @@ input <-
     range = 'A3:D352',
     col_types = 'text',
     col_names = FALSE
-  ) %>% 
+  ) %>%
   rename( secao = 1, divisao = 2, classes = 3, denominacao = 4) %>%
   fill( secao, divisao) %>%
   transmute( a_code = classes, a_desc = denominacao) %>%
@@ -872,7 +872,7 @@ input %>%
       'data/',
       'vdict_typeA_common_atividade.txt'
     ),
-    delim = '|'    
+    delim = '|'
   )
 #+end_src
 
@@ -888,7 +888,7 @@ input %>%
 ##
 ## -------------------------------------------------------------------
 ## Preparação da variável relacionada ao código da mesorregião
-## cujo conteúdo nos microdados é formado por 2 caracteres 
+## cujo conteúdo nos microdados é formado por 2 caracteres
 ## -------------------------------------------------------------------
 ##
 
@@ -909,11 +909,11 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
 ##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
 ##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
+##             codificação de origem e ficam com caracteres externos
 ##             àqueles utilizados na língua portuguesa.
 
 ## v1002 Código da Mesorregião (2 caracteres)
-input <- 
+input <-
   read_excel(
     path = paste0(
       base_dir,
@@ -933,7 +933,7 @@ input <-
     var = 'v1002',
     a_code = cod_4,
     a_desc = meso
-  ) 
+  )
 
 input %>%
   write_delim(
@@ -956,7 +956,7 @@ input %>%
 ##
 ## -------------------------------------------------------------------
 ## Preparação da variável relacionada ao código da microrregião
-## cujo conteúdo nos microdados é formado por 3 caracteres 
+## cujo conteúdo nos microdados é formado por 3 caracteres
 ## -------------------------------------------------------------------
 ##
 
@@ -977,11 +977,11 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
 ##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
 ##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
+##             codificação de origem e ficam com caracteres externos
 ##             àqueles utilizados na língua portuguesa.
 
 ## v1003 Código da Microrregião (3 caracteres)
-input <- 
+input <-
   read_excel(
     path = paste0(
       base_dir,
@@ -1024,7 +1024,7 @@ input %>%
 ##
 ## -------------------------------------------------------------------
 ## Preparação da variável "código da região metropolitana"
-## cujo conteúdo nos microdados é formado por 2 caracteres 
+## cujo conteúdo nos microdados é formado por 2 caracteres
 ## -------------------------------------------------------------------
 ##
 
@@ -1097,7 +1097,7 @@ tribble(
 ##
 ## -------------------------------------------------------------------
 ## Preparação da variável "curso superior de graduação"
-## cujo conteúdo nos microdados é formado por 3 caracteres 
+## cujo conteúdo nos microdados é formado por 3 caracteres
 ## -------------------------------------------------------------------
 ##
 
@@ -1118,11 +1118,11 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
 ##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
 ##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
+##             codificação de origem e ficam com caracteres externos
 ##             àqueles utilizados na língua portuguesa.
 
 ## v6352 Curso superior de graduação
-input <- 
+input <-
   read_excel(
     path = paste0(
       base_dir,
@@ -1136,15 +1136,15 @@ input <-
     col_types = 'text',
     col_names = FALSE
   ) %>%
-  rename(a_code = 1, a_desc = 2) %>% 
-  na.omit() %>% 
+  rename(a_code = 1, a_desc = 2) %>%
+  na.omit() %>%
   transmute(
     var = 'v6352',
     a_code,
     a_desc
   )
 
-input %>% 
+input %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -1165,7 +1165,7 @@ input %>%
 ##
 ## -------------------------------------------------------------------
 ## Preparação da variável "curso de mestrado"
-## cujo conteúdo nos microdados é formado por 3 caracteres 
+## cujo conteúdo nos microdados é formado por 3 caracteres
 ## -------------------------------------------------------------------
 ##
 
@@ -1186,11 +1186,11 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
 ##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
 ##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
+##             codificação de origem e ficam com caracteres externos
 ##             àqueles utilizados na língua portuguesa.
 
 ## v6354 Curso de mestrado
-input <- 
+input <-
   read_excel(
     path = paste0(
       base_dir,
@@ -1204,15 +1204,15 @@ input <-
     col_types = 'text',
     col_names = FALSE
   ) %>%
-  rename(a_code = 1, a_desc = 2) %>% 
-  na.omit() %>% 
+  rename(a_code = 1, a_desc = 2) %>%
+  na.omit() %>%
   transmute(
     var = 'v6354',
     a_code,
     a_desc
   )
 
-input %>% 
+input %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -1233,7 +1233,7 @@ input %>%
 ##
 ## -------------------------------------------------------------------
 ## Preparação da variável "curso de doutorado"
-## cujo conteúdo nos microdados é formado por 3 caracteres 
+## cujo conteúdo nos microdados é formado por 3 caracteres
 ## -------------------------------------------------------------------
 ##
 
@@ -1254,11 +1254,11 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
 ##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
 ##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
+##             codificação de origem e ficam com caracteres externos
 ##             àqueles utilizados na língua portuguesa.
 
 ## v6356 Curso de doutorado
-input <- 
+input <-
   read_excel(
     path = paste0(
       base_dir,
@@ -1273,14 +1273,14 @@ input <-
     col_names = FALSE
   ) %>%
   rename(a_code = 1, a_desc = 2) %>%
-  na.omit() %>% 
+  na.omit() %>%
   transmute(
     var = 'v6356',
     a_code,
     a_desc
   )
 
-input %>% 
+input %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -1324,7 +1324,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2010/'
 ## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
 ##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
 ##             nomes de diretórios, subdiretórios e arquivos perdem sua
-##             codificação de origem e ficam com caracteres externos 
+##             codificação de origem e ficam com caracteres externos
 ##             àqueles utilizados na língua portuguesa.
 
 
@@ -1363,13 +1363,13 @@ input %>%
       'data/',
       'vdict_typeA_v6121.txt'
     ),
-    delim = '|'    
+    delim = '|'
   )
 #+end_src
 
 
 ** tipo C: variáveis que compartilham respostas Sim/Não
-*** typeC Sim/Não 
+*** typeC Sim/Não
 
 #+begin_src R :tangle ./gnur_vardict_typeC_SimNao.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_SimNao.R
@@ -1553,7 +1553,7 @@ tribble(
   ## v0664 existência de filho tido nascido vivo no período de referência de 12 meses anteriores a 31/07/2010
   'v6664',     '1', 'Sim',
   'v6664',     '0', 'Não',
-  ## marcas de imputação para as variáveis 
+  ## marcas de imputação para as variáveis
   'm0502',     '1', 'Sim',
   'm0502',     '2', 'Não',
   'm0601',     '1', 'Sim',
@@ -2020,7 +2020,7 @@ tribble(
   )
 #+end_src
 
-*** v0205 banheiros de uso exclusivo, número 
+*** v0205 banheiros de uso exclusivo, número
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0205.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0205.R
@@ -2063,7 +2063,7 @@ tribble(
   )
 #+end_src
 
-*** v0207 esgotamento sanitário, tipo 
+*** v0207 esgotamento sanitário, tipo
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0207.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0207.R
@@ -2102,7 +2102,7 @@ tribble(
   )
 #+end_src
 
-*** v0208 abastecimento de água, forma 
+*** v0208 abastecimento de água, forma
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0208.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0208.R
@@ -2181,7 +2181,7 @@ tribble(
   )
 #+end_src
 
-*** v0210 lixo, destino 
+*** v0210 lixo, destino
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0210.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0210.R
@@ -2221,7 +2221,7 @@ tribble(
   )
 #+end_src
 
-*** v0211 energia elétrica, existência 
+*** v0211 energia elétrica, existência
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0211.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0211.R
@@ -2257,7 +2257,7 @@ tribble(
   )
 #+end_src
 
-*** v0212 existência de medidor ou relógio, energia elétrica, companhia distribuidora 
+*** v0212 existência de medidor ou relógio, energia elétrica, companhia distribuidora
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0212.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0212.R
@@ -2294,7 +2294,7 @@ tribble(
   )
 #+end_src
 
-*** v0402 a responsabilidade pelo domicílio é de 
+*** v0402 a responsabilidade pelo domicílio é de
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0402.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0402.R
@@ -2330,7 +2330,7 @@ tribble(
   )
 #+end_src
 
-*** v6600 espécie da unidade doméstica 
+*** v6600 espécie da unidade doméstica
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v6600.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6600.R
@@ -2367,7 +2367,7 @@ tribble(
   )
 #+end_src
 
-*** v6210 adequação da moradia 
+*** v6210 adequação da moradia
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v6210.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6210.R
@@ -2444,7 +2444,7 @@ tribble(
   )
 #+end_src
 
-*** v0502 relação de parentesco ou de convivência com a pessoa responsável pelo domicílio 
+*** v0502 relação de parentesco ou de convivência com a pessoa responsável pelo domicílio
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0502.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0502.R
@@ -4262,7 +4262,7 @@ tribble(
   )
 #+end_src
 
-*** v6930 posição na ocupação e categoria do emprego no trabalho principal 
+*** v6930 posição na ocupação e categoria do emprego no trabalho principal
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v6930.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6930.R
@@ -4380,7 +4380,7 @@ tribble(
   )
 #+end_src
 
-*** v5020 número da família 
+*** v5020 número da família
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v5020.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v5020.R
@@ -4751,7 +4751,7 @@ vdict_right <-
         delim = '|',
         col_types = cols(.default = "c")
       )
-    ) # expand_grid 
+    ) # expand_grid
   ) # bind_rows
 
 ## Municípios
@@ -4761,8 +4761,8 @@ vdict_right <-
     expand_grid(
       var = c(
         'v0002', #  v0002 código do município
-        'v6254', #  v6254 município de residência anterior 
-        'v6264', #  v6264 município de residência em 31 de julho de 2005 
+        'v6254', #  v6254 município de residência anterior
+        'v6264', #  v6264 município de residência em 31 de julho de 2005
         'v6364', #  v6364 município que frequentava escola (ou creche)
         'v6604'  #  v6604 em que município trabalhava
       ),
@@ -4965,7 +4965,7 @@ parse_variables_dictionary_using_GNU_R(){
         echo "Executando $gnur_script..."
         R CMD BATCH --quiet --vanilla $gnur_script
     done
-    
+
     rm *.Rout
 
 }
@@ -5013,6 +5013,24 @@ write_parquet(
 #+end_src
 
 * download dos microdados
+
+
+#+begin_src sh
+fetch_and_transform_microdata(){
+    base="domic pess emig mort"
+
+    for b in ${base}; do
+
+        echo $b
+
+        for i in $(find /tmp/etl -print | grep -i ${b}); do
+            #echo $i
+            echo $(wc -l $i)
+        done
+    done
+}
+#+end_src>
+
 
 #+begin_src sh
 fetch_microdata(){
