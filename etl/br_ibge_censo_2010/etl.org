@@ -5026,41 +5026,47 @@ prepare_microdata_for_data_ingestion(){
 
 #+begin_src R :tangle ./gnur_transform_microdata_into_parquet.R
 ## Converte microdados do formato texto para o formato parquet usando library(arrow)
-library(arrow)
-library(readr)
+library(arrow)  # read_delim_arrow, write_parquet
+library(readr)  # read_delim
+library(glue)   # glue
 
 src_dir <- '/tmp/etl/br_ibge_censo_2010/'
-proc_data <- paste0(src_dir, 'data/')
+proc_data <- paste0(src_dir, 'data')
 
+base <- c("domi", "pess", "emig", "mort")
 
-microdata <-
-  read_delim_arrow(
-    file = paste0(proc_data, 'microdata.txt'),
-    delim = '|',
-    col_names = FALSE,
-    as_data_frame = FALSE
+for (b in base){
+  microdata_pipe_delimited <-
+    read_delim_arrow(
+      file = glue('{proc_data}/microdata_{b}.txt'),
+      delim = '|',
+      col_names = FALSE,
+      as_data_frame = FALSE
+    )
+
+  col_names <-
+    read_delim( 
+      file = glue('{proc_data}/vdict_qdesc_{b}.txt'),
+      delim = '|',
+      show_col_types = FALSE
+    )
+
+  names(microdata) <- col_names$q_code
+
+  ## microdata %>%
+  ##   filter(ano==2022) %>%
+  ##   group_by(s11002) %>%
+  ##   count(.drop = FALSE) %>%
+  ##   arrange(s11002) %>%
+  ##   collect()
+
+  write_parquet(
+    microdata, 
+    sink = glue('{proc_data}/microdata_{b}.parquet')
   )
+  
+}
 
-col_names <-
-  read_delim(
-    file = paste0(proc_data, 'col_names.txt'),
-    delim = '|',
-    show_col_types = FALSE
-  )
-
-names(microdata) <- col_names$var
-
-## microdata %>%
-##   filter(ano==2022) %>%
-##   group_by(s11002) %>%
-##   count(.drop = FALSE) %>%
-##   arrange(s11002) %>%
-##   collect()
-
-write_parquet(
-  microdata,
-  paste0(proc_data, 'microdata.parquet')
-)
 #+end_src
 
 
