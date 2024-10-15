@@ -4976,7 +4976,19 @@ parse_variables_dictionary_using_GNU_R(){
 #+begin_src sh
 fetch_and_convert_microdata(){
 
-    for uf in SP1; do # AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO; do
+    # cria arquivo csv com linha de títulos de coluna para cada base
+    for b in domi pess emig mort; do
+        cut \
+            --delimiter='|' \
+            --fields=2 \
+            ${proc_data}/vdict_qdesc_${b}.txt | \
+            tail -n+2 | \
+            sed -z 's/\n/,/g' | \
+            sed 's/.$/\n/' | \
+            tr -d ' ' > ${proc_data}/microdata_${b}.csv
+    done
+
+    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO; do
 
         echo "Baixando os microdados de $mdata_url/$uf.zip..."
         R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/$uf.zip' )"
@@ -4995,16 +5007,6 @@ fetch_and_convert_microdata(){
             echo "  Base: ${b}"
             cut_args=$(cat ${proc_data}/cut_character_args_${b}.txt )
 
-            # cria arquivo csv com linha de títulos de coluna
-            cut \
-                --delimiter='|' \
-                --fields=2 \
-                ${proc_data}/vdict_qdesc_${b}.txt | \
-                tail -n+2 | \
-                sed -z 's/\n/,/g' | \
-                sed 's/.$/\n/' | \
-                tr -d ' ' > ${proc_data}/microdata_${b}.csv
-            
             for f in $(find ${raw_data}/ -print | grep -i ${b}); do
 
                 echo "    Arquivo: ${f}"
@@ -5026,7 +5028,7 @@ fetch_and_convert_microdata(){
 }
 #+end_src
 
-** TODO conversão dos microdados em formato parquet
+** conversão dos microdados em formato parquet
 
 #+begin_src R :tangle ./gnur_transform_microdata_into_parquet.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_transform_microdata_into_parquet.R
@@ -5059,13 +5061,13 @@ base <- c("domi", "pess", "emig", "mort")
 for (b in base){
 
   ## importa todos os campos como string
-  ##    Fonte >>> adaptado de https://stackoverflow.com/a/71305598
   col_names <-
     read_delim(
       file = glue('{proc_data}/vdict_qdesc_{b}.txt'),
       delim='|',
       show_col_types = FALSE
     )
+  ## adaptado de https://stackoverflow.com/a/71305598
   chosen_schema <- schema(
     purrr::map( col_names$q_code, ~Field$create(name = .x, type = string()))
   )
