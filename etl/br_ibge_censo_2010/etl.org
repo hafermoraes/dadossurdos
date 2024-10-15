@@ -4977,15 +4977,15 @@ parse_variables_dictionary_using_GNU_R(){
 fetch_and_convert_microdata(){
 
     # cria arquivo csv com linha de títulos de coluna para cada base
-    for b in domi pess emig mort; do
+    base="domi pess emig mort"
+    for b in ${base}; do
         cut \
             --delimiter='|' \
             --fields=2 \
             ${proc_data}/vdict_qdesc_${b}.txt | \
             tail -n+2 | \
             sed -z 's/\n/,/g' | \
-            sed 's/.$/\n/' | \
-            tr -d ' ' > ${proc_data}/microdata_${b}.csv
+            sed 's/.$/\n/' > ${proc_data}/microdata_${b}.csv
     done
 
     for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO; do
@@ -5000,7 +5000,6 @@ fetch_and_convert_microdata(){
         rm -rf ${raw_data}/$uf.zip
 
         echo "Convertendo as bases de ${uf} para formato delimitado por ','"
-        base="domi pess emig mort"
 
         for b in ${base}; do
 
@@ -5015,7 +5014,8 @@ fetch_and_convert_microdata(){
                 cut \
                     --output-delimiter=',' \
                     --characters=$cut_args \
-                    ${f} >> \
+                    ${f} | \
+                    tr -d ' ' >> \
                     ${proc_data}/microdata_${b}.csv
 
                 # removendo arquivo original
