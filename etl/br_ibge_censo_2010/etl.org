@@ -4976,7 +4976,7 @@ parse_variables_dictionary_using_GNU_R(){
 #+begin_src sh
 fetch_microdata(){
 
-    for uf in AC AL AM AP ; do # BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO; do
+    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO; do
 
         echo "Baixando os microdados de $mdata_url/$uf.zip..."
         R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/$uf.zip' )"
@@ -4997,24 +4997,28 @@ fetch_microdata(){
 #+begin_src sh
 prepare_microdata_for_data_ingestion(){
 
+    echo "Convertendo as bases do formato largura fixa para delimitado"
+    
     base="domi pess emig mort"
 
     for b in ${base}; do
 
-        echo $b
+        echo "  Base: ${b}"
         cut_args=$(cat ${proc_data}/cut_character_args_${b}.txt )
 
         for uf in $(find ${raw_data}/ -print | grep -i ${b}); do
 
-            echo ${uf}
+            echo "    UF: ${uf}"
 
-            # from fixed width format to pipe (|) delimited text file
+            # convertendo base unificada para formato delimitado por '|'
             cut \
                 --output-delimiter='|' \
                 --characters=$cut_args \
                 ${uf} >> \
                 ${proc_data}/microdata_${b}.txt
 
+            # removendo arquivo original
+            rm ${uf}
 
         done
     done
@@ -5114,7 +5118,7 @@ main(){
 
     prepare_microdata_for_data_ingestion
 
-    # convert_microdata_to_parquet_using_arrow_and_GNU_R
+    convert_microdata_to_parquet_using_arrow_and_GNU_R
 
 }
 
