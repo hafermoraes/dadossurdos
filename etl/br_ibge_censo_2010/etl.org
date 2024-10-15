@@ -5051,6 +5051,7 @@ proc_data <- paste0(src_dir, 'data')
 ##  - mort, base de mortalidade
 ##
 base <- c("domi", "pess", "emig", "mort")
+b <- base[2]
 
 ## o próximo bloco de código
 ##   1. itera cada elemento do vetor 'base'
@@ -5082,12 +5083,18 @@ for (b in base){
       schema = chosen_schema,
       col_names=TRUE
     )
+  ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ## desativando este passo por limitação de memória...
+  ## aparentemente antes de escrever em disco a função
+  ## write_parquet() lê os dados na memória, por isso não
+  ## é viável usar essa solução...
+  ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ## escrita dos dados em formato 'parquet' para redução
   ## do tamanho físico do arquivo na pasta de destino
-  write_parquet(
-    microdata_pipe_delimited, 
-    sink = glue('{proc_data}/microdata_{b}.parquet')
-  )
+  ## write_parquet(
+  ##   microdata_pipe_delimited, 
+  ##   sink = glue('{proc_data}/microdata_{b}.parquet')
+  ## )
 }
 
 #+end_src
