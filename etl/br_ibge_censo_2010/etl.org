@@ -5017,18 +5017,28 @@ write_parquet(
 
 #+begin_src sh
 fetch_and_transform_microdata(){
-    base="domic pess emig mort"
+base="domi pess emig mort"
 
-    for b in ${base}; do
 
-        echo $b
+for b in ${base}; do
 
-        for i in $(find /tmp/etl -print | grep -i ${b}); do
-            #echo $i
-            echo $(wc -l $i)
-        done
+    echo $b
+    cut_args=$(cat /tmp/etl/br_ibge_censo_2010/data/cut_character_args_${b}.txt )
+
+    for i in $(find /tmp/etl/br_ibge_censo_2010/raw/ -print | grep -i ${b}); do
+
+        echo $i
+
+        # from fixed width format to pipe (|) delimited text file
+        cut \
+            --output-delimiter='|' \
+            --characters=$cut_args \
+            $i >> \
+            /tmp/etl/br_ibge_censo_2010/data/microdata_${b}.txt
+
+
     done
-}
+
 #+end_src>
 
 
