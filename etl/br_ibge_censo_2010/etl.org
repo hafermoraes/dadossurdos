@@ -1,0 +1,5189 @@
+#+property: header-args:sh  :tangle ./etl.sh
+
+* orquestração do processo de extração, tratamento e carga dos dados brutos do censo demográfico brasileiro de 2010
+
+Este arquivo -- =etl.org= -- é a base de geração dos códigos nas linguagens *shell* e *GNU R* usadas no tratamento das informações dos microdados.
+
+Arquivos com extensão *.org* correspondem ao modo Org no editor de texto GNU Emacs.
+
+Em cada bloco de código a seguir pode haver a opção denominada *tangle*, que é responsável por realizar a exportação do conteúdo dos scripts em arquivos locais.
+Blocos de código na linguagem *shell* são exportados no arquivo =./etl.sh= que é o script que orquestra a totalidade dos passos necessários para baixar, tratar e disponibilizar os microdados e o dicionário de variáveis.
+
+O comando tangle no editor GNU Emacs pode ser executado com a combinação de teclas =C-c C-v t=, que equivale a executar o comando =org-babel-tangle=.
+
+* cabeçalho do script =etl.sh=
+
+#+begin_src sh
+#!/bin/bash
+
+# (https://askubuntu.com/a/1455039)
+set -eu
+
+echo "extração e preparação dos microdados para =br-ibge-censo-2010=\n"
+#+end_src
+
+* variáveis globais usadas no script =etl.sh=
+
+#+begin_src sh
+# endereço na internet no qual estão armazenados os microdados e o dicionário de variáveis
+base_url=ftp://ftp.ibge.gov.br
+base_url=${base_url}/Censos
+base_url=${base_url}/Censo_Demografico_2010
+base_url=${base_url}/Resultados_Gerais_da_Amostra
+base_url=${base_url}/Microdados
+mdata_url=${base_url}
+vdict_url=${base_url}/Documentacao.zip
+
+# diretórios nos quais serão armazenados os dados brutos (raw), tratados (data) e
+# convertidos no formato parquet para agilidade e menor espaço
+src_dir=/tmp/etl/br_ibge_censo_2010
+raw_data=${src_dir}/raw
+proc_data=${src_dir}/data
+parq_data=${src_dir}/parquet
+#+end_src
+
+* criação de diretórios temporários
+
+#+begin_src sh
+create_temporary_directories(){
+
+    echo "Criando diretórios temporários para dados brutos em $raw_data..."
+    rm -rf ${raw_data}
+    mkdir -p ${raw_data}
+
+    echo "Criando diretórios temporários para dados tratados em $proc_data..."
+    rm -rf ${proc_data}
+    mkdir -p ${proc_data}
+
+    echo "Criando diretórios temporários para dados colunares em $parq_data..."
+    rm -rf ${parq_data}
+    mkdir -p ${parq_data}/{domi,pess,emig,mort}
+
+}
+#+end_src
+
+* dicionário de variáveis
+** download do dicionário de variáveis e arquivos auxiliares
+
+#+begin_src sh
+fetch_variables_dictionary(){
+
+    echo "Baixando o dicionário de variáveis de $vdict_url..."
+    R --quiet --vanilla -e "curl::curl_download( '${vdict_url}', '${raw_data}/vdict.zip' )"
+
+    echo 'Descompactando o dicionário de variáveis do arquivo =vdict.zip=...'
+    unzip ${raw_data}/vdict.zip -d ${raw_data}
+
+    echo 'Removendo da pasta temporária o arquivo compactado =vdict.zip= file...'
+    rm -rf ${raw_data}/vdict.zip
+
+}
+#+end_src
+
+** entendimento do dicionário
+
+A coluna =tipo= assume valores =A=, =C= e =N=.
+
+Ao que tudo indica,
+- =A= refere-se aos dados auxiliares, disponíveis em outros arquivos presentes no arquivo compactado =Documentacao.zip=, para variáveis como /área de ponderação/, /código de municípios/, /códigos de cursos superiores (graduação, mestrado e doutorado)/ entre outras.
+- =C= refere-se aos dados categóricos, para os quais o dicionário de variáveis está disponível diretamente no layout (arquivo excel)
+- =N= refere-se provavelmente aos dados numéricos, para os quais não é necessário um dicionário de variáveis já que a variável está pronta para uso, sendo somente necessário convertê-la para o tipo de dados (inteiro, data, número decimal, etc...) necessário para análises
+
+#+begin_src R :tangle ./gnur_vardict_understanding.R
+## gnur_vardict_understanding.R
+##
+## entendimento do dicionário de variáveis do censo demográfico brasileiro de 2010 (br_ibge_censo_2010)
+
+library(readxl)   # read_excel
+library(dplyr)    # mutate, transmute, filter, rename, bind_rows, arrange
+library(stringr)  # str_split, str_to_lower, str_trim, str_locate
+library(tidyr)    # unnest
+library(glue)     # glue
+library(readr)    # write_delim
+
+src_dir <- '/tmp/etl/br_ibge_censo_2010/'
+raw_data <- paste0(src_dir, 'raw/')
+proc_data <- paste0(src_dir, 'data/')
+
+layout_xls_file <- paste0(raw_data, 'DocumentaЗ╞o/Layout/Layout_microdados_Amostra.xls')
+
+vdict <-
+  bind_rows( # Agregação dos dicionários de variáveis de cada base do censo
+    ## Dicionário de variáveis dos microdados de Domicílios
+    read_excel(
+      path = layout_xls_file,
+      sheet = 'DOMI',
+      range = 'A3:L78',
+      col_types = 'text',
+      col_names = FALSE
+    ) %>%
+    mutate(base = 'domi'),
+    ## Dicionário de variáveis dos microdados de Pessoas
+    read_excel(
+      path = layout_xls_file,
+      sheet = 'PESS',
+      range = 'A3:L246',
+      col_types = 'text',
+      col_names = FALSE
+    ) %>%
+    mutate(base = 'pess'),
+    ## Dicionário de variáveis dos microdados de Emigração
+    read_excel(
+      path = layout_xls_file,
+      sheet = 'EMIG',
+      range = 'A3:L21',
+      col_types = 'text',
+      col_names = FALSE
+    ) %>%
+    mutate(base = 'emig'),
+    ## Dicionário de variáveis dos microdados de Mortalidade
+    read_excel(
+      path = layout_xls_file,
+      sheet = 'MORT',
+      range = 'A3:L21',
+      col_types = 'text',
+      col_names = FALSE
+    ) %>%
+    mutate(base = 'mort')
+  ) %>%
+  ## Troca dos nomes de colunas
+  rename(
+    var = 1, desc = 2, pos_ini = 8, pos_fin = 9, int_part = 10, dec_part = 11, tipo = 12
+  ) %>%
+  ## remove as quebras de linha da coluna 'tipo'
+  mutate(
+    tipo = str_remove_all(string = tipo, pattern = '\n')
+  ) %>%
+  ## seleção somente das colunas necessárias para análise
+  select(
+    base, var, desc, pos_ini, pos_fin, int_part, dec_part, tipo
+  )
+
+
+## tipo == A
+##      refere-se a dados auxiliares, disponíveis em outros arquivos
+##      presentes no arquivo compactado =Documentacao.zip=, para
+##      variáveis como área de ponderação, código de municípios,
+##      códigos de cursos superiores (graduação, mestrado e doutorado)
+##      entre outras.
+vdict_typeA <-
+  vdict %>%
+  filter(
+    grepl(pattern = 'a', tipo, ignore.case = TRUE)
+  ) %>%
+  arrange(var)
+
+
+## tipo == C
+##      refere-se aos dados categóricos, para os quais o dicionário
+##      de variáveis está disponível diretamente no layout
+##      (arquivo excel)
+vdict_typeC <-
+  vdict %>%
+  filter(
+    grepl(pattern = 'c', tipo, ignore.case = TRUE)
+  ) %>%
+  arrange(var)
+
+
+## tipo == N
+##      refere-se provavelmente aos dados numéricos, para os quais
+##      não é necessário um dicionário de variáveis já que a variável
+##      está pronta para uso, sendo somente necessário convertê-la
+##      para o tipo de dados (inteiro, data, número decimal, etc...)
+##      necessário para análises
+vdict_typeN <-
+  vdict %>%
+  filter(
+    grepl(pattern = 'n', tipo, ignore.case = TRUE)
+  ) %>%
+  arrange(var)
+
+
+## tipo == C
+##      Observações:
+##        1. variáveis do tipo C no dicionário de variáveis trazem,
+##           na grande maioria dos casos, os códigos e as respostas
+##           por escrito dentro de uma mesma célula, com quebras de
+##           linha -- caracter \n -- no conteúdo da célula.
+##        2. é necessário portanto tratar os dados para separar o
+##           enunciado da questão do censo, geralmente a primeira
+##           na célula, da lista de respostas (código e resposta por
+##           escrito).
+##        3. o código a seguir gera o conteúdo, ou corpo, da função
+##           tribble que traz o dicionário de variáveis tratado
+##           para todas as variáveis do tipo =C=
+vdict %>%
+  filter(
+    grepl(pattern = 'c', tipo, ignore.case = TRUE)
+  ) %>%
+  transmute(
+    ## converte 'var' para somente letras minúsculas
+    var = str_to_lower(var),
+    ## cria, na coluna 'answer', a lista formada pelos conteúdos
+    ## entre as quebras de linha \n presentes dentro da célula da
+    ## coluna 'desc'
+    answer = str_split( string = desc, pattern='\n') #
+  ) %>%
+  ## cada conteúdo entre as quebras de linha \n nas células da
+  ## coluna 'answer' torna-se uma linha própria e repete o
+  ## conteúdo da coluna 'var'
+  unnest(answer) %>%
+  ## o conjunto de alterações a seguir precisa ocorrer no nível
+  ## das linhas da tabela, por isso é necessário explicitamente
+  ## chamar o comando rowwise()
+  rowwise() %>%
+  ## tratamento das respostas de questões do tipo =C=
+  mutate(
+    ## as respostas têm o código e o conteúdo por escrito
+    ## separados pelo hífen, então a coluna 'sep' traz a posição
+    ## do caracter '-' no string contida na coluna 'answer'
+    ## exemplo: se o conteúdo de 'answer' fosse
+    ##   "01 - teste"
+    ## a função str_locate( string = answer, pattern = '-')[1]
+    ## retorna 4, pois o hífen está na quarta posição
+    sep = str_locate( string = answer, pattern = '-')[1],
+    ## a_code, o código da resposta, está antes do hífen
+    a_code = substr(answer, start = 1, stop = sep-1 ),
+    ## e a_desc, a resposta por escrito, depois do hífen
+    a_desc = substr(answer, start = sep + 1, stop = str_length(answer)),
+    ## remove espaços redundantes de ambas as novas variáveis
+    ## tratadas 'a_code' e 'a_desc'
+    a_code = str_trim(a_code),
+    a_desc = str_trim(a_desc)
+  ) %>%
+  ## NAs são introduzidos geralmente nas linhas de enunciados
+  ## da pergunta já que elas não contém o caracter '-' separando
+  ## código e resposta por escrito.
+  ## essas linhas são portanto ignoradas com o comando na.omit()
+  na.omit() %>%
+  ## com os dados tratados, o corpo da função tribble, contendo
+  ## as colunas 'var', 'a_code' e 'a_desc' é construído seguindo
+  ## o padrão
+  ##      'var', 'a_code', 'a_desc',
+  transmute(
+    res = glue("'{var}',     '{a_code}', '{a_desc}',")
+  ) %>%
+  ## e escrito em disco, como arquivo de texte delimitado por
+  ## pipe, caracter '|', para uso posterior diretamente na longa
+  ## seção de variáveis tratadas do tipo =C=
+  write_delim(
+    file = glue('{proc_data}/typeC_tribble_bodies.txt'),
+    quote = 'none',
+    delim = '|',
+    col_names = FALSE
+  )
+
+
+
+cut_qdesc_aux <-
+  ## tabela auxiliar para determinação de
+  ##  1. argumentos da ferramenta de linha de commando 'cut' usada
+  ##     para 'recortar' as colunas dos microdados, transformando
+  ##     o arquivo do tipo 'largura fixa' para o tipo 'delimitado'
+  ##  2. enunciados de questões (q_desc), ignorando as demais
+  ##     informações da célula 'desc' como quebras de linhas, bem
+  ##     como códigos e nomes por escrito das respostas
+  vdict %>%
+  ## é necessário 'ativar' o modo rowwise() para que o próximo
+  ## bloco (mutate) opere no nível de linhas. Logo em seguida o
+  ## modo rowwise() será 'desativado' com o comando 'ungroup()'
+  rowwise() %>%
+  mutate(
+    ## converte 'var' para somente letras minúsculas
+    var = str_to_lower(var),
+    ## identificando a posição da quebra de linha '\n' na string
+    ## e salvando-a na coluna 'newline_pos'
+    newline_pos = str_locate( string = desc, pattern = '\n')[1],
+    ## criando a variável 'substr_stop_arg' para guardar a posição
+    ## de parada a ser usada na função substr(). Isso é necessário
+    ## já que a str_locate() devolve NA nos casos em que a string
+    ## 'desc' não contém a quebra de linha '\n'. Nesses casos, a
+    ## 'substr_stop_arg' retorna o comprimento da string 'desc'
+    substr_stop_arg = ifelse( is.na(newline_pos), str_length(desc), newline_pos),
+    ## a nova variável 'q_desc' guarda então somente o enunciado
+    ## da pergunta do censo, ignorando todo o resto do conteúdo da
+    ## célula.
+    q_desc = substr( desc, start = 1, stop = substr_stop_arg),
+    ## adicionalmente em alguns casos é necessário remover os
+    ## caracteres ':' e '\n' remanescentes de enunciados de
+    ## questões do censo,
+    q_desc = str_remove_all(string = q_desc, pattern = ':|\n'),
+    ## converter a 'q_desc' para letras minúsculas
+    q_desc = str_to_lower(q_desc),
+    ## e remover espaços redundantes do enunciado
+    q_desc = str_trim(q_desc)
+    ) %>%
+  ## 'desativa' o modo de operação linha-a-linha do comando
+  ## rowwise() 'ativado' acima.
+  ungroup() %>%
+  ## seleciona as colunas relevantes para os próximos passos
+  ## de exportação dos argumentos do comando 'cut' bem como
+  ## da expoertação dos enunciados tratados das questões do
+  ## censo
+  transmute(
+    base,
+    ## renomeia 'var' para 'q_code', o código da variável
+    q_code = var,
+    q_desc,
+    pos_ini,
+    pos_fin,
+    ## quantos dígitos tem a parte inteira da variável cujo
+    ## tipo é N?
+    int_part,
+    ## quantas casas decimais tem a parte decimal da variável
+    ## cujo tipo é N?
+    ##   Note: quando (1) o tipo da variável é A ou C e (2) a
+    ##         variável do tipo N é inteira, a variável 'dec'
+    ##         no dicionário de variáveis original do IBGE
+    ##         é indefinida e no GNU R tem o valor NA. Nestes
+    ##         casos substitui-se NA pelo número zero (0).
+    dec_part = ifelse( is.na(dec_part), 0, dec_part),
+    ## qual é a extensão de cada variável nos microdados? Em
+    ## outras palavras, de qual a qual caracter estão as
+    ## respostas de cada variável do censo?
+    cut_character_args = paste0(
+      pos_ini,
+      '-',
+      as.numeric(pos_ini) + as.numeric(int_part) + as.numeric(dec_part) -1
+    ),
+    check = paste0(pos_ini,'-',pos_fin) == cut_character_args
+  )
+
+
+## ----------------------------------------------------------
+##  base de domicílios
+## ----------------------------------------------------------
+##
+## exporta os argumentos 'character' da função 'cut'
+cut_qdesc_aux %>%
+  filter(base == 'domi') %>%
+  summarise(
+    args = str_flatten(cut_character_args, ',')
+  ) %>%
+  write_lines(
+    file = glue('{proc_data}/cut_character_args_domi.txt')
+  )
+##
+## exporta o código e enunciado da questão
+cut_qdesc_aux %>%
+  select(base, q_code, q_desc) %>%
+  filter( base == 'domi') %>%
+  write_delim(
+    file = glue('{proc_data}/vdict_qdesc_domi.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
+
+
+
+## ----------------------------------------------------------
+##  base de pessoas
+## ----------------------------------------------------------
+##
+## exporta os argumentos 'character' da função 'cut'
+cut_qdesc_aux %>%
+  filter(base == 'pess') %>%
+  summarise(
+    args = str_flatten(cut_character_args, ',')
+  ) %>%
+  write_lines(
+    file = glue('{proc_data}/cut_character_args_pess.txt')
+  )
+##
+## exporta o código e enunciado da questão
+cut_qdesc_aux %>%
+  select(base, q_code, q_desc) %>%
+  filter( base == 'pess') %>%
+  write_delim(
+    file = glue('{proc_data}/vdict_qdesc_pess.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
+
+
+## ----------------------------------------------------------
+##  base de emigrantes
+## ----------------------------------------------------------
+##
+## exporta os argumentos 'character' da função 'cut'
+cut_qdesc_aux %>%
+  filter(base == 'emig') %>%
+  summarise(
+    args = str_flatten(cut_character_args, ',')
+  ) %>%
+  write_lines(
+    file = glue('{proc_data}/cut_character_args_emig.txt')
+  )
+##
+## exporta o código e enunciado da questão
+cut_qdesc_aux %>%
+  select(base, q_code, q_desc) %>%
+  filter( base == 'emig') %>%
+  write_delim(
+    file = glue('{proc_data}/vdict_qdesc_emig.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
+
+
+## ----------------------------------------------------------
+##  base de mortalidade
+## ----------------------------------------------------------
+##
+## exporta os argumentos 'character' da função 'cut'
+cut_qdesc_aux %>%
+  filter(base == 'mort') %>%
+  summarise(
+    args = str_flatten(cut_character_args, ',')
+  ) %>%
+  write_lines(
+    file = glue('{proc_data}/cut_character_args_mort.txt')
+  )
+##
+## exporta o código e enunciado da questão
+cut_qdesc_aux %>%
+  select(base, q_code, q_desc) %>%
+  filter( base == 'mort') %>%
+  write_delim(
+    file = glue('{proc_data}/vdict_qdesc_mort.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
+#+end_src
+
+** tratamento individual das variáveis
+*** tipo A: variáveis que compartilham as mesmas opções de resposta
+**** v0001/v6222/v6252/v6262/v6362/v6602 unidade da federação
+
+As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigração =EMIG= e mortalidade =MORT= compartilham dos mesmos códigos e nomes por extenso referentes à unidade da federação.
+
+- v0001 Unidade da federação
+- v6222 Unidade da federação de nascimento
+- v6252 Unidade da federação de residência anterior
+- v6262 Unidade da federação de residência em 31 de julho de 2005
+- v6362 Unidade da federação que frequentava escola (ou creche)
+- v6602 Em que unidade da federação trabalhava
+
+#+begin_src R :tangle ./gnur_vardict_typeA_uf.R
+## gnur_vardict_typeA_uf.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação das variáveis relacionadas à Unidade da Federação (UF),
+## cujo conteúdo é formado por 2 caracteres em cada variável a seguir
+##
+##   v0001 Unidade da federação
+##   v6222 Unidade da federação de nascimento
+##   v6252 Unidade da federação de residência anterior
+##   v6262 Unidade da federação de residência em 31 de julho de 2005
+##   v6362 Unidade da federação que frequentava escola (ou creche)
+##   v6602 Em que unidade da federação trabalhava
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_lines
+library(glue)     # glue_data
+library(tidyr)    # expand_grid
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 10.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos
+##             àqueles utilizados na língua portuguesa.
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das unidades da federação utilizadas no censo demográfico
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Divis╞o Territorial do Brasil/',
+      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
+    ),                   # caminho até o arquivo
+    sheet = 'Município', # aba no qual os dados estão disponíveis
+    range = 'A4:B5568',  # importa somente dados de UF
+    col_types = 'text',  # ignora tipos de dados
+    col_names = FALSE    # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_2 = 1,           # primeira coluna traz o código da uf (2 caracteres)
+    uf = 2               # segunda coluna traz o nome da uf
+  ) %>%
+  unique() %>% # obs: os pares (cod_2, uf) repetem-se muitas vezes no arquivo
+  transmute(
+    a_code = cod_2,
+    a_desc = uf
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeA_common_uf.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0002/v6254/v6264/v6364/v6604 município
+
+As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigração =EMIG= e mortalidade =MORT= compartilham dos mesmos códigos e nomes por extenso referentes aos municípios do país.
+
+- v0002 Código do Município
+- v6254 Município de residência anterior
+- v6264 Município de residência em 31 de julho de 2005
+- v6364 Município que frequentava escola (ou creche)
+- v6604 Em que município trabalhava
+
+#+begin_src R :tangle ./gnur_vardict_typeA_municipio.R
+## gnur_vardict_typeA_municipio.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação das variáveis relacionadas ao código do município,
+## cujo conteúdo nos microdados é formado por 5 caracteres em cada
+## variável a seguir
+##
+##   v0002 Código do Município
+##   v6254 Município de residência anterior
+##   v6264 Município de residência em 31 de julho de 2005
+##   v6364 Município que frequentava escola (ou creche)
+##   v6604 Em que município trabalhava
+##
+## Observações: 1. Originalmente na divisão territorial brasileira, o
+##                 código do município é formado por 7 caracteres.
+##                 Por este motivo não se pode fazer análises corretas
+##                 somente com os 5 caracteres, pois há duplicação
+##                 (exemplo:
+##                   1200054 Assis Brasil no Acre e
+##                   2600054 Abreu e Lima em Pernambuco
+##                 correspondem ambos ao 'código do município' 00054
+##                 )
+##               2. o código de município conforme indicado na divisão
+##                  territorial brasileira é formado, no censo, pelas
+##                  variáveis v0001 e v0002. No exemplo:
+##                   v0001=12 v0002=00054 >> 1200054 Assis Brasil/AC
+##                   v0001=26 v0002=00054 >> 2600054 Abreu e Lima/PE
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_lines
+library(glue)     # glue_data
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 10.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos
+##             àqueles utilizados na língua portuguesa.
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## dos municípios utilizados no censo demográfico
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Divis╞o Territorial do Brasil/',
+      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
+    ),                   # caminho até o arquivo
+    sheet = 'Município', # aba no qual os dados estão disponíveis
+    range = 'G4:H5568',  # importa somente dados dos municípios
+    col_types = 'text',  # ignora tipos de dados
+    col_names = FALSE    # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_7 = 1,           # primeira coluna traz o código do município (7 caracteres)
+    municipio = 2        # segunda coluna traz o nome do município
+  ) %>%
+  transmute(
+    cod_7,
+    a_code = substr(cod_7, start = 3, stop = 7),
+    a_desc = municipio
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeA_common_municipio.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v3061/v6224/v6256/v6266/v6366/v6606 país
+
+As seguintes variáveis das bases de pessoas =PESS= e emigração =EMIG= compartilham dos mesmos códigos e nomes por extenso referentes ao país.
+
+- v3061 país de residência em 31 de julho de 2010
+- v6224 qual é o país estrangeiro de nascimento
+- v6256 país de residência anterior
+- v6266 país de residência em 31 de julho de 2005
+- v6366 país estrangeiro que frequentava escola (ou creche)
+- v6606 em que país estrangeiro trabalhava
+
+#+begin_src R :tangle ./gnur_vardict_typeA_pais.R
+## gnur_vardict_typeA_pais.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação das variáveis relacionadas ao país,
+## cujo conteúdo nos microdados é formado por 7 caracteres em cada
+## variável a seguir
+##
+##   v3061 país de residência em 31 de julho de 2010
+##   v6224 qual é o país estrangeiro de nascimento
+##   v6256 país de residência anterior
+##   v6266 país de residência em 31 de julho de 2005
+##   v6366 país estrangeiro que frequentava escola (ou creche)
+##   v6606 em que país estrangeiro trabalhava
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_lines
+library(glue)     # glue_data
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 12.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos
+##             àqueles utilizados na língua portuguesa.
+
+
+## País de nascimento (7 caracteres)
+##
+##  v6224 Qual é o país estrangeiro de nascimento
+##  v3061 País de residência em 31 de julho de 2010           >>> Base de Emigração
+##  v6256 País de residência anterior
+##  v6266 País de residência em 31 de julho de 2005
+##  v6366 País estrangeiro que frequentava escola (ou creche)
+##  v6606 Em que país estrangeiro trabalhava
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'MigraЗ╞o e Deslocamento_Paises estrangeiros.xls'
+    ),
+    sheet = 'País estrangeiro',
+    range = 'B8:C221',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(nome = 1, cod_7 = 2) %>%
+  na.omit() %>%
+  transmute(
+    a_code = cod_7,
+    a_desc = nome
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeA_common_pais.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6461/v6462 ocupação
+
+As seguintes variáveis da base de pessoas =PESS= compartilham dos mesmos códigos e nomes por extenso referentes à ocupação
+
+- v6461 Ocupação
+- v6462 Qual era a ocupação que exercia no trabalho que tinha?
+
+#+begin_src R :tangle ./gnur_vardict_typeA_ocupacao.R
+## gnur_vardict_typeA_ocupacao.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação das variáveis relacionadas à ocupação
+##
+##   v6461 Ocupação
+##   v6462 Qual era a ocupação que exercia no trabalho que tinha?
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_lines
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 12.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos
+##             àqueles utilizados na língua portuguesa.
+
+##   v6461 Ocupação
+##   v6462 Qual era a ocupação que exercia no trabalho que tinha?
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'OcupaЗ╞o COD 2010.xls'
+    ),
+    sheet = 'CÓDIGO',
+    range = 'A3:B744',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename( a_code = 1, a_desc = 2) %>%
+  na.omit()
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeA_common_ocupacao.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6471/v6472 atividade
+
+As seguintes variáveis da base de pessoas =PESS= compartilham dos mesmos códigos e nomes por extenso referentes à atividade
+
+- v6471 Atividade
+- v6472 Qual era a atividade principal do empreendimento em que tinha esse trabalho?
+
+#+begin_src R :tangle ./gnur_vardict_typeA_atividade.R
+## gnur_vardict_typeA_atividade.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação das variáveis relacionadas à atividade,
+## variável a seguir
+##
+##   v6471 Atividade
+##   v6472 Qual era a atividade principal do empreendimento em que tinha esse trabalho?
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_lines
+library(tidyr)    # fill
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 12.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos
+##             àqueles utilizados na língua portuguesa.
+
+
+## v6471 Atividade
+## v6472 Qual era a atividade principal do empreendimento em que tinha esse trabalho?
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'Atividade CNAE_DOM 2.0 2010.xls'
+    ),
+    sheet = 'CNAE DOM. 2.0 Divulgação',
+    range = 'A3:D352',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename( secao = 1, divisao = 2, classes = 3, denominacao = 4) %>%
+  fill( secao, divisao) %>%
+  transmute( a_code = classes, a_desc = denominacao) %>%
+  na.omit()
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeA_common_atividade.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** tipo A: variáveis com respostas próprias
+**** v1002 código da mesorregião
+
+#+begin_src R :tangle ./gnur_vardict_typeA_meso.R
+## gnur_vardict_typeA_meso.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável relacionada ao código da mesorregião
+## cujo conteúdo nos microdados é formado por 2 caracteres
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 10.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos
+##             àqueles utilizados na língua portuguesa.
+
+## v1002 Código da Mesorregião (2 caracteres)
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Divis╞o Territorial do Brasil/',
+      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
+    ),
+    sheet = 'Município',
+    range = 'C4:D5568',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(cod_4 = 1, meso = 2) %>%
+  unique () %>%
+  transmute(
+    var = 'v1002',
+    a_code = cod_4,
+    a_desc = meso
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeA_v1002.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v1003 código da microrregião
+
+#+begin_src R :tangle ./gnur_vardict_typeA_micro.R
+## gnur_vardict_typeA_micro.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável relacionada ao código da microrregião
+## cujo conteúdo nos microdados é formado por 3 caracteres
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 10.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos
+##             àqueles utilizados na língua portuguesa.
+
+## v1003 Código da Microrregião (3 caracteres)
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Divis╞o Territorial do Brasil/',
+      'Unidades da FederaЗ╞o, Mesorregiфes, microrregiфes e municбpios 2010.xls'
+    ),
+    sheet = 'Município',
+    range = 'E4:F5568',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(cod_3 = 1, micro = 2) %>%
+  unique () %>%
+  transmute(
+    var = 'v1003',
+    a_code = cod_3,
+    a_desc = micro
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeA_v1003.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v1004 código da região metropolitana
+
+#+begin_src R :tangle ./gnur_vardict_typeA_metro.R
+## gnur_vardict_typeA_metro.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "código da região metropolitana"
+## cujo conteúdo nos microdados é formado por 2 caracteres
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## v1004 Código da Região Metropolitana (2 caracteres)
+##
+## Observação:
+##  - embora indicado no dicionário de variáveis oficial do IBGE,
+##    não consta dos arquivos a tabela com os códigos das regiões
+##    metropolitanas, motivo pelo qual é necessário recorrer a
+##    fontes não oficiais.
+##    os dados são provenientes do repositório 'censobr' do ipeaGIT
+##    https://github.com/ipeaGIT/censobr/blob/3a3fab5e97bc3a4baae3bb3ea5e3154e2651cebf/R/add_labels_families.R#L17
+##    e foram acessados em 09.10.2024 às 18:35 (horário de Brasília)
+##
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v1004',    '01', 'Belém',
+  'v1004',    '02', 'Grande São Luís',
+  'v1004',    '03', 'Fortaleza',
+  'v1004',    '04', 'Natal',
+  'v1004',    '05', 'Recife',
+  'v1004',    '06', 'Maceió',
+  'v1004',    '07', 'Salvador',
+  'v1004',    '08', 'Belo Horizonte',
+  'v1004',    '09', 'Colar Metropolitano da RM de Belo Horizonte',
+  'v1004',    '10', 'Vale do Aço',
+  'v1004',    '11', 'Colar Metropolitano da RM do Vale do Aço',
+  'v1004',    '12', 'Grande Vitória',
+  'v1004',    '13', 'Rio de Janeiro',
+  'v1004',    '14', 'São Paulo',
+  'v1004',    '15', 'Baixada Santista',
+  'v1004',    '16', 'Campinas',
+  'v1004',    '17', 'Curitiba',
+  'v1004',    '18', 'Londrina',
+  'v1004',    '19', 'Maringá',
+  'v1004',    '20', 'Florianópolis',
+  'v1004',    '21', 'Área de Expansão Metropolitana da RM de Florianópolis',
+  'v1004',    '22', 'Núcleo Metropolitano da RM Vale do Itajaí',
+  'v1004',    '23', 'Área de Expansão Metropolitana da RM Vale do Itajaí',
+  'v1004',    '24', 'Norte/Nordeste Catarinense',
+  'v1004',    '25', 'Área de Expansão Metropolitana da RM Norte/Nordeste Catarinense',
+  'v1004',    '26', 'Porto Alegre',
+  'v1004',    '27', 'Goiânia',
+  'v1004',    '28', 'RIDE (Região Integrada de Desenvolvimento do Distrito Federal e Entorno)'
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeA_v1004.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6352 curso superior de graduação
+
+#+begin_src R :tangle ./gnur_vardict_typeA_curso_grad.R
+## gnur_vardict_typeA_curso_grad.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "curso superior de graduação"
+## cujo conteúdo nos microdados é formado por 3 caracteres
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 12.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos
+##             àqueles utilizados na língua portuguesa.
+
+## v6352 Curso superior de graduação
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'Cursos Superiores_Estrutura 2010.xls'
+    ),
+    sheet = 'Estrutura',
+    range = 'A2:B144',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(a_code = 1, a_desc = 2) %>%
+  na.omit() %>%
+  transmute(
+    var = 'v6352',
+    a_code,
+    a_desc
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeA_v6352.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6354 curso de mestrado
+
+#+begin_src R :tangle ./gnur_vardict_typeA_curso_mestr.R
+## gnur_vardict_typeA_curso_mestr.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "curso de mestrado"
+## cujo conteúdo nos microdados é formado por 3 caracteres
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 12.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos
+##             àqueles utilizados na língua portuguesa.
+
+## v6354 Curso de mestrado
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'Cursos Mestrado_Estrutura 2010.xls'
+    ),
+    sheet = 'Estrutura',
+    range = 'A2:B135',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(a_code = 1, a_desc = 2) %>%
+  na.omit() %>%
+  transmute(
+    var = 'v6354',
+    a_code,
+    a_desc
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeA_v6354.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6356 curso de doutorado
+
+#+begin_src R :tangle ./gnur_vardict_typeA_curso_dout.R
+## gnur_vardict_typeA_curso_dout.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "curso de doutorado"
+## cujo conteúdo nos microdados é formado por 3 caracteres
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 12.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos
+##             àqueles utilizados na língua portuguesa.
+
+## v6356 Curso de doutorado
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'Cursos Doutorado_Estrutura 2010.xls'
+    ),
+    sheet = 'Estrutura',
+    range = 'A2:B132',
+    col_types = 'text',
+    col_names = FALSE
+  ) %>%
+  rename(a_code = 1, a_desc = 2) %>%
+  na.omit() %>%
+  transmute(
+    var = 'v6356',
+    a_code,
+    a_desc
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeA_v6356.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6121 religião
+
+#+begin_src R :tangle ./gnur_vardict_typeA_religiao.R
+## gnur_vardict_typeA_religiao.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável religião
+##
+##   v6121 Qual é a sua religião ou culto?
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename, mutate, rowwise, as_tibble
+library(readr)    # read_lines, write_delim
+library(stringr)  # str_conv, str_extract, str_locate
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_Gerais_da_Amostra/Microdados/Documentacao.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 12.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+## IMPORTANTE: Ao descompactar o arquivo 'Documentacao.zip' usando o
+##             'unzip' no container docker 'rocker/tidyverse:4.4.1 os
+##             nomes de diretórios, subdiretórios e arquivos perdem sua
+##             codificação de origem e ficam com caracteres externos
+##             àqueles utilizados na língua portuguesa.
+
+
+## v6121 Qual é a sua religião ou culto?
+input <-
+  read_lines(
+    file = paste0(
+      base_dir,
+      'raw/',
+      'DocumentaЗ╞o/',
+      'Anexos Auxiliares/',
+      'Religi╞o 2010.txt'
+    ),
+    skip = 2,
+    skip_empty_rows = TRUE
+  ) %>%
+  as_tibble() %>%
+  rename( orig = 1) %>%
+  rowwise() %>%
+  mutate(
+    orig = str_conv(orig, encoding = 'ISO-8859-1'),
+    space_position = str_locate(orig, ' ')[1],
+    a_code = str_extract(string = orig, pattern = '[0-9]+' ),
+    a_desc = substr(orig, start = space_position + 1, stop = str_length(orig))
+  ) %>%
+  transmute(
+    var = 'v6121',
+    a_code,
+    a_desc
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeA_v6121.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** tipo C: variáveis que compartilham respostas Sim/Não
+**** typeC Sim/Não
+
+#+begin_src R :tangle ./gnur_vardict_typeC_SimNao.R
+## gnur_vardict_typeC_SimNao.R
+##
+##
+## br_ibge_censo_2010
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  ## v0206 sanitário ou buraco para dejeções, existência
+  'v0206',     '1', 'Sim',
+  'v0206',     '2', 'Não',
+  ## v0213 rádio, existência
+  'v0213',     '1', 'Sim',
+  'v0213',     '2', 'Não',
+  ## v0214 televisão, existência
+  'v0214',     '1', 'Sim',
+  'v0214',     '2', 'Não',
+  ## v0215 máquina de lavar roupa, existência
+  'v0215',     '1', 'Sim',
+  'v0215',     '2', 'Não',
+  ## v0216 geladeira, existência
+  'v0216',     '1', 'Sim',
+  'v0216',     '2', 'Não',
+  ## v0217 telefone celular, existência
+  'v0217',     '1', 'Sim',
+  'v0217',     '2', 'Não',
+  ## v0218 telefone fixo, existência
+  'v0218',     '1', 'Sim',
+  'v0218',     '2', 'Não',
+  ## v0219 microcomputador, existência
+  'v0219',     '1', 'Sim',
+  'v0219',     '2', 'Não',
+  ## v0220 microcomputador com acesso à internet, existência
+  'v0220',     '1', 'Sim',
+  'v0220',     '2', 'Não',
+  ## v0221 motocicleta para uso particular, existência
+  'v0221',     '1', 'Sim',
+  'v0221',     '2', 'Não',
+  ## v0222 automóvel para uso particular, existência
+  'v0222',     '1', 'Sim',
+  'v0222',     '2', 'Não',
+  ## v0301 alguma pessoa que morava com você(s) estava
+  ##       morando em outro país em 31 de julho de 2010
+  'v0301',     '1', 'Sim',
+  'v0301',     '2', 'Não',
+  ## v0701 de agosto de 2009 a julho de 2010, faleceu
+  ##       alguma pessoa que morava com você(s) (inclusive
+  ##       crianças recém-nascidas e idosos)
+  'v0701',     '1', 'Sim',
+  'v0701',     '2', 'Não',
+  ## m0201 marca de imputação na v0201
+  'm0201',     '1', 'Sim',
+  'm0201',     '2', 'Não',
+  ## m2011 marca de imputação na v2011
+  'm2011',     '1', 'Sim',
+  'm2011',     '2', 'Não',
+  ## m0202 marca de imputação na v0202
+  'm0202',     '1', 'Sim',
+  'm0202',     '2', 'Não',
+  ## m0203 marca de imputação na v0203
+  'm0203',     '1', 'Sim',
+  'm0203',     '2', 'Não',
+  ## m0204 marca de imputação na v0204
+  'm0204',     '1', 'Sim',
+  'm0204',     '2', 'Não',
+  ## m0205 marca de imputação na v0205
+  'm0205',     '1', 'Sim',
+  'm0205',     '2', 'Não',
+  ## m0206 marca de imputação na v0206
+  'm0206',     '1', 'Sim',
+  'm0206',     '2', 'Não',
+  ## m0207 marca de imputação na v0207
+  'm0207',     '1', 'Sim',
+  'm0207',     '2', 'Não',
+  ## m0208 marca de imputação na v0208
+  'm0208',     '1', 'Sim',
+  'm0208',     '2', 'Não',
+  ## m0209 marca de imputação na v0209
+  'm0209',     '1', 'Sim',
+  'm0209',     '2', 'Não',
+  ## m0210 marca de imputação na v0210
+  'm0210',     '1', 'Sim',
+  'm0210',     '2', 'Não',
+  ## m0211 marca de imputação na v0211
+  'm0211',     '1', 'Sim',
+  'm0211',     '2', 'Não',
+  ## m0212 marca de imputação na v0212
+  'm0212',     '1', 'Sim',
+  'm0212',     '2', 'Não',
+  ## m0213 marca de imputação na v0213
+  'm0213',     '1', 'Sim',
+  'm0213',     '2', 'Não',
+  ## m0214 marca de imputação na v0214
+  'm0214',     '1', 'Sim',
+  'm0214',     '2', 'Não',
+  ## m0215 marca de imputação na v0215
+  'm0215',     '1', 'Sim',
+  'm0215',     '2', 'Não',
+  ## m0216 marca de imputação na v0216
+  'm0216',     '1', 'Sim',
+  'm0216',     '2', 'Não',
+  ## m0217 marca de imputação na v0217
+  'm0217',     '1', 'Sim',
+  'm0217',     '2', 'Não',
+  ## m0218 marca de imputação na v0218
+  'm0218',     '1', 'Sim',
+  'm0218',     '2', 'Não',
+  ## m0219 marca de imputação na v0219
+  'm0219',     '1', 'Sim',
+  'm0219',     '2', 'Não',
+  ## m0220 marca de imputação na v0220
+  'm0220',     '1', 'Sim',
+  'm0220',     '2', 'Não',
+  ## m0221 marca de imputação na v0221
+  'm0221',     '1', 'Sim',
+  'm0221',     '2', 'Não',
+  ## m0222 marca de imputação na v0222
+  'm0222',     '1', 'Sim',
+  'm0222',     '2', 'Não',
+  ## m0301 marca de imputação na v0301
+  'm0301',     '1', 'Sim',
+  'm0301',     '2', 'Não',
+  ## m0401 marca de imputação na v0401
+  'm0401',     '1', 'Sim',
+  'm0401',     '2', 'Não',
+  ## m0402 marca de imputação na v0402
+  'm0402',     '1', 'Sim',
+  'm0402',     '2', 'Não',
+  ## m0701 marca de imputação na v0701
+  'm0701',     '1', 'Sim',
+  'm0701',     '2', 'Não',
+  ## v0627 sabe ler e escrever
+  'v0627',     '1', 'Sim',
+  'v0627',     '2', 'Não',
+  ## v0632 conclusão de outro curso superior de graduação
+  'v0632',     '1', 'Sim',
+  'v0632',     '2', 'Não',
+  ## v0634 conclusão deste curso
+  'v0634',     '1', 'Sim',
+  'v0634',     '2', 'Não',
+  ## v0641 na semana de 25 a 31/07/10, durante pelo menos
+  ##       1 hora, trabalhou ganhando em dinheiro, produtos,
+  ##       mercadorias ou benefícios
+  'v0641',     '1', 'Sim',
+  'v0641',     '2', 'Não',
+  ## v0642 na semana de 25 a 31/07/10, tinha trabalho remunerado
+  ##       do qual estava temporariamente afastado(a)
+  'v0642',     '1', 'Sim',
+  'v0642',     '2', 'Não',
+  ## v0643 na semana de 25 a 31/07/10, durante pelo menos 1 hora,
+  ##       ajudou sem qualquer pagamento no trabalho remunerado
+  ##       de morador do domicílio
+  'v0643',     '1', 'Sim',
+  'v0643',     '2', 'Não',
+  ## v0644 na semana de 25 a 31/07/10, durante pelo menos 1 hora,
+  ##       trabalhou na plantação, criação de animais ou pesca,
+  ##       somente para alimentação dos moradores do domicílio
+  ##       (inclusive caça e extração vegetal)
+  'v0644',     '1', 'Sim',
+  'v0644',     '2', 'Não',
+  ## v0654 no período de 02 a 31 de julho de 2010, tomou alguma
+  ##       providência, de fato, para conseguir  trabalho?
+  'v0654',     '1', 'Sim',
+  'v0654',     '2', 'Não',
+  ## v0655 se tivesse conseguido trabalho, estaria disponível
+  ##       para assumi-lo na semana de 25 a 31 de julho de 2010?
+  'v0655',     '1', 'Sim',
+  'v0655',     '2', 'Não',
+  ## v0661 retorna do trabalho para casa diariamente
+  'v0661',     '1', 'Sim',
+  'v0661',     '2', 'Não',
+  ## v0664 existência de filho tido nascido vivo no período de referência de 12 meses anteriores a 31/07/2010
+  'v6664',     '1', 'Sim',
+  'v6664',     '0', 'Não',
+  ## marcas de imputação para as variáveis
+  'm0502',     '1', 'Sim',
+  'm0502',     '2', 'Não',
+  'm0601',     '1', 'Sim',
+  'm0601',     '2', 'Não',
+  'm6033',     '1', 'Sim',
+  'm6033',     '2', 'Não',
+  'm0606',     '1', 'Sim',
+  'm0606',     '2', 'Não',
+  'm0613',     '1', 'Sim',
+  'm0613',     '2', 'Não',
+  'm0614',     '1', 'Sim',
+  'm0614',     '2', 'Não',
+  'm0615',     '1', 'Sim',
+  'm0615',     '2', 'Não',
+  'm0616',     '1', 'Sim',
+  'm0616',     '2', 'Não',
+  'm0617',     '1', 'Sim',
+  'm0617',     '2', 'Não',
+  'm0618',     '1', 'Sim',
+  'm0618',     '2', 'Não',
+  'm0619',     '1', 'Sim',
+  'm0619',     '2', 'Não',
+  'm0620',     '1', 'Sim',
+  'm0620',     '2', 'Não',
+  'm0621',     '1', 'Sim',
+  'm0621',     '2', 'Não',
+  'm0622',     '1', 'Sim',
+  'm0622',     '2', 'Não',
+  'm6222',     '1', 'Sim',
+  'm6222',     '2', 'Não',
+  'm6224',     '1', 'Sim',
+  'm6224',     '2', 'Não',
+  'm0623',     '1', 'Sim',
+  'm0623',     '2', 'Não',
+  'm0624',     '1', 'Sim',
+  'm0624',     '2', 'Não',
+  'm0625',     '1', 'Sim',
+  'm0625',     '2', 'Não',
+  'm6252',     '1', 'Sim',
+  'm6252',     '2', 'Não',
+  'm6254',     '1', 'Sim',
+  'm6254',     '2', 'Não',
+  'm6256',     '1', 'Sim',
+  'm6256',     '2', 'Não',
+  'm0626',     '1', 'Sim',
+  'm0626',     '2', 'Não',
+  'm6262',     '1', 'Sim',
+  'm6262',     '2', 'Não',
+  'm6264',     '1', 'Sim',
+  'm6264',     '2', 'Não',
+  'm6266',     '1', 'Sim',
+  'm6266',     '2', 'Não',
+  'm0627',     '1', 'Sim',
+  'm0627',     '2', 'Não',
+  'm0628',     '1', 'Sim',
+  'm0628',     '2', 'Não',
+  'm0629',     '1', 'Sim',
+  'm0629',     '2', 'Não',
+  'm0630',     '1', 'Sim',
+  'm0630',     '2', 'Não',
+  'm0631',     '1', 'Sim',
+  'm0631',     '2', 'Não',
+  'm0632',     '1', 'Sim',
+  'm0632',     '2', 'Não',
+  'm0633',     '1', 'Sim',
+  'm0633',     '2', 'Não',
+  'm0634',     '1', 'Sim',
+  'm0634',     '2', 'Não',
+  'm0635',     '1', 'Sim',
+  'm0635',     '2', 'Não',
+  'm6352',     '1', 'Sim',
+  'm6352',     '2', 'Não',
+  'm6354',     '1', 'Sim',
+  'm6354',     '2', 'Não',
+  'm6356',     '1', 'Sim',
+  'm6356',     '2', 'Não',
+  'm0636',     '1', 'Sim',
+  'm0636',     '2', 'Não',
+  'm6362',     '1', 'Sim',
+  'm6362',     '2', 'Não',
+  'm6364',     '1', 'Sim',
+  'm6364',     '2', 'Não',
+  'm6366',     '1', 'Sim',
+  'm6366',     '2', 'Não',
+  'm0637',     '1', 'Sim',
+  'm0637',     '2', 'Não',
+  'm0638',     '1', 'Sim',
+  'm0638',     '2', 'Não',
+  'm0639',     '1', 'Sim',
+  'm0639',     '2', 'Não',
+  'm0640',     '1', 'Sim',
+  'm0640',     '2', 'Não',
+  'm0641',     '1', 'Sim',
+  'm0641',     '2', 'Não',
+  'm0642',     '1', 'Sim',
+  'm0642',     '2', 'Não',
+  'm0643',     '1', 'Sim',
+  'm0643',     '2', 'Não',
+  'm0644',     '1', 'Sim',
+  'm0644',     '2', 'Não',
+  'm0645',     '1', 'Sim',
+  'm0645',     '2', 'Não',
+  'm6461',     '1', 'Sim',
+  'm6461',     '2', 'Não',
+  'm6471',     '1', 'Sim',
+  'm6471',     '2', 'Não',
+  'm0648',     '1', 'Sim',
+  'm0648',     '2', 'Não',
+  'm0649',     '1', 'Sim',
+  'm0649',     '2', 'Não',
+  'm0650',     '1', 'Sim',
+  'm0650',     '2', 'Não',
+  'm0651',     '1', 'Sim',
+  'm0651',     '2', 'Não',
+  'm6511',     '1', 'Sim',
+  'm6511',     '2', 'Não',
+  'm0652',     '1', 'Sim',
+  'm0652',     '2', 'Não',
+  'm6521',     '1', 'Sim',
+  'm6521',     '2', 'Não',
+  'm0653',     '1', 'Sim',
+  'm0653',     '2', 'Não',
+  'm0654',     '1', 'Sim',
+  'm0654',     '2', 'Não',
+  'm0655',     '1', 'Sim',
+  'm0655',     '2', 'Não',
+  'm0656',     '1', 'Sim',
+  'm0656',     '2', 'Não',
+  'm0657',     '1', 'Sim',
+  'm0657',     '2', 'Não',
+  'm0658',     '1', 'Sim',
+  'm0658',     '2', 'Não',
+  'm0659',     '1', 'Sim',
+  'm0659',     '2', 'Não',
+  'm6591',     '1', 'Sim',
+  'm6591',     '2', 'Não',
+  'm0660',     '1', 'Sim',
+  'm0660',     '2', 'Não',
+  'm6602',     '1', 'Sim',
+  'm6602',     '2', 'Não',
+  'm6604',     '1', 'Sim',
+  'm6604',     '2', 'Não',
+  'm6606',     '1', 'Sim',
+  'm6606',     '2', 'Não',
+  'm0661',     '1', 'Sim',
+  'm0661',     '2', 'Não',
+  'm0662',     '1', 'Sim',
+  'm0662',     '2', 'Não',
+  'm0663',     '1', 'Sim',
+  'm0663',     '2', 'Não',
+  'm6631',     '1', 'Sim',
+  'm6631',     '2', 'Não',
+  'm6632',     '1', 'Sim',
+  'm6632',     '2', 'Não',
+  'm6633',     '1', 'Sim',
+  'm6633',     '2', 'Não',
+  'm0664',     '1', 'Sim',
+  'm0664',     '2', 'Não',
+  'm6641',     '1', 'Sim',
+  'm6641',     '2', 'Não',
+  'm6642',     '1', 'Sim',
+  'm6642',     '2', 'Não',
+  'm6643',     '1', 'Sim',
+  'm6643',     '2', 'Não',
+  'm0665',     '1', 'Sim',
+  'm0665',     '2', 'Não',
+  'm6660',     '1', 'Sim',
+  'm6660',     '2', 'Não',
+  'm0667',     '1', 'Sim',
+  'm0667',     '2', 'Não',
+  'm0668',     '1', 'Sim',
+  'm0668',     '2', 'Não',
+  'm6681',     '1', 'Sim',
+  'm6681',     '2', 'Não',
+  'm6682',     '1', 'Sim',
+  'm6682',     '2', 'Não',
+  'm0669',     '1', 'Sim',
+  'm0669',     '2', 'Não',
+  'm6691',     '1', 'Sim',
+  'm6691',     '2', 'Não',
+  'm6692',     '1', 'Sim',
+  'm6692',     '2', 'Não',
+  'm6693',     '1', 'Sim',
+  'm6693',     '2', 'Não',
+  'm0670',     '1', 'Sim',
+  'm0670',     '2', 'Não',
+  'm0671',     '1', 'Sim',
+  'm0671',     '2', 'Não',
+  'm6800',     '1', 'Sim',
+  'm6800',     '2', 'Não',
+  'm6121',     '1', 'Sim',
+  'm6121',     '2', 'Não',
+  'm0604',     '1', 'Sim',
+  'm0604',     '2', 'Não',
+  'm0605',     '1', 'Sim',
+  'm0605',     '2', 'Não',
+  'm6462',     '1', 'Sim',
+  'm6462',     '2', 'Não',
+  'm6472',     '1', 'Sim',
+  'm6472',     '2', 'Não',
+  'm0303',     '1', 'Sim',
+  'm0303',     '2', 'Não',
+  'm0304',     '1', 'Sim',
+  'm0304',     '2', 'Não',
+  'm0305',     '1', 'Sim',
+  'm0305',     '2', 'Não',
+  'm3061',     '1', 'Sim',
+  'm3061',     '2', 'Não',
+  'm0703',     '1', 'Sim',
+  'm0703',     '2', 'Não',
+  'm0704',     '1', 'Sim',
+  'm0704',     '2', 'Não',
+  'm7051',     '1', 'Sim',
+  'm7051',     '2', 'Não',
+  'm7052',     '1', 'Sim',
+  'm7052',     '2', 'Não',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_common_simnao.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** tipo C: variáveis com respostas próprias
+**** v1001 região geográfica
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v1001.R
+## gnur_vardict_typeC_v1001.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "região geográfica"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v1001',     '1', 'Região norte',
+  'v1001',     '2', 'Região nordeste',
+  'v1001',     '3', 'Região sudeste',
+  'v1001',     '4', 'Região sul',
+  'v1001',     '5', 'Região centro-oeste',
+  )  %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v1001.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v1006 situação do domicílio
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v1006.R
+## gnur_vardict_typeC_v1006.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "situação do domicío"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v1006',     '1', 'Urbana',
+  'v1006',     '2', 'Rural',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v1006.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v4001 espécie de unidade visitada
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v4001.R
+## gnur_vardict_typeC_v4001.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "espécie de unidade visitada"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v4001',    '01', 'Domicílio particular permanente ocupado',
+  'v4001',    '02', 'Domicílio particular permanente ocupado sem entrevista realizada',
+  'v4001',    '05', 'Domicílio particular improvisado ocupado',
+  'v4001',    '06', 'Domicílio coletivo com morador'
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v4001.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v4002 tipo de espécie
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v4002.R
+## gnur_vardict_typeC_v4002.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "tipo de espécie"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v4002',    '11', 'Casa',
+  'v4002',    '12', 'Casa de vila ou em condomínio',
+  'v4002',    '13', 'Apartamento',
+  'v4002',    '14', 'Habitação em: casa de cômodos, cortiço ou cabeça de porco',
+  'v4002',    '15', 'Oca ou maloca',
+  'v4002',    '51', 'Tenda ou barraca',
+  'v4002',    '52', 'Dentro de estabelecimento',
+  'v4002',    '53', 'Outro (vagão, trailer, gruta, etc)',
+  'v4002',    '61', 'Asilo, orfanato e similares  com morador',
+  'v4002',    '62', 'Hotel, pensão e similares com morador',
+  'v4002',    '63', 'Alojamento de trabalhadores com morador',
+  'v4002',    '64', 'Penitenciária, presídio ou casa de detenção com morador',
+  'v4002',    '65', 'Outro com morador'
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v4002.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0201 domicílio, condição de ocupação
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0201.R
+## gnur_vardict_typeC_v0201.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "domicílio, condição de ocupação"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0201',     '1', 'Próprio de algum morador - já pago',
+  'v0201',     '2', 'Próprio de algum morador - ainda pagando',
+  'v0201',     '3', 'Alugado',
+  'v0201',     '4', 'Cedido por empregador',
+  'v0201',     '5', 'Cedido de outra forma',
+  'v0201',     '6', 'Outra condição',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0201.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0202 material predominante, paredes externas
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0202.R
+## gnur_vardict_typeC_v0202.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "material predominante, paredes externas"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0202',     '1', 'Alvenaria com revestimento',
+  'v0202',     '2', 'Alvenaria sem revestimento',
+  'v0202',     '3', 'Madeira apropriada para construção (aparelhada)',
+  'v0202',     '4', 'Taipa revestida',
+  'v0202',     '5', 'Taipa não revestida',
+  'v0202',     '6', 'Madeira aproveitada',
+  'v0202',     '7', 'Palha',
+  'v0202',     '8', 'Outro material',
+  'v0202',     '9', 'Sem parede',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0202.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0205 banheiros de uso exclusivo, número
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0205.R
+## gnur_vardict_typeC_v0205.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "banheiros de uso exclusivo, número"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0205',     '0', 'Zero banheiros',
+  'v0205',     '1', 'Um banheiro',
+  'v0205',     '2', 'Dois banheiros',
+  'v0205',     '3', 'Três banheiros',
+  'v0205',     '4', 'Quatro banheiros',
+  'v0205',     '5', 'Cinco banheiros',
+  'v0205',     '6', 'Seis banheiros',
+  'v0205',     '7', 'Sete banheiros',
+  'v0205',     '8', 'Oito banheiros',
+  'v0205',     '9', 'Nove ou mais banheiros',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0205.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0207 esgotamento sanitário, tipo
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0207.R
+## gnur_vardict_typeC_v0207.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "esgotamento sanitário, tipo"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0207',     '1', 'Rede geral de esgoto ou pluvial',
+  'v0207',     '2', 'Fossa séptica',
+  'v0207',     '3', 'Fossa rudimentar',
+  'v0207',     '4', 'Vala',
+  'v0207',     '5', 'Rio, lago ou mar',
+  'v0207',     '6', 'Outro',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0207.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0208 abastecimento de água, forma
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0208.R
+## gnur_vardict_typeC_v0208.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## preparação da variável "abastecimento de água, forma"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0208',    '01', 'Rede geral de distribuição',
+  'v0208',    '02', 'Poço ou nascente na propriedade',
+  'v0208',    '03', 'Poço ou nascente fora da propriedade',
+  'v0208',    '04', 'Carro-pipa',
+  'v0208',    '05', 'Água da chuva armazenada em cisterna',
+  'v0208',    '06', 'Água da chuva armazenada de outra forma',
+  'v0208',    '07', 'Rios, açudes, lagos e igarapés',
+  'v0208',    '08', 'Outra',
+  'v0208',    '09', 'Poço ou nascente na aldeia',
+  'v0208',    '10', 'Poço ou nascente fora da aldeia',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0208.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0209 abastecimento de água, canalização
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0209.R
+## gnur_vardict_typeC_v0209.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "abastecimento de água, canalização"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0209',     '1', 'Sim, em pelo menos um cômodo',
+  'v0209',     '2', 'Sim, só na propriedade ou terreno',
+  'v0209',     '3', 'Não',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0209.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0210 lixo, destino
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0210.R
+## gnur_vardict_typeC_v0210.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "lixo, destino"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0210',     '1', 'Coletado diretamente por serviço de limpeza',
+  'v0210',     '2', 'Colocado em caçamba de serviço de limpeza',
+  'v0210',     '3', 'Queimado (na propriedade)',
+  'v0210',     '4', 'Enterrado (na propriedade)',
+  'v0210',     '5', 'Jogado em terreno baldio ou logradouro',
+  'v0210',     '6', 'Jogado em rio, lago ou mar',
+  'v0210',     '7', 'Tem outro destino',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0210.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0211 energia elétrica, existência
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0211.R
+## gnur_vardict_typeC_v0211.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "energia elétrica, existência"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0211',     '1', 'Sim, de companhia distribuidora',
+  'v0211',     '2', 'Sim, de outras fontes',
+  'v0211',     '3', 'Não existe energia elétrica',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0211.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0212 existência de medidor ou relógio, energia elétrica, companhia distribuidora
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0212.R
+## gnur_vardict_typeC_v0212.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "existência de medidor ou relógio, energia
+## elétrica, companhia distribuidora"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0212',     '1', 'Sim, de uso exclusivo',
+  'v0212',     '2', 'Sim, de uso comum',
+  'v0212',     '3', 'Não tem medidor ou relógio',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0212.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0402 a responsabilidade pelo domicílio é de
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0402.R
+## gnur_vardict_typeC_v0402.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "a responsabilidade pelo domicílio é de"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0402',     '1', 'Apenas um morador',
+  'v0402',     '2', 'Mais de um morador',
+  'v0402',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0402.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6600 espécie da unidade doméstica
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v6600.R
+## gnur_vardict_typeC_v6600.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "espécie da unidade doméstica"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v6600',     '1', 'Unipessoal',
+  'v6600',     '2', 'Nuclear',
+  'v6600',     '3', 'Estendida',
+  'v6600',     '4', 'Composta',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v6600.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6210 adequação da moradia
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v6210.R
+## gnur_vardict_typeC_v6210.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "adequação da moradia"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v6210',     '1', 'Adequada',
+  'v6210',     '2', 'Semi-adequada',
+  'v6210',     '3', 'Inadequada',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v6210.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v1005 situação do setor
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v1005.R
+## gnur_vardict_typeC_v1005.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "situação do setor"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v1005',     '1', 'Área urbanizada',
+  'v1005',     '2', 'Área não urbanizada',
+  'v1005',     '3', 'Área urbanizada isolada',
+  'v1005',     '4', 'Área rural de extensão urbana',
+  'v1005',     '5', 'Aglomerado rural (povoado)',
+  'v1005',     '6', 'Aglomerado rural (núcleo)',
+  'v1005',     '7', 'Aglomerado rural (outros)',
+  'v1005',     '8', 'Área rural exclusive aglomerado rural',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v1005.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0502 relação de parentesco ou de convivência com a pessoa responsável pelo domicílio
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0502.R
+## gnur_vardict_typeC_v0502.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "relação de parentesco ou de convivência
+## com a pessoa responsável pelo domicílio"
+## -------------------------------------------------------------------
+##
+
+## pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0502',    '01', 'Pessoa responsável pelo domicílio',
+  'v0502',    '02', 'Cônjuge ou companheiro(a) de sexo diferente',
+  'v0502',    '03', 'Cônjuge ou companheiro(a) do mesmo sexo',
+  'v0502',    '04', 'Filho(a) do responsável e do cônjuge',
+  'v0502',    '05', 'Filho(a) somente do responsável',
+  'v0502',    '06', 'Enteado(a)',
+  'v0502',    '07', 'Genro ou nora',
+  'v0502',    '08', 'Pai, mãe, padrasto ou madrasta',
+  'v0502',    '09', 'Sogro(a)',
+  'v0502',    '10', 'Neto(a)',
+  'v0502',    '11', 'Bisneto(a)',
+  'v0502',    '12', 'Irmão ou irmã',
+  'v0502',    '13', 'Avô ou avó',
+  'v0502',    '14', 'Outro parente',
+  'v0502',    '15', 'Agregado(a)',
+  'v0502',    '16', 'Convivente',
+  'v0502',    '17', 'Pensionista',
+  'v0502',    '18', 'Empregado(a) doméstico(a)',
+  'v0502',    '19', 'Parente do(a) empregado(a)  doméstico(a)',
+  'v0502',    '20', 'Individual em domicílio coletivo',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0502.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0601 sexo
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0601.R
+## gnur_vardict_typeC_v0601.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "sexo"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0601',     '1', 'Masculino',
+  'v0601',     '2', 'Feminino',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0601.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6040 forma de declaração da idade
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v6040.R
+## gnur_vardict_typeC_v6040.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "forma de declaração da idade"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v6040',     '1', 'Data de nascimento',
+  'v6040',     '2', 'Idade declarada',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v6040.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0606 cor ou raça
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0606.R
+## gnur_vardict_typeC_v0606.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "cor ou raça"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0606',     '1', 'Branca',
+  'v0606',     '2', 'Preta',
+  'v0606',     '3', 'Amarela',
+  'v0606',     '4', 'Parda',
+  'v0606',     '5', 'Indígena',
+  'v0606',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0606.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0613 registro de nascimento
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0613.R
+## gnur_vardict_typeC_v0613.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "registro de nascimento"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0613',     '1', 'Do cartório',
+  'v0613',     '2', 'Declaração de nascido vivo (DNV) do hospital ou da maternidade',
+  'v0613',     '3', 'Registro administrativo de nascimento indígena (RANI)',
+  'v0613',     '4', 'Não tem',
+  'v0613',     '5', 'Não sabe',
+  'v0613',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0613.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0614 dificuldade permanente de enxergar
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0614.R
+## gnur_vardict_typeC_v0614.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "dificuldade permanente de enxergar"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0614',     '1', 'Sim, não consegue de modo algum',
+  'v0614',     '2', 'Sim, grande dificuldade',
+  'v0614',     '3', 'Sim, alguma dificuldade',
+  'v0614',     '4', 'Não, nenhuma dificuldade',
+  'v0614',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0614.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0615 dificuldade permanente de ouvir
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0615.R
+## gnur_vardict_typeC_v0615.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "dificuldade permanente de ouvir"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0615',     '1', 'Sim, não consegue de modo algum',
+  'v0615',     '2', 'Sim, grande dificuldade',
+  'v0615',     '3', 'Sim, alguma dificuldade',
+  'v0615',     '4', 'Não, nenhuma dificuldade',
+  'v0615',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0615.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0616 dificuldade permanente de caminhar ou subir degraus
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0616.R
+## gnur_vardict_typeC_v0616.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "dificuldade permanente de caminhar ou
+## subir degraus"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0616',     '1', 'Sim, não consegue de modo algum',
+  'v0616',     '2', 'Sim, grande dificuldade',
+  'v0616',     '3', 'Sim, alguma dificuldade',
+  'v0616',     '4', 'Não, nenhuma dificuldade',
+  'v0616',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0616.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0617 deficiência mental/intelectual permanente
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0617.R
+## gnur_vardict_typeC_v0617.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "deficiência mental/intelectual permanente"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0617',     '1', 'Sim',
+  'v0617',     '2', 'Não',
+  'v0617',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0617.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0618 nasceu neste município
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0618.R
+## gnur_vardict_typeC_v0618.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "nasceu neste município"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0618',     '1', 'Sim e sempre morou',
+  'v0618',     '2', 'Sim mas morou em outro município ou país estrangeiro',
+  'v0618',     '3', 'Não',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0618.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0619 nasceu nesta unidade da federação
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0619.R
+## gnur_vardict_typeC_v0619.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "nasceu nesta unidade da federação"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0619',     '1', 'Sim, e sempre morou',
+  'v0619',     '2', 'Sim, mas morou em outra UF ou país estrangeiro',
+  'v0619',     '3', 'Não',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0619.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0620 nacionalidade
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0620.R
+## gnur_vardict_typeC_v0620.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "nacionalidade"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0620',     '1', 'Brasileiro nato',
+  'v0620',     '2', 'Naturalizado brasileiro',
+  'v0620',     '3', 'Estrangeiro',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0620.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0622 uf ou país estrangeiro de nascimento
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0622.R
+## gnur_vardict_typeC_v0622.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "uf ou país estrangeiro de nascimento"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0622',     '1', 'UF',
+  'v0622',     '2', 'País estrangeiro',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0622.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0625 unidade da federação e município ou país estrangeiro de moradia antes de mudar-se para este município
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0625.R
+## gnur_vardict_typeC_v0625.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "unidade da federação e município ou país
+## estrangeiro de moradia antes de mudar-se para este município"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0625',     '1', 'UF/Município',
+  'v0625',     '2', 'País estrangeiro',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0625.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0626 residência em 31 de julho de 2005
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0626.R
+## gnur_vardict_typeC_v0626.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "residência em 31 de julho de 2005"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0626',     '1', 'UF/Município',
+  'v0626',     '2', 'País estrangeiro',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0626.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0628 frequenta escola ou creche
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0628.R
+## gnur_vardict_typeC_v0628.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "frequenta escola ou creche"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0628',     '1', 'Sim, pública',
+  'v0628',     '2', 'Sim, particular',
+  'v0628',     '3', 'Não, já frequentou',
+  'v0628',     '4', 'Não, nunca frequentou',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0628.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0629 curso que frequenta
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0629.R
+## gnur_vardict_typeC_v0629.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "curso que frequenta"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0629',    '01', 'Creche',
+  'v0629',    '02', 'Pré-escolar (maternal e jardim da infância)',
+  'v0629',    '03', 'Classe de alfabetização - CA',
+  'v0629',    '04', 'Alfabetização de jovens e adultos',
+  'v0629',    '05', 'Regular do ensino fundamental',
+  'v0629',    '06', 'Educação de jovens e adultos - EJA - ou supletivo do ensino fundamental',
+  'v0629',    '07', 'Regular do ensino médio',
+  'v0629',    '08', 'Educação de jovens e adultos - EJA - ou supletivo do ensino médio',
+  'v0629',    '09', 'Superior de graduação',
+  'v0629',    '10', 'Especialização de nível superior ( mínimo de 360 horas )',
+  'v0629',    '11', 'Mestrado',
+  'v0629',    '12', 'Doutorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0629.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0630 série / ano que frequenta
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0630.R
+## gnur_vardict_typeC_v0630.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "série / ano que frequenta"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0630',    '01', 'Primeiro ano',
+  'v0630',    '02', 'Primeira série / Segundo ano',
+  'v0630',    '03', 'Segunda série / Terceiro ano',
+  'v0630',    '04', 'Terceira série / Quarto ano',
+  'v0630',    '05', 'Quarta série / Quinto ano',
+  'v0630',    '06', 'Quinta série / Sexto ano',
+  'v0630',    '07', 'Sexta série / Sétimo ano',
+  'v0630',    '08', 'Sétima série / Oitavo ano',
+  'v0630',    '09', 'Oitava série / Nono ano',
+  'v0630',    '10', 'Não seriado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0630.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0631 série que frequenta
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0631.R
+## gnur_vardict_typeC_v0631.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "série que frequenta"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0631',     '1', 'Primeira série',
+  'v0631',     '2', 'Segunda série',
+  'v0631',     '3', 'Terceira série',
+  'v0631',     '4', 'Quarta série',
+  'v0631',     '5', 'Não seriado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0631.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0633 curso mais elevado que frequentou
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0633.R
+## gnur_vardict_typeC_v0633.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "curso mais elevado que frequentou"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0633',    '01', 'Creche, pré-escolar (maternal e jardim de infância), classe de alfabetização - CA',
+  'v0633',    '02', 'Alfabetização de jovens e adultos',
+  'v0633',    '03', 'Antigo primário (elementar)',
+  'v0633',    '04', 'Antigo ginásio (médio 1º ciclo)',
+  'v0633',    '05', 'Ensino fundamental ou 1º grau (da 1ª a 3ª série/ do 1º ao 4º ano)',
+  'v0633',    '06', 'Ensino fundamental ou 1º grau (4ª série/ 5º ano)',
+  'v0633',    '07', 'Ensino fundamental ou 1º grau (da 5ª a 8ª série/ 6º ao 9º ano)',
+  'v0633',    '08', 'Supletivo do ensino fundamental ou do 1º grau',
+  'v0633',    '09', 'Antigo científico, clássico, etc.....(médio 2º ciclo)',
+  'v0633',    '10', 'Regular ou supletivo do ensino médio ou do 2º grau',
+  'v0633',    '11', 'Superior de graduação',
+  'v0633',    '12', 'Especialização de nível superior ( mínimo de 360 horas )',
+  'v0633',    '13', 'Mestrado',
+  'v0633',    '14', 'Doutorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0633.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0635 espécie do curso mais elevado concluído
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0635.R
+## gnur_vardict_typeC_v0635.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "espécie do curso mais elevado concluído"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0635',     '1', 'Superior de graduação',
+  'v0635',     '2', 'Mestrado',
+  'v0635',     '3', 'Doutorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0635.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6400 nível de instrução
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v6400.R
+## gnur_vardict_typeC_v6400.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "nível de instrução"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v6400',     '1', 'Sem instrução e fundamental incompleto',
+  'v6400',     '2', 'Fundamental completo e médio incompleto',
+  'v6400',     '3', 'Médio completo e superior incompleto',
+  'v6400',     '4', 'Superior completo',
+  'v6400',     '5', 'Não determinado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v6400.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0636 município e unidade da federação ou país estrangeiro que frequentava escola (ou creche)
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0636.R
+## gnur_vardict_typeC_v0636.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "município e unidade da federação ou país
+## estrangeiro que frequentava escola (ou creche)"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0636',     '1', 'Neste município',
+  'v0636',     '2', 'Em outro município',
+  'v0636',     '3', 'Em país estrangeiro',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0636.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0637 vive em companhia de cônjuge ou companheiro(a)
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0637.R
+## gnur_vardict_typeC_v0637.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "vive em companhia de cônjuge ou
+## companheiro(a)"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0637',     '1', 'Sim',
+  'v0637',     '2', 'Não, mas viveu',
+  'v0637',     '3', 'Não, nunca viveu',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0637.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0639 natureza da união
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0639.R
+## gnur_vardict_typeC_v0639.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "natureza da união"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0639',     '1', 'Casamento civil e religioso',
+  'v0639',     '2', 'Só casamento civil',
+  'v0639',     '3', 'Só casamento religioso',
+  'v0639',     '4', 'União consensual',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0639.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0640 estado civil
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0640.R
+## gnur_vardict_typeC_v0640.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "estado civil"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0640',     '1', 'Casado(a)',
+  'v0640',     '2', 'Desquitado(a) ou separado(a) judicialmente',
+  'v0640',     '3', 'Divorciado(a)',
+  'v0640',     '4', 'Viúvo(a)',
+  'v0640',     '5', 'Solteiro(a)',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0640.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0645 quantos trabalhos tinha
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0645.R
+## gnur_vardict_typeC_v0645.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "quantos trabalhos tinha"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0645',     '1', 'Um',
+  'v0645',     '2', 'Dois ou mais',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0645.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0648 nesse trabalho era
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0648.R
+## gnur_vardict_typeC_v0648.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "nesse trabalho era"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0648',     '1', 'Empregado com carteira de trabalho assinada',
+  'v0648',     '2', 'Militar do exército, marinha, aeronáutica, policia militar ou corpo de bombeiros',
+  'v0648',     '3', 'Empregado pelo regime jurídico dos funcionários públicos',
+  'v0648',     '4', 'Empregado sem carteira de trabalho assinada',
+  'v0648',     '5', 'Conta própria',
+  'v0648',     '6', 'Empregador',
+  'v0648',     '7', 'Não remunerado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0648.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0649 quantas pessoas empregava nesse trabalho
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0649.R
+## gnur_vardict_typeC_v0649.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "quantas pessoas empregava nesse trabalho"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0649',     '1', '1 a 5 pessoas',
+  'v0649',     '2', '6 ou mais pessoas',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0649.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0650 era contribuinte de instituto de previdência oficial em algum trabalho que tinha na semana de 25 a 31 de julho de 2010
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0650.R
+## gnur_vardict_typeC_v0650.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "era contribuinte de instituto de
+## previdência oficial em algum trabalho que tinha na semana de 25 a
+## 31 de julho de 2010"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0650',     '1', 'Sim, no trabalho principal',
+  'v0650',     '2', 'Sim, em outro trabalho',
+  'v0650',     '3', 'Não',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0650.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0651 no trabalho principal, qual era o rendimento bruto (ou a retirada) mensal que ganhava habitualmente em julho de 2010
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0651.R
+## gnur_vardict_typeC_v0651.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "no trabalho principal, qual era o
+## rendimento bruto (ou a retirada) mensal que ganhava habitualmente
+## em julho de 2010"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0651',     '0', 'Não tem',
+  'v0651',     '1', 'Em dinheiro, produtos ou mercadorias',
+  'v0651',     '2', 'Somente em benefícios',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0651.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0652 nos demais trabalhos, qual era o rendimento bruto (ou a retirada) mensal que ganhava habitualmente em julho de 2010
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0652.R
+## gnur_vardict_typeC_v0652.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "nos demais trabalhos, qual era o rendimento
+## bruto (ou a retirada) mensal que ganhava habitualmente em julho de
+## 2010"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0652',     '0', 'Não tem',
+  'v0652',     '1', 'Em dinheiro, produtos ou mercadorias',
+  'v0652',     '2', 'Somente em benefícios',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0652.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0656 em julho de 2010, tinha rendimento mensal habitual de aposentadoria ou pensão de instituto de previdência oficial (federal, estadual ou municipal)?
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0656.R
+## gnur_vardict_typeC_v0656.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "em julho de 2010, tinha rendimento mensal
+## habitual de aposentadoria ou pensão de instituto de previdência
+## oficial (federal, estadual ou municipal)?"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0656',     '1', 'Sim',
+  'v0656',     '0', 'Não',
+  'v0656',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0656.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0657 em julho de 2010, tinha rendimento mensal habitual de programa social bolsa-família ou programa de erradicação do trabalho infantil (peti)
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0657.R
+## gnur_vardict_typeC_v0657.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "em julho de 2010, tinha rendimento mensal
+## habitual de programa social bolsa-família ou programa de
+## erradicação do trabalho infantil (peti)"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0657',     '1', 'Sim',
+  'v0657',     '0', 'Não',
+  'v0657',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0657.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0658 em julho 2010, tinha rendimento mensal habitual de outros programas sociais ou de transferências
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0658.R
+## gnur_vardict_typeC_v0658.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "em julho 2010, tinha rendimento mensal
+## habitual de outros programas sociais ou de transferências"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0658',     '1', 'Sim',
+  'v0658',     '0', 'Não',
+  'v0658',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0658.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0659 em julho de 2010, tinha rendimento mensal habitual de outras fontes (juros de poupança, aplicações financeiras, aluguel, pensão, aposentadoria de previdência privada, etc)?
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0659.R
+## gnur_vardict_typeC_v0659.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "em julho de 2010, tinha rendimento mensal
+## habitual de outras fontes (juros de poupança, aplicações
+## financeiras, aluguel, pensão, aposentadoria de previdência privada,
+## etc)?"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0659',     '1', 'Sim',
+  'v0659',     '0', 'Não',
+  'v0659',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0659.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0660 em que município e unidade da federação ou país estrangeiro trabalha
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0660.R
+## gnur_vardict_typeC_v0660.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "em que município e unidade da federação
+## ou país estrangeiro trabalha"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0660',     '1', 'No próprio domicílio',
+  'v0660',     '2', 'Apenas neste município, mas não no próprio domicílio',
+  'v0660',     '3', 'Em outro município',
+  'v0660',     '4', 'Em país estrangeiro',
+  'v0660',     '5', 'Em mais de um município ou país',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0660.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0662 qual é o tempo habitual gasto de deslocamento de sua casa até o trabalho
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0662.R
+## gnur_vardict_typeC_v0662.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "qual é o tempo habitual gasto de
+## deslocamento de sua casa até o trabalho"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0662',     '1', 'Até 05 minutos',
+  'v0662',     '2', 'De 06 minutos até meia hora',
+  'v0662',     '3', 'Mais de meia hora até uma hora',
+  'v0662',     '4', 'Mais de uma hora até duas horas',
+  'v0662',     '5', 'Mais de duas horas',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0662.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0663 quantos filhos e filhas nascidos vivos teve até 31 de julho de 2010
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0663.R
+## gnur_vardict_typeC_v0663.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "quantos filhos e filhas nascidos vivos
+## teve até 31 de julho de 2010"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0663',     '1', 'Teve filhos nascidos vivos',
+  'v0663',     '2', 'Não teve nenhum filho nascido vivo',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0663.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0664 dos filhos e filhas que teve, quantos estavam vivos em 31 de julho de 2010
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0664.R
+## gnur_vardict_typeC_v0664.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "dos filhos e filhas que teve, quantos
+## estavam vivos em 31 de julho de 2010"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0664',     '1', 'Filhos vivos',
+  'v0664',     '2', 'Não sabe',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0664.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0665 qual é o sexo do último filho tido nascido vivo até 31 de julho de 2010
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0665.R
+## gnur_vardict_typeC_v0665.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "qual é o sexo do último filho tido nascido
+## vivo até 31 de julho de 2010"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0665',     '1', 'Masculino',
+  'v0665',     '2', 'Feminino',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0665.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0667 este(a) filho(a) estava vivo(a) em 31 de julho de 2010
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0667.R
+## gnur_vardict_typeC_v0667.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "este(a) filho(a) estava vivo(a) em 31 de
+## julho de 2010"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0667',     '1', 'Sim',
+  'v0667',     '2', 'Não',
+  'v0667',     '9', 'Não sabe',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0667.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0668 qual foi o mês e o ano que este(a) filho(a) faleceu
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0668.R
+## gnur_vardict_typeC_v0668.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "qual foi o mês e o ano que este(a)
+## filho(a) faleceu"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0668',     '1', 'Sabe o mês e ano ou somente o ano',
+  'v0668',     '2', 'Não sabe',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0668.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0669 quantos filhos e filhas nascidos mortos teve até 31 de julho de 2010
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0669.R
+## gnur_vardict_typeC_v0669.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "quantos filhos e filhas nascidos mortos
+## teve até 31 de julho de 2010"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0669',     '1', 'Teve filho nascido morto',
+  'v0669',     '2', 'Não teve filho nascido morto',
+  'v0669',     '3', 'Não sabe',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0669.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0670 assinale quem prestou as informações desta pessoa
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0670.R
+## gnur_vardict_typeC_v0670.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "assinale quem prestou as informações
+## desta pessoa"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0670',     '1', 'A própria pessoa',
+  'v0670',     '2', 'Outro morador',
+  'v0670',     '3', 'Não morador',
+  'v0670',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0670.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6900 condição de atividade na semana de referência
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v6900.R
+## gnur_vardict_typeC_v6900.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "condição de atividade na semana de
+## referência"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v6900',     '1', 'Economicamente ativas',
+  'v6900',     '2', 'Não economicamente ativas',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v6900.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6910 condição de ocupação na semana de referência
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v6910.R
+## gnur_vardict_typeC_v6910.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "condição de ocupação na semana de
+## referência"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v6910',     '1', 'Ocupadas',
+  'v6910',     '2', 'Desocupadas',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v6910.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6920 situação de ocupação na semana de referência
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v6920.R
+## gnur_vardict_typeC_v6920.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "situação de ocupação na semana de
+## referência"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v6920',     '1', 'Ocupadas',
+  'v6920',     '2', 'Não ocupadas',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v6920.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6930 posição na ocupação e categoria do emprego no trabalho principal
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v6930.R
+## gnur_vardict_typeC_v6930.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "posição na ocupação e categoria do emprego
+## no trabalho principal"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v6930',     '1', 'Empregados com carteira de trabalho assinada',
+  'v6930',     '2', 'Militares e funcionários públicos estatutários',
+  'v6930',     '3', 'Empregados sem carteira de trabalho assinada',
+  'v6930',     '4', 'Conta própria',
+  'v6930',     '5', 'Empregadores',
+  'v6930',     '6', 'Não remunerados',
+  'v6930',     '7', 'Trabalhadores na produção para o próprio consumo',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v6930.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v6940 subgrupo e categoria do emprego no trabalho principal
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v6940.R
+## gnur_vardict_typeC_v6940.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "subgrupo e categoria do emprego no
+## trabalho principal"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v6940',     '1', 'Trabalhadores domésticos com carteira de trabalho assinada',
+  'v6940',     '2', 'Trabalhadores domésticos sem carteira de trabalho assinada',
+  'v6940',     '3', 'Demais empregados com carteira de trabalho assinada',
+  'v6940',     '4', 'Militares e funcionários públicos estatutários',
+  'v6940',     '5', 'Demais empregados sem carteira de trabalho assinada',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v6940.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0604 tem mãe viva?
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0604.R
+## gnur_vardict_typeC_v0604.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "tem mãe viva?"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0604',     '1', 'Sim e mora neste domicílio',
+  'v0604',     '2', 'Sim e mora em outro domicílio',
+  'v0604',     '3', 'Não',
+  'v0604',     '4', 'Não sabe',
+  'v0604',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0604.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v5020 número da família
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v5020.R
+## gnur_vardict_typeC_v5020.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "número da família"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v5020',    '01', 'Famílias únicas ou conviventes principais: Corresponde à família dos responsáveis pela unidade doméstica.',
+  'v5020',    '02', 'Família convivente – segunda',
+  'v5020',    '03', 'Família convivente – terceira',
+  'v5020',    '04', 'Família convivente – quarta',
+  'v5020',    '05', 'Família convivente – quinta',
+  'v5020',    '06', 'Família convivente – sexta',
+  'v5020',    '07', 'Família convivente – sétima',
+  'v5020',    '08', 'Família convivente – oitava',
+  'v5020',    '09', 'Família convivente – nona',
+  'v5020',    'Branco', 'para pessoas residentes em domicílios coletivos e/ou em unidades domésticas localizadas em terras indígenas, onde não se fez a identificação de famílias.',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v5020.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v5030 tipo de unidade doméstica
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v5030.R
+## gnur_vardict_typeC_v5030.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "tipo de unidade doméstica"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v5030',     '1', 'Unipessoal',
+  'v5030',     '2', 'Duas pessoas ou mais sem parentesco',
+  'v5030',     '3', 'Duas pessoas ou mais com parentesco',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v5030.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v5040 indicadora de família
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v5040.R
+## gnur_vardict_typeC_v5040.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "indicadora de família"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v5040',     '1', 'Arranjo familiar',
+  'v5040',     '0', 'Arranjo não familiar',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v5040.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v5090 tipo de composição familiar das famílias únicas e conviventes principais
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v5090.R
+## gnur_vardict_typeC_v5090.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "tipo de composição familiar das famílias
+## únicas e conviventes principais"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v5090',     '1', 'Casal sem filho(s)',
+  'v5090',     '2', 'Casal sem filho(s) e com parente(s)',
+  'v5090',     '3', 'Casal com filho(s)',
+  'v5090',     '4', 'Casal com filho(s) e com parente(s)',
+  'v5090',     '5', 'Mulher sem cônjuge com filho(s)',
+  'v5090',     '6', 'Mulher sem cônjuge com filho(s) e com parente(s)',
+  'v5090',     '7', 'Homem sem cônjuge com filho(s)',
+  'v5090',     '8', 'Homem sem cônjuge com filho(s) e com parente(s)',
+  'v5090',     '9', 'Outro',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v5090.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v5100 tipo de composição familiar das famílias conviventes secundárias
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v5100.R
+## gnur_vardict_typeC_v5100.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "tipo de composição familiar das famílias
+## conviventes secundárias"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v5100',     '1', 'Casal sem filho(s)',
+  'v5100',     '2', 'Casal com filho(s)',
+  'v5100',     '3', 'Mulher sem cônjuge com filho(s)',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v5100.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0303 sexo do emigrante
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0303.R
+## gnur_vardict_typeC_v0303.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "sexo do emigrante"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0303',     '1', 'Masculino',
+  'v0303',     '2', 'Feminino',
+  'v0303',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0303.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0703 mês e ano de falecimento
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0703.R
+## gnur_vardict_typeC_v0703.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "mês e ano de falecimento"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0703',     '01', 'Agosto de 2009',
+  'v0703',     '02', 'Setembro de 2009',
+  'v0703',     '03', 'Outubro de 2009',
+  'v0703',     '04', 'Novembro de 2009',
+  'v0703',     '05', 'Dezembro de 2009',
+  'v0703',     '06', 'Janeiro de 2010',
+  'v0703',     '07', 'Fevereiro de 2010',
+  'v0703',     '08', 'Março de 2010',
+  'v0703',     '09', 'Abril de 2010',
+  'v0703',     '10', 'Maio de 2010',
+  'v0703',     '11', 'Junho de 2010',
+  'v0703',     '12', 'Julho de 2010',
+  'v0703',     '99', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0703.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+**** v0704 sexo da pessoa falecida
+
+#+begin_src R :tangle ./gnur_vardict_typeC_v0704.R
+## gnur_vardict_typeC_v0704.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação da variável "sexo da pessoa falecida"
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+
+tribble(
+  ~var,    ~a_code, ~a_desc,
+  'v0704',     '1', 'Masculino',
+  'v0704',     '2', 'Feminino',
+  'v0704',     '9', 'Ignorado',
+  ) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_typeC_v0704.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+** disponibilização do dicionário de variáveis tratado
+
+#+begin_src R :tangle ./gnur_parse_variables_dictionary.R
+## gnur_parse_variables_dictionary.R
+##
+##
+## br_ibge_censo_2010
+##
+## -------------------------------------------------------------------
+## Preparação do dicionário de variáveis e dos microdados
+## -------------------------------------------------------------------
+##
+
+library(dplyr)    # bind_rows, %>%, transmute
+library(readr)    # read_delim
+library(tidyr)    # expand_grid
+
+base_dir <- '/tmp/etl/br_ibge_censo_2010/'
+proc_data <- paste0(base_dir, 'data/')
+
+## Cria tabela vazia para preenchimento incremental posterior
+## com o dicionário de variáveis formado pelas colunas
+##   - var, o código da variável
+##   - a_code, o código da resposta
+##   - a_desc, a resposta por extenso
+vdict_right <- tibble()
+
+## Aqui começa uma longa construção da tabela vdict_right,
+## contra a qual será feita um left join. Essa tabela
+## vdict_right tem por objetivo guardar as combinações
+## de var, a_code e a_desc, descritas acima. Estas são
+## as variáveis e respostas tratadas em scripts próprios.
+## O processo consiste em ler o arquivo do disco e fazer
+## a escrita incremental (append) na tabela vdict_right.
+
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+## Primeiro bloco de variáveis: tipo A, com respostas
+## comuns a diferentes variáveis.
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+## UF
+vdict_right <-
+  bind_rows(
+    vdict_right,
+    expand_grid(
+      var = c(
+        'v0001',  #  v0001 Unidade da federação
+        'v6222',  #  v6222 Unidade da federação de nascimento
+        'v6252',  #  v6252 Unidade da federação de residência anterior
+        'v6262',  #  v6262 Unidade da federação de residência em 31 de julho de 2005
+        'v6362',  #  v6362 Unidade da federação que frequentava escola (ou creche)
+        'v6602'   #  v6602 Em que unidade da federação trabalhava
+      ),
+      read_delim( # pares de código (a_code) e nome (a_desc) das UFs
+        file = paste0( proc_data, 'vdict_typeA_common_uf.txt'),
+        delim = '|',
+        col_types = cols(.default = "c")
+      )
+    ) # expand_grid
+  ) # bind_rows
+
+## Municípios
+vdict_right <-
+  bind_rows(
+    vdict_right,
+    expand_grid(
+      var = c(
+        'v0002', #  v0002 código do município
+        'v6254', #  v6254 município de residência anterior
+        'v6264', #  v6264 município de residência em 31 de julho de 2005
+        'v6364', #  v6364 município que frequentava escola (ou creche)
+        'v6604'  #  v6604 em que município trabalhava
+      ),
+      read_delim( # pares de código (a_code) e nome (a_desc) dos municípios
+        file = paste0( proc_data, 'vdict_typeA_common_municipio.txt'),
+        delim = '|',
+        col_types = cols(.default = "c")
+      ) %>% transmute( a_code = cod_7, a_desc)
+    ) # expand_grid
+  ) # bind_rows
+
+## Países
+vdict_right <-
+  bind_rows(
+    vdict_right,
+    expand_grid(
+      var = c(
+        'v6224', # v6224 Qual é o país estrangeiro de nascimento
+        'v3061', # v3061 País de residência em 31 de julho de 2010           >>> Base de Emigração
+        'v6256', # v6256 País de residência anterior
+        'v6266', # v6266 País de residência em 31 de julho de 2005
+        'v6366', # v6366 País estrangeiro que frequentava escola (ou creche)
+        'v6606'  # v6606 Em que país estrangeiro trabalhava
+      ),
+      read_delim( # pares de código (a_code) e nome (a_desc) dos países
+        file = paste0( proc_data, 'vdict_typeA_common_pais.txt'),
+        delim = '|',
+        col_types = cols(.default = "c")
+      )
+    ) # expand_grid
+  ) # bind_rows
+
+## Ocupação
+vdict_right <-
+  bind_rows(
+    vdict_right,
+    expand_grid(
+      var = c(
+        'v6461', # v6461 Ocupação
+        'v6462'  # v6462 Qual era a ocupação que exercia no trabalho que tinha?
+      ),
+      read_delim( # pares de código (a_code) e nome (a_desc) da ocupação
+        file = paste0( proc_data, 'vdict_typeA_common_ocupacao.txt'),
+        delim = '|',
+        col_types = cols(.default = "c")
+      )
+    ) # expand_grid
+  ) # bind_rows
+
+## Atividade
+vdict_right <-
+  bind_rows(
+    vdict_right,
+    expand_grid(
+      var = c(
+        'v6471', # v6471 Atividade
+        'v6472'  # v6472 Qual era a atividade principal do empreendimento em que tinha esse trabalho?
+      ),
+      read_delim( # pares de código (a_code) e nome (a_desc) da atividade
+        file = paste0( proc_data, 'vdict_typeA_common_atividade.txt'),
+        delim = '|',
+        col_types = cols(.default = "c")
+      )
+    ) # expand_grid
+  ) # bind_rows
+
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+## Segundo bloco de variáveis: tipo C, com respostas
+## comuns a diferentes variáveis.
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+## Variáveis com respostas comuns Sim/Nao do tipo C
+vdict_right <-
+  bind_rows(
+    vdict_right,
+      read_delim(
+        file = paste0( proc_data, 'vdict_typeC_common_simnao.txt'),
+        delim = '|',
+        col_types = cols(.default = "c")
+      )
+  ) # bind_rows
+
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+## Terceiro bloco de variáveis: tipo A, com respostas
+## próprias de cada variável. Há diversos arquivos
+## individuais que são iterados, lidos em memória e
+## o conteúdo é incrementado à tabela vdict_right.
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+list_typeA <- list.files( path = proc_data, pattern = 'vdict_typeA_v')
+for (i in seq_along(list_typeA)){
+  vdict_right <-
+    bind_rows(
+      vdict_right,
+      read_delim(
+        file = paste0( proc_data, list_typeA[i]),
+        delim = '|',
+        col_types = cols(.default = 'c')
+      )
+    )
+}
+
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+## Último bloco de variáveis: tipo C, com respostas
+## próprias de cada variável. Igualmente, há diversos
+## arquivos individuais que são iterados, lidos em
+## memória e o conteúdo é incrementado à tabela
+## vdict_right.
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+list_typeC <- list.files( path = proc_data, pattern = 'vdict_typeC_v')
+for (i in seq_along(list_typeC)){
+  vdict_right <-
+    bind_rows(
+      vdict_right,
+      read_delim(
+        file = paste0( proc_data, list_typeC[i]),
+        delim = '|',
+        col_types = cols(.default = 'c')
+      )
+    )
+}
+
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+## Dicionário tratado de variáveis
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+## Base de domicílios
+read_delim(
+  file = paste0(proc_data, 'vdict_qdesc_domi.txt'),
+  delim = '|',
+  col_types = cols(.default = 'c')
+)  %>%
+  left_join(
+    vdict_right,
+    by = c("q_code" = "var")
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_domi.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
+
+## Base de Pessoas
+read_delim(
+  file = paste0(proc_data, 'vdict_qdesc_pess.txt'),
+  delim = '|',
+  col_types = cols(.default = 'c')
+)  %>%
+  left_join(
+    vdict_right,
+    by = c("q_code" = "var")
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_pess.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
+
+## Base de Emigração
+read_delim(
+  file = paste0(proc_data, 'vdict_qdesc_emig.txt'),
+  delim = '|',
+  col_types = cols(.default = 'c')
+)  %>%
+  left_join(
+    vdict_right,
+    by = c("q_code" = "var")
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_emig.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
+
+## Base de Mortalidade
+read_delim(
+  file = paste0(proc_data, 'vdict_qdesc_mort.txt'),
+  delim = '|',
+  col_types = cols(.default = 'c')
+)  %>%
+  left_join(
+    vdict_right,
+    by = c("q_code" = "var")
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_mort.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
+#+end_src
+
+
+#+begin_src sh
+parse_variables_dictionary_using_GNU_R(){
+
+    echo 'Prepara o dicionário de variáveis e tratamento dos microdados usando o GNU R'
+
+    for gnur_script in ./gnur_vardict*.R
+    do
+        echo "Executando $gnur_script..."
+        R CMD BATCH --quiet --vanilla $gnur_script
+    done
+
+    R CMD BATCH --quiet --vanilla ./gnur_parse_variables_dictionary.R
+    
+    rm *.Rout
+
+}
+#+end_src
+
+
+* microdados
+
+** download e conversão dos microdados para arquivos csv
+
+#+begin_src sh
+fetch_and_convert_microdata_to_parquet_format(){
+
+    # Censo 2010 possui 4 arquivos por estado:
+    #  - domi, base de domicílios
+    #  - pess, base de pessoas
+    #  - emig, base de emigração
+    #  - mort, base de mortalidade
+    base="domi pess emig mort"
+
+    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO; do
+
+        echo "Baixando os microdados de ${mdata_url}/${uf}.zip..."
+        R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/${uf}.zip' )"
+
+        echo "Descompactando os microdados do arquivo ${uf}.zip em ${raw_data}/${uf}..."
+        unzip ${raw_data}/$uf.zip -d ${raw_data}
+
+        echo "Removendo da pasta temporária o arquivo compactado ${uf}.zip..."
+        rm -rf ${raw_data}/$uf.zip
+
+        echo "Tratando as bases de ${uf}..."
+
+        for b in ${base}; do
+
+            echo "  Base: ${b}"
+            cut_args=$(cat ${proc_data}/cut_character_args_${b}.txt )
+
+            for f in $(find ${raw_data}/ -print | grep -i ${b}); do
+
+                echo "    Convertendo para csv o arquivo ${f}..."
+                cut \
+                    --output-delimiter=',' \
+                    --characters=$cut_args \
+                    ${f} | \
+                    tr -d ' ' > \
+                    ${proc_data}/microdata_${b}_${uf}.csv
+
+                echo "    Removendo arquivo original ${f}..."
+                rm ${f}
+
+                echo "    Convertendo a base de csv para parquet em ${parq_data}/${b}/${uf}..."
+                R CMD BATCH --quiet --vanilla "--args base='${b}' uf='${uf}'" ./gnur_transform_csv_into_parquet.R
+
+                echo "    Removendo o arquivo ${proc_data}/microdata_${b}_${uf}.csv..."
+                rm ${proc_data}/microdata_${b}_${uf}.csv
+            done
+        done
+
+    done
+
+    # remove arquivos temporários do GNU R do diretório
+    rm *.{Rout,out}
+}
+#+end_src
+
+** conversão dos microdados em formato parquet
+
+#+begin_src R :tangle ./gnur_transform_csv_into_parquet.R
+## gnur_transform_csv_into_parquet.R
+##
+## Converte microdados do formato texto para o formato parquet usando library(arrow)
+##
+## Função é chamada como
+##  R CMD BATCH --quiet --vanilla "--args base='pess' uf='SP1'" ./gnur_transform_csv_into_parquet.R
+
+## recupera os argumentos passados via linha de comando
+args <- commandArgs(TRUE)
+
+for(i in 1:length(args)){
+  eval(parse(text=args[[i]]))
+}
+
+library(arrow)  # open_dataset, write_dataset
+library(readr)  # read_delim
+library(glue)   # glue
+
+## pastas nas quais alocados os dados tratados e em formato parquet
+src_dir <- '/tmp/etl/br_ibge_censo_2010/'
+proc_data <- paste0(src_dir, 'data')
+parq_data <- paste0(src_dir, 'parquet')
+
+## importa todos os campos como string
+col_names <-
+    read_delim(
+      file = glue('{proc_data}/vdict_qdesc_{base}.txt'),
+      delim='|',
+      show_col_types = FALSE
+    )
+## adaptado de https://stackoverflow.com/a/71305598
+csv_schema <- schema(
+  purrr::map( col_names$q_code, ~Field$create(name = .x, type = string()))
+)
+
+## leitura dos microdados delimitados por ',' via
+## pacote 'arrow'.
+microdata_pipe_delimited <-
+  open_dataset(
+    glue('{proc_data}/microdata_{base}_{uf}.csv'),
+    format="csv",
+    schema = csv_schema,
+    col_names = TRUE,
+    skip = 0
+  )
+
+## escrita dos microdados tratados em formato 'parquet'
+## para agilidade e menor espaço em disco
+  write_dataset(
+    microdata_pipe_delimited, 
+    path = glue('{parq_data}/{base}/{uf}'),
+    format = 'parquet'
+  )
+#+end_src
+
+
+#+begin_src R :eval no :tangle no
+library(arrow)  # open_dataset
+library(dplyr)  # %>%, group_by, count
+library(glue)   # glue
+
+## pastas nas quais alocados os dados tratados e em formato parquet
+src_dir <- '/tmp/etl/br_ibge_censo_2010/'
+proc_data <- paste0(src_dir, 'data')
+parq_data <- paste0(src_dir, 'parquet')
+
+base <- 'pess'
+
+## leitura dos microdados delimitados por ',' via
+## pacote 'arrow'.
+
+## método japonês
+mdata_pess <-
+  open_dataset(
+    list.files(
+      glue('{parq_data}/pess'),
+      recursive = TRUE,
+      full.names = TRUE
+    )
+  )
+
+mdata_pess %>% group_by(v0615) %>% count() %>% collect()
+
+
+## método alemão
+mdata <-
+  open_dataset(
+    c(
+      file.path = glue('{parq_data}/{base}/AC/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/AL/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/AM/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/AP/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/BA/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/CE/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/DF/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/ES/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/GO/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MA/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MG/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MS/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MT/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PA/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PB/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PE/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PI/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PR/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RJ/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RN/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RO/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RR/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RS/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SC/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SE/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SP1/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SP2_RM/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/TO/part-0.parquet')
+    ),
+    format="parquet"
+  )
+#+end_src
+
+* orquestração do tratamento dos microdados do censo
+
+#+begin_src sh
+main(){
+
+    create_temporary_directories
+
+    fetch_variables_dictionary
+
+    parse_variables_dictionary_using_GNU_R
+
+    fetch_and_convert_microdata_to_parquet_format
+
+}
+
+main
+
+exit 0
+#+end_src
+
+
+# Local Variables:
+# eval: (add-hook 'after-save-hook (lambda () (org-babel-tangle) ))
+# End:
