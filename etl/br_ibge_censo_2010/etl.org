@@ -38,6 +38,7 @@ vdict_url=${base_url}/Documentacao.zip
 src_dir=/tmp/etl/br_ibge_censo_2010
 raw_data=${src_dir}/raw
 proc_data=${src_dir}/data
+parq_data=${src_dir}/parquet
 #+end_src
 
 * criação de diretórios temporários
@@ -52,6 +53,10 @@ create_temporary_directories(){
     echo "Criando diretórios temporários para dados tratados em $proc_data..."
     rm -rf ${proc_data}
     mkdir -p ${proc_data}
+
+    echo "Criando diretórios temporários para dados colunares em $parq_data..."
+    rm -rf ${parq_data}
+    mkdir -p ${parq_data}/{domi,pess,emig,mort}
 
 }
 #+end_src
@@ -4978,17 +4983,17 @@ fetch_and_convert_microdata(){
 
     # cria arquivo csv com linha de títulos de coluna para cada base
     base="domi pess emig mort"
-    for b in ${base}; do
-        cut \
-            --delimiter='|' \
-            --fields=2 \
-            ${proc_data}/vdict_qdesc_${b}.txt | \
-            tail -n+2 | \
-            sed -z 's/\n/,/g' | \
-            sed 's/.$/\n/' > ${proc_data}/microdata_${b}.csv
-    done
+    # for b in ${base}; do
+    #     cut \
+    #         --delimiter='|' \
+    #         --fields=2 \
+    #         ${proc_data}/vdict_qdesc_${b}.txt | \
+    #         tail -n+2 | \
+    #         sed -z 's/\n/,/g' | \
+    #         sed 's/.$/\n/' > ${proc_data}/microdata_${b}.csv
+    # done
 
-    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO; do
+    for uf in SP1; do #AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO; do
 
         echo "Baixando os microdados de $mdata_url/$uf.zip..."
         R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/$uf.zip' )"
@@ -5015,11 +5020,11 @@ fetch_and_convert_microdata(){
                     --output-delimiter=',' \
                     --characters=$cut_args \
                     ${f} | \
-                    tr -d ' ' >> \
-                    ${proc_data}/microdata_${b}.csv
+                    tr -d ' ' > \
+                    ${proc_data}/microdata_${b}_${uf}.csv
 
                 # removendo arquivo original
-                rm ${f}
+                # rm ${f}
             done
         done
 
@@ -5030,7 +5035,72 @@ fetch_and_convert_microdata(){
 
 ** conversão dos microdados em formato parquet
 
-#+begin_src R :tangle ./gnur_transform_microdata_into_parquet.R
+
+#+begin_src R :tangle ./gnur_transform_csv_into_parquet.R
+## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_transform_csv_into_parquet.R
+##
+## Converte microdados do formato texto para o formato parquet usando library(arrow)
+##
+## Função é chamada como
+##  R CMD BATCH --vanilla '--args base=pess uf=SP1' ./gnur_transform_csv_into_parquet.R
+
+## recupera os argumentos passados via linha de comando
+## for (arg in commandArgs(TRUE)){
+##   eval(parse(text=arg))
+## }
+base='pess'
+uf='SP1'
+
+library(arrow)  # open_dataset, write_parquet
+library(readr)  # read_delim
+library(glue)   # glue
+
+## pasta na qual estão alocadas as base tratadas em formato
+## texto delimitadas por pipe '|'
+src_dir <- '/tmp/etl/br_ibge_censo_2010/'
+proc_data <- paste0(src_dir, 'data')
+parq_data <- paste0(src_dir, 'parquet')
+
+## Censo 2010 possui 4 arquivos por estado:
+##  - domi, base de domicílios
+##  - pess, base de pessoas
+##  - emig, base de emigração
+##  - mort, base de mortalidade
+
+## importa todos os campos como string
+col_names <-
+    read_delim(
+      file = glue('{proc_data}/vdict_qdesc_{b}.txt'),
+      delim='|',
+      show_col_types = FALSE
+    )
+## adaptado de https://stackoverflow.com/a/71305598
+csv_schema <- schema(
+  purrr::map( col_names$q_code, ~Field$create(name = .x, type = string()))
+)
+
+## leitura dos microdados delimitados por ',' via
+## pacote 'arrow'. Nota: os dados são lidos sem nome
+## de colunas, o que será corrigido no próximo trecho.
+microdata_pipe_delimited <-
+  open_dataset(
+    glue('{proc_data}/microdata_{base}_{uf}.csv'),
+    format="csv",
+    schema = csv_schema,
+    col_names = TRUE,
+    skip = 0
+  )
+
+  write_dataset(
+    microdata_pipe_delimited, 
+    path = glue('{parq_data}/{b}/{uf}.parquet')
+  )
+
+#+end_src
+
+
+
+#+begin_src R :tangle ./gnur_transform_microdata_into_parquet_bkp.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_transform_microdata_into_parquet.R
 ##
 ## Converte microdados do formato texto para o formato parquet usando library(arrow)
@@ -5051,7 +5121,6 @@ proc_data <- paste0(src_dir, 'data')
 ##  - mort, base de mortalidade
 ##
 base <- c("domi", "pess", "emig", "mort")
-b <- base[2]
 
 ## o próximo bloco de código
 ##   1. itera cada elemento do vetor 'base'
@@ -5081,8 +5150,10 @@ for (b in base){
       glue('{proc_data}/microdata_{b}.csv'),
       format="csv",
       schema = chosen_schema,
-      col_names=TRUE
+      col_names = TRUE,
+      skip = 1
     )
+
   ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ## desativando este passo por limitação de memória...
   ## aparentemente antes de escrever em disco a função
@@ -5096,7 +5167,6 @@ for (b in base){
   ##   sink = glue('{proc_data}/microdata_{b}.parquet')
   ## )
 }
-
 #+end_src
 
 
@@ -5123,13 +5193,9 @@ main(){
 
     # parse_variables_dictionary_using_GNU_R
 
-    # fetch_microdata
-
-    # prepare_microdata_for_data_ingestion
-
     fetch_and_convert_microdata
 
-    convert_microdata_to_parquet_using_arrow_and_GNU_R
+    # convert_microdata_to_parquet_using_arrow_and_GNU_R
 
 }
 
