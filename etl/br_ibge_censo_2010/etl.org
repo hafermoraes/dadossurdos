@@ -5049,7 +5049,7 @@ for(i in 1:length(args)){
   eval(parse(text=args[[i]]))
 }
 
-library(arrow)  # open_dataset, write_parquet
+library(arrow)  # open_dataset, write_dataset
 library(readr)  # read_delim
 library(glue)   # glue
 
@@ -5091,6 +5091,73 @@ microdata_pipe_delimited <-
   )
 #+end_src
 
+
+#+begin_src R :eval no :tangle no
+
+library(arrow)  # open_dataset
+library(dplyr)
+library(glue)   # glue
+
+## pasta na qual estão alocadas as base tratadas em formato
+## texto delimitadas por pipe '|'
+src_dir <- '/tmp/etl/br_ibge_censo_2010/'
+proc_data <- paste0(src_dir, 'data')
+parq_data <- paste0(src_dir, 'parquet')
+
+base <- 'pess'
+
+## leitura dos microdados delimitados por ',' via
+## pacote 'arrow'.
+
+## método japonês
+mdata_pess <-
+  open_dataset(
+    list.files(
+      glue('{parq_data}/pess'),
+      recursive = TRUE,
+      full.names = TRUE
+    )
+  )
+
+mdata_pess %>% group_by(v1001, v1002) %>% count(sort=TRUE) %>% collect()
+
+
+## método alemão
+mdata <-
+  open_dataset(
+    c(
+      file.path = glue('{parq_data}/{base}/AC/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/AL/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/AM/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/AP/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/BA/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/CE/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/DF/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/ES/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/GO/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MA/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MG/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MS/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MT/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PA/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PB/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PE/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PI/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PR/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RJ/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RN/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RO/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RR/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RS/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SC/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SE/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SP1/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SP2_RM/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/TO/part-0.parquet')
+    ),
+    format="parquet"
+  )
+#+end_src
 
 * orquestração do tratamento dos microdados do censo
 
