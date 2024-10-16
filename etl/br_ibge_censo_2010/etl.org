@@ -4979,32 +4979,27 @@ parse_variables_dictionary_using_GNU_R(){
 ** download e conversão dos microdados para arquivos csv
 
 #+begin_src sh
-fetch_and_convert_microdata(){
+fetch_and_convert_microdata_to_parquet_format(){
 
-    # cria arquivo csv com linha de títulos de coluna para cada base
+    # Censo 2010 possui 4 arquivos por estado:
+    #  - domi, base de domicílios
+    #  - pess, base de pessoas
+    #  - emig, base de emigração
+    #  - mort, base de mortalidade
     base="domi pess emig mort"
-    # for b in ${base}; do
-    #     cut \
-    #         --delimiter='|' \
-    #         --fields=2 \
-    #         ${proc_data}/vdict_qdesc_${b}.txt | \
-    #         tail -n+2 | \
-    #         sed -z 's/\n/,/g' | \
-    #         sed 's/.$/\n/' > ${proc_data}/microdata_${b}.csv
-    # done
 
-    for uf in SP1; do #AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO; do
+    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO; do
 
-        echo "Baixando os microdados de $mdata_url/$uf.zip..."
-        R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/$uf.zip' )"
+        echo "Baixando os microdados de ${mdata_url}/${uf}.zip..."
+        R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/${uf}.zip' )"
 
-        echo "Descompactando os microdados do arquivo $uf.zip..."
+        echo "Descompactando os microdados do arquivo ${uf}.zip em ${raw_data}/${uf}..."
         unzip ${raw_data}/$uf.zip -d ${raw_data}
 
-        echo "Removendo da pasta temporária o arquivo compactado $uf.zip..."
+        echo "Removendo da pasta temporária o arquivo compactado ${uf}.zip..."
         rm -rf ${raw_data}/$uf.zip
 
-        echo "Convertendo as bases de ${uf} para formato delimitado por ','"
+        echo "Tratando as bases de ${uf}..."
 
         for b in ${base}; do
 
@@ -5013,9 +5008,7 @@ fetch_and_convert_microdata(){
 
             for f in $(find ${raw_data}/ -print | grep -i ${b}); do
 
-                echo "    Arquivo: ${f}"
-
-                # convertendo base unificada para formato delimitado por ','
+                echo "    Convertendo para csv o arquivo ${f}..."
                 cut \
                     --output-delimiter=',' \
                     --characters=$cut_args \
@@ -5023,8 +5016,14 @@ fetch_and_convert_microdata(){
                     tr -d ' ' > \
                     ${proc_data}/microdata_${b}_${uf}.csv
 
-                # removendo arquivo original
-                # rm ${f}
+                echo "    Removendo arquivo original ${f}..."
+                rm ${f}
+
+                echo "    Convertendo a base de csv para parquet em ${parq_data}/${b}/${uf}..."
+                R CMD BATCH --quiet --vanilla "--args base='${b}' uf='${uf}'" ./gnur_transform_csv_into_parquet.R
+
+                echo "    Removendo o arquivo ${proc_data}/microdata_${b}_${uf}.csv..."
+                rm ${proc_data}/microdata_${b}_${uf}.csv
             done
         done
 
@@ -5035,21 +5034,20 @@ fetch_and_convert_microdata(){
 
 ** conversão dos microdados em formato parquet
 
-
 #+begin_src R :tangle ./gnur_transform_csv_into_parquet.R
 ## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_transform_csv_into_parquet.R
 ##
 ## Converte microdados do formato texto para o formato parquet usando library(arrow)
 ##
 ## Função é chamada como
-##  R CMD BATCH --vanilla '--args base=pess uf=SP1' ./gnur_transform_csv_into_parquet.R
+##  R CMD BATCH --quiet --vanilla "--args base='pess' uf='SP1'" ./gnur_transform_csv_into_parquet.R
 
 ## recupera os argumentos passados via linha de comando
-## for (arg in commandArgs(TRUE)){
-##   eval(parse(text=arg))
-## }
-base='pess'
-uf='SP1'
+args <- commandArgs(TRUE)
+
+for(i in 1:length(args)){
+  eval(parse(text=args[[i]]))
+}
 
 library(arrow)  # open_dataset, write_parquet
 library(readr)  # read_delim
@@ -5061,16 +5059,10 @@ src_dir <- '/tmp/etl/br_ibge_censo_2010/'
 proc_data <- paste0(src_dir, 'data')
 parq_data <- paste0(src_dir, 'parquet')
 
-## Censo 2010 possui 4 arquivos por estado:
-##  - domi, base de domicílios
-##  - pess, base de pessoas
-##  - emig, base de emigração
-##  - mort, base de mortalidade
-
 ## importa todos os campos como string
 col_names <-
     read_delim(
-      file = glue('{proc_data}/vdict_qdesc_{b}.txt'),
+      file = glue('{proc_data}/vdict_qdesc_{base}.txt'),
       delim='|',
       show_col_types = FALSE
     )
@@ -5080,8 +5072,7 @@ csv_schema <- schema(
 )
 
 ## leitura dos microdados delimitados por ',' via
-## pacote 'arrow'. Nota: os dados são lidos sem nome
-## de colunas, o que será corrigido no próximo trecho.
+## pacote 'arrow'.
 microdata_pipe_delimited <-
   open_dataset(
     glue('{proc_data}/microdata_{base}_{uf}.csv'),
@@ -5091,94 +5082,13 @@ microdata_pipe_delimited <-
     skip = 0
   )
 
+## escrita dos microdados tratados em formato 'parquet'
+## para agilidade e menor espaço em disco
   write_dataset(
     microdata_pipe_delimited, 
-    path = glue('{parq_data}/{b}/{uf}.parquet')
+    path = glue('{parq_data}/{base}/{uf}'),
+    format = 'parquet'
   )
-
-#+end_src
-
-
-
-#+begin_src R :tangle ./gnur_transform_microdata_into_parquet_bkp.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_transform_microdata_into_parquet.R
-##
-## Converte microdados do formato texto para o formato parquet usando library(arrow)
-
-library(arrow)  # read_delim_arrow, write_parquet
-library(readr)  # read_delim
-library(glue)   # glue
-
-## pasta na qual estão alocadas as base tratadas em formato
-## texto delimitadas por pipe '|'
-src_dir <- '/tmp/etl/br_ibge_censo_2010/'
-proc_data <- paste0(src_dir, 'data')
-
-## Censo 2010 possui 4 arquivos por estado:
-##  - domi, base de domicílios
-##  - pess, base de pessoas
-##  - emig, base de emigração
-##  - mort, base de mortalidade
-##
-base <- c("domi", "pess", "emig", "mort")
-
-## o próximo bloco de código
-##   1. itera cada elemento do vetor 'base'
-##   2. lê o microdado delimitado por ',' via pacote 'arrow'
-##   3. salva em disco o microdado em formato 'parquet',
-##      responsável pela redução do tamanho físico do
-##      microdado.
-for (b in base){
-
-  ## importa todos os campos como string
-  col_names <-
-    read_delim(
-      file = glue('{proc_data}/vdict_qdesc_{b}.txt'),
-      delim='|',
-      show_col_types = FALSE
-    )
-  ## adaptado de https://stackoverflow.com/a/71305598
-  chosen_schema <- schema(
-    purrr::map( col_names$q_code, ~Field$create(name = .x, type = string()))
-  )
-
-  ## leitura dos microdados delimitados por ',' via
-  ## pacote 'arrow'. Nota: os dados são lidos sem nome
-  ## de colunas, o que será corrigido no próximo trecho.
-  microdata_pipe_delimited <-
-    open_dataset(
-      glue('{proc_data}/microdata_{b}.csv'),
-      format="csv",
-      schema = chosen_schema,
-      col_names = TRUE,
-      skip = 1
-    )
-
-  ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ## desativando este passo por limitação de memória...
-  ## aparentemente antes de escrever em disco a função
-  ## write_parquet() lê os dados na memória, por isso não
-  ## é viável usar essa solução...
-  ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ## escrita dos dados em formato 'parquet' para redução
-  ## do tamanho físico do arquivo na pasta de destino
-  ## write_parquet(
-  ##   microdata_pipe_delimited, 
-  ##   sink = glue('{proc_data}/microdata_{b}.parquet')
-  ## )
-}
-#+end_src
-
-
-#+begin_src sh
-convert_microdata_to_parquet_using_arrow_and_GNU_R(){
-
-    echo 'Converting the processed microdata to .parquet format using GNU R and arrow library...'
-    R CMD BATCH --quiet --vanilla ./gnur_transform_microdata_into_parquet.R
-    rm *.Rout
-
-    echo 'DONE.'
-}
 #+end_src
 
 
@@ -5187,15 +5097,13 @@ convert_microdata_to_parquet_using_arrow_and_GNU_R(){
 #+begin_src sh
 main(){
 
-    # create_temporary_directories
+    create_temporary_directories
 
-    # fetch_variables_dictionary
+    fetch_variables_dictionary
 
-    # parse_variables_dictionary_using_GNU_R
+    parse_variables_dictionary_using_GNU_R
 
-    fetch_and_convert_microdata
-
-    # convert_microdata_to_parquet_using_arrow_and_GNU_R
+    fetch_and_convert_microdata_to_parquet_format
 
 }
 
