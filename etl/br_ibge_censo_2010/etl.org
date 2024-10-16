@@ -34,7 +34,8 @@ base_url=${base_url}/Microdados
 mdata_url=${base_url}
 vdict_url=${base_url}/Documentacao.zip
 
-# diretórios nos quais serão armazenados os dados brutos (raw) e tratados (data)
+# diretórios nos quais serão armazenados os dados brutos (raw), tratados (data) e
+# convertidos no formato parquet para agilidade e menor espaço
 src_dir=/tmp/etl/br_ibge_censo_2010
 raw_data=${src_dir}/raw
 proc_data=${src_dir}/data
@@ -89,7 +90,7 @@ Ao que tudo indica,
 - =N= refere-se provavelmente aos dados numéricos, para os quais não é necessário um dicionário de variáveis já que a variável está pronta para uso, sendo somente necessário convertê-la para o tipo de dados (inteiro, data, número decimal, etc...) necessário para análises
 
 #+begin_src R :tangle ./gnur_vardict_understanding.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_understanding.R
+## gnur_vardict_understanding.R
 ##
 ## entendimento do dicionário de variáveis do censo demográfico brasileiro de 2010 (br_ibge_censo_2010)
 
@@ -306,10 +307,12 @@ cut_qdesc_aux <-
     q_desc = substr( desc, start = 1, stop = substr_stop_arg),
     ## adicionalmente em alguns casos é necessário remover os
     ## caracteres ':' e '\n' remanescentes de enunciados de
-    ## questões do censo
+    ## questões do censo,
     q_desc = str_remove_all(string = q_desc, pattern = ':|\n'),
-    ## e converter a 'q_desc' para letras minúsculas
+    ## converter a 'q_desc' para letras minúsculas
     q_desc = str_to_lower(q_desc),
+    ## e remover espaços redundantes do enunciado
+    q_desc = str_trim(q_desc)
     ) %>%
   ## 'desativa' o modo de operação linha-a-linha do comando
   ## rowwise() 'ativado' acima.
@@ -463,7 +466,7 @@ As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigra�
 - v6602 Em que unidade da federação trabalhava
 
 #+begin_src R :tangle ./gnur_vardict_typeA_uf.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_uf.R
+## gnur_vardict_typeA_uf.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -551,7 +554,7 @@ As seguintes variáveis das bases de domicílios =DOMI=, pessoas =PESS=, emigra�
 - v6604 Em que município trabalhava
 
 #+begin_src R :tangle ./gnur_vardict_typeA_municipio.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_municipio.R
+## gnur_vardict_typeA_municipio.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -654,7 +657,7 @@ As seguintes variáveis das bases de pessoas =PESS= e emigração =EMIG= compart
 - v6606 em que país estrangeiro trabalhava
 
 #+begin_src R :tangle ./gnur_vardict_typeA_pais.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_pais.R
+## gnur_vardict_typeA_pais.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -743,7 +746,7 @@ As seguintes variáveis da base de pessoas =PESS= compartilham dos mesmos códig
 - v6462 Qual era a ocupação que exercia no trabalho que tinha?
 
 #+begin_src R :tangle ./gnur_vardict_typeA_ocupacao.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_ocupacao.R
+## gnur_vardict_typeA_ocupacao.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -814,7 +817,7 @@ As seguintes variáveis da base de pessoas =PESS= compartilham dos mesmos códig
 - v6472 Qual era a atividade principal do empreendimento em que tinha esse trabalho?
 
 #+begin_src R :tangle ./gnur_vardict_typeA_atividade.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_atividade.R
+## gnur_vardict_typeA_atividade.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -886,7 +889,7 @@ input %>%
 **** v1002 código da mesorregião
 
 #+begin_src R :tangle ./gnur_vardict_typeA_meso.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_meso.R
+## gnur_vardict_typeA_meso.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -954,7 +957,7 @@ input %>%
 **** v1003 código da microrregião
 
 #+begin_src R :tangle ./gnur_vardict_typeA_micro.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_micro.R
+## gnur_vardict_typeA_micro.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -1022,7 +1025,7 @@ input %>%
 **** v1004 código da região metropolitana
 
 #+begin_src R :tangle ./gnur_vardict_typeA_metro.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_metro.R
+## gnur_vardict_typeA_metro.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -1095,7 +1098,7 @@ tribble(
 **** v6352 curso superior de graduação
 
 #+begin_src R :tangle ./gnur_vardict_typeA_curso_grad.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_curso_grad.R
+## gnur_vardict_typeA_curso_grad.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -1163,7 +1166,7 @@ input %>%
 **** v6354 curso de mestrado
 
 #+begin_src R :tangle ./gnur_vardict_typeA_curso_mestr.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_curso_mestr.R
+## gnur_vardict_typeA_curso_mestr.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -1231,7 +1234,7 @@ input %>%
 **** v6356 curso de doutorado
 
 #+begin_src R :tangle ./gnur_vardict_typeA_curso_dout.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_curso_dout.R
+## gnur_vardict_typeA_curso_dout.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -1299,7 +1302,7 @@ input %>%
 **** v6121 religião
 
 #+begin_src R :tangle ./gnur_vardict_typeA_religiao.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeA_religiao.R
+## gnur_vardict_typeA_religiao.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -1376,7 +1379,7 @@ input %>%
 **** typeC Sim/Não
 
 #+begin_src R :tangle ./gnur_vardict_typeC_SimNao.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_SimNao.R
+## gnur_vardict_typeC_SimNao.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -1789,7 +1792,7 @@ tribble(
 **** v1001 região geográfica
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v1001.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v1001.R
+## gnur_vardict_typeC_v1001.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -1827,7 +1830,7 @@ tribble(
 **** v1006 situação do domicílio
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v1006.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v1006.R
+## gnur_vardict_typeC_v1006.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -1862,7 +1865,7 @@ tribble(
 **** v4001 espécie de unidade visitada
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v4001.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v4001.R
+## gnur_vardict_typeC_v4001.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -1899,7 +1902,7 @@ tribble(
 **** v4002 tipo de espécie
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v4002.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v4002.R
+## gnur_vardict_typeC_v4002.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -1945,7 +1948,7 @@ tribble(
 **** v0201 domicílio, condição de ocupação
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0201.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0201.R
+## gnur_vardict_typeC_v0201.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -1984,7 +1987,7 @@ tribble(
 **** v0202 material predominante, paredes externas
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0202.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0202.R
+## gnur_vardict_typeC_v0202.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2026,7 +2029,7 @@ tribble(
 **** v0205 banheiros de uso exclusivo, número
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0205.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0205.R
+## gnur_vardict_typeC_v0205.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2069,7 +2072,7 @@ tribble(
 **** v0207 esgotamento sanitário, tipo
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0207.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0207.R
+## gnur_vardict_typeC_v0207.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2108,7 +2111,7 @@ tribble(
 **** v0208 abastecimento de água, forma
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0208.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0208.R
+## gnur_vardict_typeC_v0208.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2151,7 +2154,7 @@ tribble(
 **** v0209 abastecimento de água, canalização
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0209.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0209.R
+## gnur_vardict_typeC_v0209.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2187,7 +2190,7 @@ tribble(
 **** v0210 lixo, destino
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0210.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0210.R
+## gnur_vardict_typeC_v0210.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2227,7 +2230,7 @@ tribble(
 **** v0211 energia elétrica, existência
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0211.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0211.R
+## gnur_vardict_typeC_v0211.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2263,7 +2266,7 @@ tribble(
 **** v0212 existência de medidor ou relógio, energia elétrica, companhia distribuidora
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0212.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0212.R
+## gnur_vardict_typeC_v0212.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2300,7 +2303,7 @@ tribble(
 **** v0402 a responsabilidade pelo domicílio é de
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0402.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0402.R
+## gnur_vardict_typeC_v0402.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2336,7 +2339,7 @@ tribble(
 **** v6600 espécie da unidade doméstica
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v6600.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6600.R
+## gnur_vardict_typeC_v6600.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2373,7 +2376,7 @@ tribble(
 **** v6210 adequação da moradia
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v6210.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6210.R
+## gnur_vardict_typeC_v6210.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2409,7 +2412,7 @@ tribble(
 **** v1005 situação do setor
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v1005.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v1005.R
+## gnur_vardict_typeC_v1005.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2450,7 +2453,7 @@ tribble(
 **** v0502 relação de parentesco ou de convivência com a pessoa responsável pelo domicílio
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0502.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0502.R
+## gnur_vardict_typeC_v0502.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2504,7 +2507,7 @@ tribble(
 **** v0601 sexo
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0601.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0601.R
+## gnur_vardict_typeC_v0601.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2539,7 +2542,7 @@ tribble(
 **** v6040 forma de declaração da idade
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v6040.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6040.R
+## gnur_vardict_typeC_v6040.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2574,7 +2577,7 @@ tribble(
 **** v0606 cor ou raça
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0606.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0606.R
+## gnur_vardict_typeC_v0606.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2613,7 +2616,7 @@ tribble(
 **** v0613 registro de nascimento
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0613.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0613.R
+## gnur_vardict_typeC_v0613.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2652,7 +2655,7 @@ tribble(
 **** v0614 dificuldade permanente de enxergar
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0614.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0614.R
+## gnur_vardict_typeC_v0614.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2690,7 +2693,7 @@ tribble(
 **** v0615 dificuldade permanente de ouvir
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0615.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0615.R
+## gnur_vardict_typeC_v0615.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2728,7 +2731,7 @@ tribble(
 **** v0616 dificuldade permanente de caminhar ou subir degraus
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0616.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0616.R
+## gnur_vardict_typeC_v0616.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2767,7 +2770,7 @@ tribble(
 **** v0617 deficiência mental/intelectual permanente
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0617.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0617.R
+## gnur_vardict_typeC_v0617.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2803,7 +2806,7 @@ tribble(
 **** v0618 nasceu neste município
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0618.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0618.R
+## gnur_vardict_typeC_v0618.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2839,7 +2842,7 @@ tribble(
 **** v0619 nasceu nesta unidade da federação
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0619.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0619.R
+## gnur_vardict_typeC_v0619.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2875,7 +2878,7 @@ tribble(
 **** v0620 nacionalidade
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0620.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0620.R
+## gnur_vardict_typeC_v0620.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2911,7 +2914,7 @@ tribble(
 **** v0622 uf ou país estrangeiro de nascimento
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0622.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0622.R
+## gnur_vardict_typeC_v0622.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2946,7 +2949,7 @@ tribble(
 **** v0625 unidade da federação e município ou país estrangeiro de moradia antes de mudar-se para este município
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0625.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0625.R
+## gnur_vardict_typeC_v0625.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -2982,7 +2985,7 @@ tribble(
 **** v0626 residência em 31 de julho de 2005
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0626.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0626.R
+## gnur_vardict_typeC_v0626.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3017,7 +3020,7 @@ tribble(
 **** v0628 frequenta escola ou creche
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0628.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0628.R
+## gnur_vardict_typeC_v0628.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3054,7 +3057,7 @@ tribble(
 **** v0629 curso que frequenta
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0629.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0629.R
+## gnur_vardict_typeC_v0629.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3099,7 +3102,7 @@ tribble(
 **** v0630 série / ano que frequenta
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0630.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0630.R
+## gnur_vardict_typeC_v0630.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3142,7 +3145,7 @@ tribble(
 **** v0631 série que frequenta
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0631.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0631.R
+## gnur_vardict_typeC_v0631.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3180,7 +3183,7 @@ tribble(
 **** v0633 curso mais elevado que frequentou
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0633.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0633.R
+## gnur_vardict_typeC_v0633.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3227,7 +3230,7 @@ tribble(
 **** v0635 espécie do curso mais elevado concluído
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0635.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0635.R
+## gnur_vardict_typeC_v0635.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3263,7 +3266,7 @@ tribble(
 **** v6400 nível de instrução
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v6400.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6400.R
+## gnur_vardict_typeC_v6400.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3301,7 +3304,7 @@ tribble(
 **** v0636 município e unidade da federação ou país estrangeiro que frequentava escola (ou creche)
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0636.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0636.R
+## gnur_vardict_typeC_v0636.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3338,7 +3341,7 @@ tribble(
 **** v0637 vive em companhia de cônjuge ou companheiro(a)
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0637.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0637.R
+## gnur_vardict_typeC_v0637.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3375,7 +3378,7 @@ tribble(
 **** v0639 natureza da união
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0639.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0639.R
+## gnur_vardict_typeC_v0639.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3412,7 +3415,7 @@ tribble(
 **** v0640 estado civil
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0640.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0640.R
+## gnur_vardict_typeC_v0640.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3450,7 +3453,7 @@ tribble(
 **** v0645 quantos trabalhos tinha
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0645.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0645.R
+## gnur_vardict_typeC_v0645.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3485,7 +3488,7 @@ tribble(
 **** v0648 nesse trabalho era
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0648.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0648.R
+## gnur_vardict_typeC_v0648.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3525,7 +3528,7 @@ tribble(
 **** v0649 quantas pessoas empregava nesse trabalho
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0649.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0649.R
+## gnur_vardict_typeC_v0649.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3560,7 +3563,7 @@ tribble(
 **** v0650 era contribuinte de instituto de previdência oficial em algum trabalho que tinha na semana de 25 a 31 de julho de 2010
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0650.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0650.R
+## gnur_vardict_typeC_v0650.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3598,7 +3601,7 @@ tribble(
 **** v0651 no trabalho principal, qual era o rendimento bruto (ou a retirada) mensal que ganhava habitualmente em julho de 2010
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0651.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0651.R
+## gnur_vardict_typeC_v0651.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3636,7 +3639,7 @@ tribble(
 **** v0652 nos demais trabalhos, qual era o rendimento bruto (ou a retirada) mensal que ganhava habitualmente em julho de 2010
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0652.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0652.R
+## gnur_vardict_typeC_v0652.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3674,7 +3677,7 @@ tribble(
 **** v0656 em julho de 2010, tinha rendimento mensal habitual de aposentadoria ou pensão de instituto de previdência oficial (federal, estadual ou municipal)?
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0656.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0656.R
+## gnur_vardict_typeC_v0656.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3712,7 +3715,7 @@ tribble(
 **** v0657 em julho de 2010, tinha rendimento mensal habitual de programa social bolsa-família ou programa de erradicação do trabalho infantil (peti)
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0657.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0657.R
+## gnur_vardict_typeC_v0657.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3750,7 +3753,7 @@ tribble(
 **** v0658 em julho 2010, tinha rendimento mensal habitual de outros programas sociais ou de transferências
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0658.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0658.R
+## gnur_vardict_typeC_v0658.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3787,7 +3790,7 @@ tribble(
 **** v0659 em julho de 2010, tinha rendimento mensal habitual de outras fontes (juros de poupança, aplicações financeiras, aluguel, pensão, aposentadoria de previdência privada, etc)?
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0659.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0659.R
+## gnur_vardict_typeC_v0659.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3826,7 +3829,7 @@ tribble(
 **** v0660 em que município e unidade da federação ou país estrangeiro trabalha
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0660.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0660.R
+## gnur_vardict_typeC_v0660.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3865,7 +3868,7 @@ tribble(
 **** v0662 qual é o tempo habitual gasto de deslocamento de sua casa até o trabalho
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0662.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0662.R
+## gnur_vardict_typeC_v0662.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3904,7 +3907,7 @@ tribble(
 **** v0663 quantos filhos e filhas nascidos vivos teve até 31 de julho de 2010
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0663.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0663.R
+## gnur_vardict_typeC_v0663.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3940,7 +3943,7 @@ tribble(
 **** v0664 dos filhos e filhas que teve, quantos estavam vivos em 31 de julho de 2010
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0664.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0664.R
+## gnur_vardict_typeC_v0664.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -3976,7 +3979,7 @@ tribble(
 **** v0665 qual é o sexo do último filho tido nascido vivo até 31 de julho de 2010
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0665.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0665.R
+## gnur_vardict_typeC_v0665.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4012,7 +4015,7 @@ tribble(
 **** v0667 este(a) filho(a) estava vivo(a) em 31 de julho de 2010
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0667.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0667.R
+## gnur_vardict_typeC_v0667.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4049,7 +4052,7 @@ tribble(
 **** v0668 qual foi o mês e o ano que este(a) filho(a) faleceu
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0668.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0668.R
+## gnur_vardict_typeC_v0668.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4085,7 +4088,7 @@ tribble(
 **** v0669 quantos filhos e filhas nascidos mortos teve até 31 de julho de 2010
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0669.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0669.R
+## gnur_vardict_typeC_v0669.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4122,7 +4125,7 @@ tribble(
 **** v0670 assinale quem prestou as informações desta pessoa
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0670.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0670.R
+## gnur_vardict_typeC_v0670.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4160,7 +4163,7 @@ tribble(
 **** v6900 condição de atividade na semana de referência
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v6900.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6900.R
+## gnur_vardict_typeC_v6900.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4196,7 +4199,7 @@ tribble(
 **** v6910 condição de ocupação na semana de referência
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v6910.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6910.R
+## gnur_vardict_typeC_v6910.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4232,7 +4235,7 @@ tribble(
 **** v6920 situação de ocupação na semana de referência
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v6920.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6920.R
+## gnur_vardict_typeC_v6920.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4268,7 +4271,7 @@ tribble(
 **** v6930 posição na ocupação e categoria do emprego no trabalho principal
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v6930.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6930.R
+## gnur_vardict_typeC_v6930.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4309,7 +4312,7 @@ tribble(
 **** v6940 subgrupo e categoria do emprego no trabalho principal
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v6940.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v6940.R
+## gnur_vardict_typeC_v6940.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4348,7 +4351,7 @@ tribble(
 **** v0604 tem mãe viva?
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0604.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0604.R
+## gnur_vardict_typeC_v0604.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4386,7 +4389,7 @@ tribble(
 **** v5020 número da família
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v5020.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v5020.R
+## gnur_vardict_typeC_v5020.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4429,7 +4432,7 @@ tribble(
 **** v5030 tipo de unidade doméstica
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v5030.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v5030.R
+## gnur_vardict_typeC_v5030.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4465,7 +4468,7 @@ tribble(
 **** v5040 indicadora de família
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v5040.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v5040.R
+## gnur_vardict_typeC_v5040.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4500,7 +4503,7 @@ tribble(
 **** v5090 tipo de composição familiar das famílias únicas e conviventes principais
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v5090.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v5090.R
+## gnur_vardict_typeC_v5090.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4543,7 +4546,7 @@ tribble(
 **** v5100 tipo de composição familiar das famílias conviventes secundárias
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v5100.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v5100.R
+## gnur_vardict_typeC_v5100.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4580,7 +4583,7 @@ tribble(
 **** v0303 sexo do emigrante
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0303.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0303.R
+## gnur_vardict_typeC_v0303.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4616,7 +4619,7 @@ tribble(
 **** v0703 mês e ano de falecimento
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0703.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0703.R
+## gnur_vardict_typeC_v0703.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4662,7 +4665,7 @@ tribble(
 **** v0704 sexo da pessoa falecida
 
 #+begin_src R :tangle ./gnur_vardict_typeC_v0704.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_vardict_typeC_v0704.R
+## gnur_vardict_typeC_v0704.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4698,7 +4701,7 @@ tribble(
 ** disponibilização do dicionário de variáveis tratado
 
 #+begin_src R :tangle ./gnur_parse_variables_dictionary.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_parse_variables_dictionary.R
+## gnur_parse_variables_dictionary.R
 ##
 ##
 ## br_ibge_censo_2010
@@ -4968,6 +4971,8 @@ parse_variables_dictionary_using_GNU_R(){
         R CMD BATCH --quiet --vanilla $gnur_script
     done
 
+    R CMD BATCH --quiet --vanilla ./gnur_parse_variables_dictionary.R
+    
     rm *.Rout
 
 }
@@ -5029,13 +5034,15 @@ fetch_and_convert_microdata_to_parquet_format(){
 
     done
 
+    # remove arquivos temporários do GNU R do diretório
+    rm *.{Rout,out}
 }
 #+end_src
 
 ** conversão dos microdados em formato parquet
 
 #+begin_src R :tangle ./gnur_transform_csv_into_parquet.R
-## https://github.com/hafermoraes/dadossurdos/etl/br_ibge_censo_2010/gnur_transform_csv_into_parquet.R
+## gnur_transform_csv_into_parquet.R
 ##
 ## Converte microdados do formato texto para o formato parquet usando library(arrow)
 ##
@@ -5053,8 +5060,7 @@ library(arrow)  # open_dataset, write_dataset
 library(readr)  # read_delim
 library(glue)   # glue
 
-## pasta na qual estão alocadas as base tratadas em formato
-## texto delimitadas por pipe '|'
+## pastas nas quais alocados os dados tratados e em formato parquet
 src_dir <- '/tmp/etl/br_ibge_censo_2010/'
 proc_data <- paste0(src_dir, 'data')
 parq_data <- paste0(src_dir, 'parquet')
@@ -5093,13 +5099,11 @@ microdata_pipe_delimited <-
 
 
 #+begin_src R :eval no :tangle no
-
 library(arrow)  # open_dataset
-library(dplyr)
+library(dplyr)  # %>%, group_by, count
 library(glue)   # glue
 
-## pasta na qual estão alocadas as base tratadas em formato
-## texto delimitadas por pipe '|'
+## pastas nas quais alocados os dados tratados e em formato parquet
 src_dir <- '/tmp/etl/br_ibge_censo_2010/'
 proc_data <- paste0(src_dir, 'data')
 parq_data <- paste0(src_dir, 'parquet')
@@ -5119,7 +5123,7 @@ mdata_pess <-
     )
   )
 
-mdata_pess %>% group_by(v1001, v1002) %>% count(sort=TRUE) %>% collect()
+mdata_pess %>% group_by(v0615) %>% count() %>% collect()
 
 
 ## método alemão
