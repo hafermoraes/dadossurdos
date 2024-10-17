@@ -83,7 +83,6 @@ fetch_variables_dictionary(){
         cat ${f} | \
                 sed 's/\t/    /g' | \
                 sed 's/\$//g' | \
-                sed 's/\.//g' | \
                 sed 's/\"//g' | \
                 sed 's/\/\*//g' | \
                 sed 's/\*\///g' > /tmp/aux
@@ -104,9 +103,6 @@ Parte das informações como códigos de países, ocupações, atividade, religi
 ##
 ## entendimento do dicionário de variáveis do censo demográfico brasileiro de 2000 (br_ibge_censo_2000)
 
-## caos primeiro, depois arruma...
-
-
 library(readxl)   # read_excel
 library(dplyr)    # mutate, transmute, filter, rename, bind_rows, arrange
 library(stringr)  # str_split, str_to_lower, str_trim, str_locate
@@ -120,35 +116,15 @@ proc_data <- paste0(src_dir, 'data/')
 
 
 domi <-
-  read_lines(
-    file = paste0(raw_data, 'SAS/LE DOMIC.sas'),
-    skip = 20,
-    locale = readr::locale(encoding = "ISO-8859-1"),
-  )
-
-domi %>%
-  tibble() %>%
-  rename(orig = 1) %>% 
-  mutate(
-    aux = str_replace_all(string = orig, pattern = '\t', replacement = '    '),
-    cont = substr(aux, start = 1, stop = 6),
-    var = substr(aux, start = 7, stop = 14),
-    nchars = substr(aux, start = 15, stop = 19),
-    desc = substr(aux, start = 20, stop = 1024)
-  ) %>%
-  View
-
-domi <-
   read_fwf(
     file = paste0(raw_data, 'SAS/LE_DOMIC.sas'),
     col_positions = fwf_widths(
       c(
-        7,   #  1-7   >> contador de linha         =cont=
-        6,   #  8-13  >> código da variável        =var=
-        6,  # 14-19  >> comprimento do campo      =nchars=
-        1024 # 20-    >> dicionário de variáveis   =desc=
+        6,   #  1-6   >> contador de linha         =col1=
+        13,   #  7-19  >> comprimento do campo      =col2=
+        1024 # 20-    >> dicionário de variáveis   =col3=
       ),
-      c('cont', 'var', 'nchars', 'desc')
+      c('col1', 'col2', 'col3')
     ),
     skip = 20,
     show_col_types = FALSE,
@@ -156,7 +132,15 @@ domi <-
     locale = readr::locale(encoding = "ISO-8859-1")
   )
 
-domi %>% View
+domi %>%
+  fill(col1, col2) %>%
+  rowwise() %>%
+  mutate(
+    sep = str_locate(string = col2, pattern = ' ')[1],
+    var = substr(col2, start = 1, stop = sep),
+    nchars = substr(col2, start = sep + 1, stop = 1024)
+  ) %>%
+  View
 #+end_src
 
 * orquestração do tratamento dos microdados do censo
