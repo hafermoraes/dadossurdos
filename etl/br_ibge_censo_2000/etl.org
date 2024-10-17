@@ -1,0 +1,184 @@
+#+property: header-args:sh  :tangle ./etl.sh
+
+* orquestração do processo de extração, tratamento e carga dos dados brutos do censo demográfico brasileiro de 2000
+
+Este arquivo -- =etl.org= -- é a base de geração dos códigos nas linguagens *shell* e *GNU R* usadas no tratamento das informações dos microdados.
+
+Arquivos com extensão *.org* correspondem ao modo Org no editor de texto GNU Emacs.
+
+Em cada bloco de código a seguir pode haver a opção denominada *tangle*, que é responsável por realizar a exportação do conteúdo dos scripts em arquivos locais.
+Blocos de código na linguagem *shell* são exportados no arquivo =./etl.sh= que é o script que orquestra a totalidade dos passos necessários para baixar, tratar e disponibilizar os microdados e o dicionário de variáveis.
+
+O comando tangle no editor GNU Emacs pode ser executado com a combinação de teclas =C-c C-v t=, que equivale a executar o comando =org-babel-tangle=.
+
+* cabeçalho do script =etl.sh=
+
+#+begin_src sh
+#!/bin/bash
+
+# (https://askubuntu.com/a/1455039)
+set -eu
+
+echo "extração e preparação dos microdados para =br-ibge-censo-2000=\n"
+#+end_src
+
+* variáveis globais usadas no script =etl.sh=
+
+#+begin_src sh
+# endereço na internet no qual estão armazenados os microdados e o dicionário de variáveis
+base_url=ftp://ftp.ibge.gov.br
+base_url=${base_url}/Censos
+base_url=${base_url}/Censo_Demografico_2000
+base_url=${base_url}/Microdados
+mdata_url=${base_url}
+vdict_url=${base_url}/1_Documentacao_20170908.zip
+
+# diretórios nos quais serão armazenados os dados brutos (raw), tratados (data) e
+# convertidos no formato parquet para agilidade e menor espaço
+src_dir=/tmp/etl/br_ibge_censo_2000
+raw_data=${src_dir}/raw
+proc_data=${src_dir}/data
+parq_data=${src_dir}/parquet
+#+end_src
+
+* criação de diretórios temporários
+
+#+begin_src sh
+create_temporary_directories(){
+
+    echo "Criando diretórios temporários para dados brutos em $raw_data..."
+    rm -rf ${raw_data}
+    mkdir -p ${raw_data}
+
+    echo "Criando diretórios temporários para dados tratados em $proc_data..."
+    rm -rf ${proc_data}
+    mkdir -p ${proc_data}
+
+    echo "Criando diretórios temporários para dados colunares em $parq_data..."
+    rm -rf ${parq_data}
+    mkdir -p ${parq_data}/{domi,pess,fami}
+
+}
+#+end_src
+
+* dicionário de variáveis
+** download do dicionário de variáveis e arquivos auxiliares
+
+#+begin_src sh
+fetch_variables_dictionary(){
+
+    echo "Baixando o dicionário de variáveis de $vdict_url..."
+    R --quiet --vanilla -e "curl::curl_download( '${vdict_url}', '${raw_data}/vdict.zip' )"
+
+    echo 'Descompactando o dicionário de variáveis do arquivo =vdict.zip=...'
+    unzip ${raw_data}/vdict.zip -d ${raw_data}
+
+    echo 'Removendo da pasta temporária o arquivo compactado =vdict.zip= file...'
+    rm -rf ${raw_data}/vdict.zip
+
+    echo 'Removendo caracteres dos scripts SAS para melhor tratamento no R...'
+    find ${raw_data}/SAS -type f | rename 's/ /_/g'
+
+    for f in $(find ${raw_data}/SAS -type f | grep sas); do
+        cat ${f} | \
+                sed 's/\t/    /g' | \
+                sed 's/\$//g' | \
+                sed 's/\.//g' | \
+                sed 's/\"//g' | \
+                sed 's/\/\*//g' | \
+                sed 's/\*\///g' > /tmp/aux
+        mv /tmp/aux $f
+    done
+
+}
+#+end_src
+
+** entendimento do dicionário
+
+Os dicionários de variáveis do Censo de 2000 decorrem diretamente dos scripts/macros de leitura do SAS para base =dom= (domicílios), =pes= (pessoas) e =fami= (famílias).
+
+Parte das informações como códigos de países, ocupações, atividade, religião, cursos superiores (graduação, mestrado e doutorado), códigos de mesorregiões, microrregiões e regiões metropolitanas estão disponíveis em arquivos auxiliares que precisam ser tratados individualmente antes de serem usados nas análises.
+
+#+begin_src R :tangle ./gnur_vardict_understanding.R
+## gnur_vardict_understanding.R
+##
+## entendimento do dicionário de variáveis do censo demográfico brasileiro de 2000 (br_ibge_censo_2000)
+
+## caos primeiro, depois arruma...
+
+
+library(readxl)   # read_excel
+library(dplyr)    # mutate, transmute, filter, rename, bind_rows, arrange
+library(stringr)  # str_split, str_to_lower, str_trim, str_locate
+library(tidyr)    # unnest
+library(glue)     # glue
+library(readr)    # write_delim
+
+src_dir <- '/tmp/etl/br_ibge_censo_2000/'
+raw_data <- paste0(src_dir, 'raw/')
+proc_data <- paste0(src_dir, 'data/')
+
+
+domi <-
+  read_lines(
+    file = paste0(raw_data, 'SAS/LE DOMIC.sas'),
+    skip = 20,
+    locale = readr::locale(encoding = "ISO-8859-1"),
+  )
+
+domi %>%
+  tibble() %>%
+  rename(orig = 1) %>% 
+  mutate(
+    aux = str_replace_all(string = orig, pattern = '\t', replacement = '    '),
+    cont = substr(aux, start = 1, stop = 6),
+    var = substr(aux, start = 7, stop = 14),
+    nchars = substr(aux, start = 15, stop = 19),
+    desc = substr(aux, start = 20, stop = 1024)
+  ) %>%
+  View
+
+domi <-
+  read_fwf(
+    file = paste0(raw_data, 'SAS/LE_DOMIC.sas'),
+    col_positions = fwf_widths(
+      c(
+        7,   #  1-7   >> contador de linha         =cont=
+        6,   #  8-13  >> código da variável        =var=
+        6,  # 14-19  >> comprimento do campo      =nchars=
+        1024 # 20-    >> dicionário de variáveis   =desc=
+      ),
+      c('cont', 'var', 'nchars', 'desc')
+    ),
+    skip = 20,
+    show_col_types = FALSE,
+    col_types = cols(.default = 'c'),
+    locale = readr::locale(encoding = "ISO-8859-1")
+  )
+
+domi %>% View
+#+end_src
+
+* orquestração do tratamento dos microdados do censo
+
+#+begin_src sh
+main(){
+
+    create_temporary_directories
+
+    fetch_variables_dictionary
+
+    # parse_variables_dictionary_using_GNU_R
+
+    # fetch_and_convert_microdata_to_parquet_format
+
+}
+
+main
+
+exit 0
+#+end_src
+
+# Local Variables:
+# eval: (add-hook 'after-save-hook (lambda () (org-babel-tangle) ))
+# End:
