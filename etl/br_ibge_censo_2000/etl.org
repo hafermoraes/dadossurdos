@@ -115,14 +115,14 @@ raw_data <- paste0(src_dir, 'raw/')
 proc_data <- paste0(src_dir, 'data/')
 
 
-domi <-
+aux_domi <-
   read_fwf(
     file = paste0(raw_data, 'SAS/LE_DOMIC.sas'),
     col_positions = fwf_widths(
       c(
-        6,   #  1-6   >> contador de linha         =col1=
-        13,   #  7-19  >> comprimento do campo      =col2=
-        1024 # 20-    >> dicionário de variáveis   =col3=
+        6,    # 1-6   >> contador de linha               =col1=
+        13,   # 7-19  >> variável e número de caracteres =col2=
+        1024  # 20-   >> dicionário de variáveis         =col3=
       ),
       c('col1', 'col2', 'col3')
     ),
@@ -132,15 +132,112 @@ domi <-
     locale = readr::locale(encoding = "ISO-8859-1")
   )
 
-domi %>%
+aux_domi %>%
+  ## ignora as últimas 7 linhas
+  filter(row_number() <= n() -7) %>% 
   fill(col1, col2) %>%
   rowwise() %>%
   mutate(
-    sep = str_locate(string = col2, pattern = ' ')[1],
-    var = substr(col2, start = 1, stop = sep),
-    nchars = substr(col2, start = sep + 1, stop = 1024)
+    sep_col2 = str_locate(string = col2, pattern = ' ')[1],
+    var = substr(col2, start = 1, stop = sep_col2),
+    var = str_trim(var),
+    var = str_to_lower(var),
+    nchars = substr(col2, start = sep_col2 + 1, stop = 1024),
+    col3 = str_trim(col3),
+    col3 = str_to_lower(col3),
+    sep_col3 = str_locate(string = col3, pattern = '-')[1],
+    q_desc = case_when(
+      is.na(sep_col3) ~ col3,
+      TRUE ~ NA
+    ),
+    a_code = case_when(
+      !is.na(sep_col3) ~ substr(col3, start = 1, stop = sep_col3 - 1),
+      TRUE ~ NA
+    ),
+    a_code = str_trim(a_code),
+    a_desc = case_when(
+      !is.na(sep_col3) ~ substr(col3, start = sep_col3 + 1, stop = 1024),
+      TRUE ~ NA
+    ),
+    a_desc = str_trim(a_desc)
+  ) %>%
+  ungroup() %>%
+  filter(
+    !grepl('arquivo|branco', col3, ignore.case = TRUE)
+  ) %>%
+  fill(q_desc) %>%
+  transmute(
+    base = 'domi',
+    q_code = var,
+    q_desc,
+    nchars,
+    a_code,
+    a_desc
   ) %>%
   View
+
+
+aux_pess <-
+  read_fwf(
+    file = paste0(raw_data, 'SAS/LE_PESSOAS.sas'),
+    col_positions = fwf_widths(
+      c(
+        6,    # 1-6   >> contador de linha               =col1=
+        10,   # 7-16  >> variável e número de caracteres =col2=
+        1024  # 17-   >> dicionário de variáveis         =col3=
+      ),
+      c('col1', 'col2', 'col3')
+    ),
+    skip = 20,
+    show_col_types = FALSE,
+    col_types = cols(.default = 'c'),
+    locale = readr::locale(encoding = "ISO-8859-1")
+  )
+
+aux_pess %>%
+  ## ignora as últimas 7 linhas
+  filter(row_number() <= n() -7) %>% 
+  fill(col1, col2) %>%
+  rowwise() %>%
+  mutate(
+    sep_col2 = str_locate(string = col2, pattern = ' ')[1],
+    var = substr(col2, start = 1, stop = sep_col2),
+    var = str_trim(var),
+    var = str_to_lower(var),
+    nchars = substr(col2, start = sep_col2 + 1, stop = 1024),
+    col3 = str_trim(col3),
+    col3 = str_to_lower(col3),
+    sep_col3 = str_locate(string = col3, pattern = '-')[1],
+    q_desc = case_when(
+      is.na(sep_col3) ~ col3,
+      TRUE ~ NA
+    ),
+    a_code = case_when(
+      !is.na(sep_col3) ~ substr(col3, start = 1, stop = sep_col3 - 1),
+      TRUE ~ NA
+    ),
+    a_code = str_trim(a_code),
+    a_desc = case_when(
+      !is.na(sep_col3) ~ substr(col3, start = sep_col3 + 1, stop = 1024),
+      TRUE ~ NA
+    ),
+    a_desc = str_trim(a_desc)
+  ) %>%
+  ungroup() %>%
+  filter(
+    !grepl('arquivo|branco', col3, ignore.case = TRUE)
+  ) %>%
+  fill(q_desc) %>%
+  transmute(
+    base = 'pess',
+    q_code = var,
+    q_desc,
+    nchars,
+    a_code,
+    a_desc
+  ) %>%
+  View
+
 #+end_src
 
 * orquestração do tratamento dos microdados do censo
