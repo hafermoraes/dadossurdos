@@ -78,7 +78,7 @@ fetch_variables_dictionary(){
 
     echo 'Removendo caracteres dos scripts SAS para melhor tratamento no R...'
     find ${raw_data}/SAS -type f | rename 's/ /_/g'
-
+    # é necessário remover tabs (\t), aspas duplas, comentários (/* */) e cifrões ($)
     for f in $(find ${raw_data}/SAS -type f | grep sas); do
         cat ${f} | \
                 sed 's/\t/    /g' | \
@@ -110,67 +110,150 @@ library(tidyr)    # unnest
 library(glue)     # glue
 library(readr)    # write_delim
 
+## caminhos até os dados do censo 2000
 src_dir <- '/tmp/etl/br_ibge_censo_2000/'
 raw_data <- paste0(src_dir, 'raw/')
 proc_data <- paste0(src_dir, 'data/')
 
-
 aux_domi <-
+  ## o dicionário de variáveis do Censo 2000 decorre diretamente
+  ## do script/macro de leitura do software SAS, não restando
+  ## outra alternativa, para trabalhar com o GNU R, a não ser
+  ## tratar o dicionário de variáveis como um arquivo de formato
+  ## largura fixa.
+  ## Originalmente o arquivo contém caracteres binários, aspas
+  ## comentários (/* e */), tabulação (\t), por isso um script
+  ## shell o trata antes da importação no GNU R que ocorre nas
+  ## próximas linhas.
   read_fwf(
     file = paste0(raw_data, 'SAS/LE_DOMIC.sas'),
     col_positions = fwf_widths(
       c(
-        6,    # 1-6   >> contador de linha               =col1=
-        13,   # 7-19  >> variável e número de caracteres =col2=
-        1024  # 20-   >> dicionário de variáveis         =col3=
+        6,     # 1-6   >> contador de linha               =col1=
+        13,    # 7-19  >> variável e número de caracteres =col2=
+        1024   # 20-   >> dicionário de variáveis         =col3=
       ),
       c('col1', 'col2', 'col3')
     ),
-    skip = 20,
+    ## as primeiras 20 linhas são relevantes somente para a
+    ## leitura dos microdados no software SAS, motivo pelo
+    ## qual essas linhas são ignoradas (puladas) na importação
+    ## no GNU R.
+    skip = 20, 
     show_col_types = FALSE,
+    ## importa 100% dos dados como texto
     col_types = cols(.default = 'c'),
+    ## muito provavelmente o software SAS utilizado pelo IBGE
+    ## foi utilizado no sistema operacional Microsoft Windows
+    ## para salvar o script de importação. Isso introduz
+    ## divergências na codificação do arquivo, motivo pelo
+    ## qual é necessário ler no sistema operacional GNU/Linux
+    ## o arquivo com a codificação mais próxima da original
     locale = readr::locale(encoding = "ISO-8859-1")
   )
 
-aux_domi %>%
-  ## ignora as últimas 7 linhas
-  filter(row_number() <= n() -7) %>% 
-  fill(col1, col2) %>%
+aux_domi %>% 
+  ## ignora as últimas 7 linhas pelo mesmo motivo mais acima
+  ## na explicação sobre ignorar as primeiras 20 linhas.
+  filter(row_number() <= n() -7) %>%
+  ## preenche as linhas cujo conteúdo é NA nas colunas col1
+  ## e col2
+  fill(col1, col2) %>% 
+  ## a seguir será necessário operar linha-a-linha no
+  ## tratamento das informações, por isso é necessário
+  ## formalmente ativar a instrução rowwise()
   rowwise() %>%
   mutate(
+    ## a coluna 1 traz a posição inicial da variável
+    ## no microdado do censo
+    pos_ini = str_remove_all(string = col1, pattern = '@'),
+    ## a coluna 2 traz tanto o código da variável quando o
+    ## comprimento do campo nos microdados e ambos são
+    ## separados por espaço ' ' no script SAS. De modo a
+    ## viabilizar a separação dessas informações mais
+    ## adiante, é necessário saber a posição do primeiro
+    ## espaço ' ' dentro da coluna col2.
     sep_col2 = str_locate(string = col2, pattern = ' ')[1],
+    ## o código da variável está contido entre o primeiro
+    ## caracter e o espaço ' ' encontrado no passo anterior
     var = substr(col2, start = 1, stop = sep_col2),
+    ## removem-se então os espaços redundantes
     var = str_trim(var),
+    ## e converte-se o conteúdo da variável para letras
+    ## minúsculas.
     var = str_to_lower(var),
+    ## o comprimento do campo no microdado encontra-se entre
+    ## o espaço ' ' e o final da linha referente à coluna
+    ## col2.
     nchars = substr(col2, start = sep_col2 + 1, stop = 1024),
+    nchars_dot = str_locate(string = nchars, pattern = '.')[1],
+    nchars = substr(nchars, start = 1, stop = nchars_dot),
+    ## a posição final do campo no microdado é formada por
+    ## pos_ini + nchar - 1
+    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
+    ## removem-se então os espaços redundantes da coluna col3
     col3 = str_trim(col3),
+    ## e converte-se o conteúdo da variável para letras
+    ## minúsculas
     col3 = str_to_lower(col3),
+    ## a coluna 3 traz tanto o enunciado da pergunta no censo
+    ## quanto o dicionário de variáveis com códigos e textos
+    ## de resposta separados por hífen '-'. O passo a seguir
+    ## localiza a posição do hífen '-' no texto da coluna 3.
     sep_col3 = str_locate(string = col3, pattern = '-')[1],
+    ## quando não é encontrado um hífen '-', trata-se da linha
+    ## com o enunciado da variável do censo.
     q_desc = case_when(
       is.na(sep_col3) ~ col3,
       TRUE ~ NA
     ),
+    ## quando é encontrado um hífen '-', código da resposta
+    ## encontra-se entre o primeiro caracter e o caracter
+    ## imediatamente anterior ao hífen.
     a_code = case_when(
       !is.na(sep_col3) ~ substr(col3, start = 1, stop = sep_col3 - 1),
       TRUE ~ NA
     ),
+    ## em seguida removem-se os espaços redundantes do código
+    ## da resposta.
     a_code = str_trim(a_code),
+    ## ainda no caso de ser possível encontrar um hífen '-'
+    ## na coluna col3, o texto da resposta encontra-se entre o
+    ## hífen '-' e o último caracter do texto da coluna 3.
     a_desc = case_when(
       !is.na(sep_col3) ~ substr(col3, start = sep_col3 + 1, stop = 1024),
       TRUE ~ NA
     ),
+    ## em seguida removem-se os espaços redundantes do texto
+    ## da resposta.
     a_desc = str_trim(a_desc)
   ) %>%
+  ## a partir de agora não é mais necessário operar linha a linha
+  ## por isso ungroup() reverte o comando rowwise()
   ungroup() %>%
+  ## em seguida deve-se remover os registros cuja coluna 3
+  ## contenham 'arquivo' ou 'branco' em seu conteúdo, pois
+  ## fazem referência a arquivos auxiliares que demandam
+  ## tratamento específico (código de município, mesorregião,
+  ## microrregião, região metropolitana, ocupação, atividade,
+  ## cursos superiores, religião) ou detalham o que significa
+  ## uma entrada vazia no microdado para as variáveis que
+  ## estão detalhadas nos scripts/macros de leitura do
+  ## software SAS.
   filter(
     !grepl('arquivo|branco', col3, ignore.case = TRUE)
   ) %>%
+  ## preenche as linhas cujo conteúdo é NA na coluna q_desc
   fill(q_desc) %>%
+  ## 
   transmute(
     base = 'domi',
     q_code = var,
-    q_desc,
+    pos_ini,
     nchars,
+    pos_fin,
+    cut_character_arg = paste0(pos_ini,'-',pos_fin),
+    q_desc,
     a_code,
     a_desc
   ) %>%
@@ -178,59 +261,137 @@ aux_domi %>%
 
 
 aux_pess <-
+  ## o dicionário de variáveis do Censo 2000 decorre diretamente
+  ## do script/macro de leitura do software SAS, não restando
+  ## outra alternativa, para trabalhar com o GNU R, a não ser
+  ## tratar o dicionário de variáveis como um arquivo de formato
+  ## largura fixa.
+  ## Originalmente o arquivo contém caracteres binários, aspas
+  ## comentários (/* e */), tabulação (\t), por isso um script
+  ## shell o trata antes da importação no GNU R que ocorre nas
+  ## próximas linhas.
   read_fwf(
     file = paste0(raw_data, 'SAS/LE_PESSOAS.sas'),
     col_positions = fwf_widths(
       c(
-        6,    # 1-6   >> contador de linha               =col1=
-        10,   # 7-16  >> variável e número de caracteres =col2=
-        1024  # 17-   >> dicionário de variáveis         =col3=
+        6,     # 1-6   >> contador de linha               =col1=
+        10,    # 7-16  >> variável e número de caracteres =col2=
+        1024   # 17-   >> dicionário de variáveis         =col3=
       ),
       c('col1', 'col2', 'col3')
     ),
-    skip = 20,
+    ## as primeiras 20 linhas são relevantes somente para a
+    ## leitura dos microdados no software SAS, motivo pelo
+    ## qual essas linhas são ignoradas (puladas) na importação
+    ## no GNU R.
+    skip = 20, 
     show_col_types = FALSE,
+    ## importa 100% dos dados como texto
     col_types = cols(.default = 'c'),
+    ## muito provavelmente o software SAS utilizado pelo IBGE
+    ## foi utilizado no sistema operacional Microsoft Windows
+    ## para salvar o script de importação. Isso introduz
+    ## divergências na codificação do arquivo, motivo pelo
+    ## qual é necessário ler no sistema operacional GNU/Linux
+    ## o arquivo com a codificação mais próxima da original
     locale = readr::locale(encoding = "ISO-8859-1")
   )
 
 aux_pess %>%
-  ## ignora as últimas 7 linhas
-  filter(row_number() <= n() -7) %>% 
+  ## ignora as últimas 7 linhas pelo mesmo motivo mais acima
+  ## na explicação sobre ignorar as primeiras 20 linhas.
+  filter(row_number() <= n() -7) %>%
+  ## preenche as linhas cujo conteúdo é NA nas colunas col1
+  ## e col2
   fill(col1, col2) %>%
+  ## a seguir será necessário operar linha-a-linha no
+  ## tratamento das informações, por isso é necessário
+  ## formalmente ativar a instrução rowwise()
   rowwise() %>%
   mutate(
+    ## a coluna 1 traz a posição inicial da variável
+    ## no microdado do censo
+    pos_ini = str_remove_all(string = col1, pattern = '@'),
+    ## a coluna 2 traz tanto o código da variável quando o
+    ## comprimento do campo nos microdados e ambos são
+    ## separados por espaço ' ' no script SAS. De modo a
+    ## viabilizar a separação dessas informações mais
+    ## adiante, é necessário saber a posição do primeiro
+    ## espaço ' ' dentro da coluna col2.
     sep_col2 = str_locate(string = col2, pattern = ' ')[1],
+    ## o código da variável está contido entre o primeiro
+    ## caracter e o espaço ' ' encontrado no passo anterior
     var = substr(col2, start = 1, stop = sep_col2),
+    ## removem-se então os espaços redundantes
     var = str_trim(var),
+    ## e converte-se o conteúdo da variável para letras
+    ## minúsculas.
     var = str_to_lower(var),
+    ## o comprimento do campo no microdado encontra-se entre
+    ## o espaço ' ' e o final da linha referente à coluna
+    ## col2.
     nchars = substr(col2, start = sep_col2 + 1, stop = 1024),
+    nchars_dot = str_locate(string = nchars, pattern = '.')[1],
+    nchars = substr(nchars, start = 1, stop = nchars_dot -1),
+    ## removem-se então os espaços redundantes da coluna col3
     col3 = str_trim(col3),
+    ## e converte-se o conteúdo da variável para letras
+    ## minúsculas
     col3 = str_to_lower(col3),
+    ## a coluna 3 traz tanto o enunciado da pergunta no censo
+    ## quanto o dicionário de variáveis com códigos e textos
+    ## de resposta separados por hífen '-'. O passo a seguir
+    ## localiza a posição do hífen '-' no texto da coluna 3.
     sep_col3 = str_locate(string = col3, pattern = '-')[1],
+    ## quando não é encontrado um hífen '-', trata-se da linha
+    ## com o enunciado da variável do censo.
     q_desc = case_when(
       is.na(sep_col3) ~ col3,
       TRUE ~ NA
     ),
+    ## quando é encontrado um hífen '-', código da resposta
+    ## encontra-se entre o primeiro caracter e o caracter
+    ## imediatamente anterior ao hífen.
     a_code = case_when(
       !is.na(sep_col3) ~ substr(col3, start = 1, stop = sep_col3 - 1),
       TRUE ~ NA
     ),
+    ## em seguida removem-se os espaços redundantes do código
+    ## da resposta.
     a_code = str_trim(a_code),
+    ## ainda no caso de ser possível encontrar um hífen '-'
+    ## na coluna col3, o texto da resposta encontra-se entre o
+    ## hífen '-' e o último caracter do texto da coluna 3.
     a_desc = case_when(
       !is.na(sep_col3) ~ substr(col3, start = sep_col3 + 1, stop = 1024),
       TRUE ~ NA
     ),
+    ## em seguida removem-se os espaços redundantes do texto
+    ## da resposta.
     a_desc = str_trim(a_desc)
   ) %>%
+  ## a partir de agora não é mais necessário operar linha a linha
+  ## por isso ungroup() reverte o comando rowwise()
   ungroup() %>%
+  ## em seguida deve-se remover os registros cuja coluna 3
+  ## contenham 'arquivo' ou 'branco' em seu conteúdo, pois
+  ## fazem referência a arquivos auxiliares que demandam
+  ## tratamento específico (código de município, mesorregião,
+  ## microrregião, região metropolitana, ocupação, atividade,
+  ## cursos superiores, religião) ou detalham o que significa
+  ## uma entrada vazia no microdado para as variáveis que
+  ## estão detalhadas nos scripts/macros de leitura do
+  ## software SAS.
   filter(
     !grepl('arquivo|branco', col3, ignore.case = TRUE)
   ) %>%
+  ## preenche as linhas cujo conteúdo é NA na coluna q_desc
   fill(q_desc) %>%
+  ## 
   transmute(
     base = 'pess',
     q_code = var,
+    pos_ini,
     q_desc,
     nchars,
     a_code,
