@@ -226,7 +226,22 @@ aux_domi %>%
     ),
     ## em seguida removem-se os espaços redundantes do texto
     ## da resposta.
-    a_desc = str_trim(a_desc)
+    a_desc = str_trim(a_desc),
+    ## inclui um marcado para o caso de a variável ter seu
+    ## dicionário localizado como um arquivo auxiliar. Isso
+    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
+    tipo = case_when(
+      var %in% c(
+        ## variáveis comuns aos microdados de domicílios,
+        ## pessoas e famílias
+        'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
+        ## variáveis exclusivas dos microdados de pessoas
+        'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
+        'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
+        'v4451', 'v4461'
+      ) ~ 'auxiliar',
+      TRUE ~ NA
+    )
   ) %>%
   ## a partir de agora não é mais necessário operar linha a linha
   ## por isso ungroup() reverte o comando rowwise()
@@ -255,7 +270,8 @@ aux_domi %>%
     cut_character_arg = paste0(pos_ini,'-',pos_fin),
     q_desc,
     a_code,
-    a_desc
+    a_desc,
+    tipo
   ) %>%
   View
 
@@ -368,7 +384,22 @@ aux_pess %>%
     ),
     ## em seguida removem-se os espaços redundantes do texto
     ## da resposta.
-    a_desc = str_trim(a_desc)
+    a_desc = str_trim(a_desc),
+    ## inclui um marcado para o caso de a variável ter seu
+    ## dicionário localizado como um arquivo auxiliar. Isso
+    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
+    tipo = case_when(
+      var %in% c(
+        ## variáveis comuns aos microdados de domicílios,
+        ## pessoas e famílias
+        'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
+        ## variáveis exclusivas dos microdados de pessoas
+        'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
+        'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
+        'v4451', 'v4461'
+      ) ~ 'auxiliar',
+      TRUE ~ NA
+    )
   ) %>%
   ## a partir de agora não é mais necessário operar linha a linha
   ## por isso ungroup() reverte o comando rowwise()
@@ -395,7 +426,8 @@ aux_pess %>%
     q_desc,
     nchars,
     a_code,
-    a_desc
+    a_desc,
+    tipo
   ) %>%
   View
 
