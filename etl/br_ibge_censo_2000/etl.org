@@ -439,6 +439,62 @@ aux_pess %>%
 
 **** v1002 codigo da mesorregião
 
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v1002.R
+## gnur_vardict_auxfiles_v1002.R
+##
+##
+## br_ibge_censo_2000
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # transmute, unique, rename,
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das unidades da federação utilizadas no censo demográfico
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Divisao Territorial Brasileira.xls'
+    ),                     # caminho até o arquivo
+    sheet = 'Mesorregião', # aba no qual os dados estão disponíveis
+    range = 'A2:B138',     # importa somente dados de UF
+    col_types = 'text',    # ignora tipos de dados
+    col_names = FALSE      # ignora nomes de colunas
+  ) %>% 
+  rename(
+    cod_4 = 1,           # primeira coluna traz o código da mesorregião
+    meso = 2             # segunda coluna traz o nome da mesorregião
+  ) %>%
+  transmute(
+    q_code = 'v1002',
+    a_code = cod_4,
+    a_desc = meso
+  ) 
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v1002.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
 **** v1003 codigo da microrregião
 
 **** v0103/v1103 codigo do município
