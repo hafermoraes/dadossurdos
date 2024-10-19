@@ -433,6 +433,54 @@ aux_pess %>%
 
 #+end_src
 
+** tratamento individual das variáveis
+
+*** dicionário de variáveis em arquivos auxiliares (externo aos scripts SAS)
+
+**** v1002 codigo da mesorregião
+
+**** v1003 codigo da microrregião
+
+**** v0103/v1103 codigo do município
+
+**** v0104 codigo do distrito
+
+**** v0105 codigo do subdistrito
+
+**** v1004 região metropolitana
+
+**** v4090 código da religião
+
+**** v4210 código da uf ou país de nascimento
+
+**** v4230 código da uf ou país de residência anterior
+
+**** v4250 código do município de residência
+
+**** v4260 código da uf ou país de residência em 31/07/1995
+
+**** v4276 código do município e uf ou país estrangeiro que trabalha ou estuda
+
+**** v4355 código do curso mais elevado concluído
+
+**** v4452 código novo da ocupação
+
+**** v4462 código novo da atividade
+
+**** v4354 código do curso mais elevado concluído (concla)
+
+**** v4219 código da uf ou país de nascimento (onu)
+
+**** v4239 código da uf ou país (onu) de residência anterior
+
+**** v4269 código da uf ou país (onu) de residência em 31/07/1995
+
+**** v4279 código do país estrangeiro (onu) que trabalha ou estuda
+
+**** v4451 código antigo da ocupação
+
+**** v4461 código antigo da atividade
+
 * orquestração do tratamento dos microdados do censo
 
 #+begin_src sh
