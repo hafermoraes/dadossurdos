@@ -108,7 +108,7 @@ library(dplyr)    # mutate, transmute, filter, rename, bind_rows, arrange
 library(stringr)  # str_split, str_to_lower, str_trim, str_locate
 library(tidyr)    # unnest
 library(glue)     # glue
-library(readr)    # write_delim
+library(readr)    # write_delim, write_lines
 
 ## caminhos até os dados do censo 2000
 src_dir <- '/tmp/etl/br_ibge_censo_2000/'
@@ -121,7 +121,7 @@ proc_data <- paste0(src_dir, 'data/')
 ## -------------------------------------------------------------
 
 ## importação do dicionário de variáveis
-aux_domi <-
+input_domi <-
   ## o dicionário de variáveis do Censo 2000 decorre diretamente
   ## do script/macro de leitura do software SAS, não restando
   ## outra alternativa, para trabalhar com o GNU R, a não ser
@@ -159,8 +159,8 @@ aux_domi <-
   )
 
 
-aux_domi <-
-  aux_domi %>%
+output_domi <-
+  input_domi %>%
   filter(row_number() <= n() -7) %>% 
   rowwise() %>%
   mutate(
@@ -206,7 +206,7 @@ aux_domi <-
         ## variáveis exclusivas dos microdados de pessoas
         'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
         'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
-        'v4451', 'v4461'
+        'v4451', 'v4461', 'v1103'
       ) ~ 'auxiliar',
       TRUE ~ NA
     )    
@@ -214,162 +214,35 @@ aux_domi <-
   ungroup()
 
 
-aux_domi %>% 
+## código e enunciado das variáveis
+output_domi %>% 
   filter(qa=='q') %>%
   transmute(
     base = 'domi',
     q_code,
-    q_desc,
-    cut_arg,
-    pos_ini,
-    nchars,
-    pos_fin,
-    tipo
+    q_desc
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_qdesc_domi.txt' ),
+    delim = '|',
+    col_names = TRUE
   )
 
-
-aux_domi %>% 
-  select( q_code, a_code, a_desc) %>%
-  fill(q_code) %>%
-  left_join(
-    aux_domi %>%
-    filter(qa=='q') %>%
-    select(q_code, q_desc, tipo)
-  ) %>% 
-  filter(is.na(tipo)) %>%
-  filter(!is.na(a_code), !grepl('branco', a_code, ignore.case = TRUE)) %>%
-  View
-
-
-## cut_desc_domi <-
-##   aux_domi %>% 
-##   ## ignora as últimas 7 linhas pelo mesmo motivo mais acima
-##   ## na explicação sobre ignorar as primeiras 20 linhas.
-##   filter(row_number() <= n() -7) %>%
-##   ## preenche as linhas cujo conteúdo é NA nas colunas col1
-##   ## e col2
-##   fill(col1, col2) %>% 
-##   ## a seguir será necessário operar linha-a-linha no
-##   ## tratamento das informações, por isso é necessário
-##   ## formalmente ativar a instrução rowwise()
-##   rowwise() %>%
-##   mutate(
-##     ## a coluna 1 traz a posição inicial da variável
-##     ## no microdado do censo
-##     pos_ini = str_remove_all(string = col1, pattern = '@'),
-##     ## a coluna 2 traz tanto o código da variável quando o
-##     ## comprimento do campo nos microdados e ambos são
-##     ## separados por espaço ' ' no script SAS. De modo a
-##     ## viabilizar a separação dessas informações mais
-##     ## adiante, é necessário saber a posição do primeiro
-##     ## espaço ' ' dentro da coluna col2.
-##     sep_col2 = str_locate(string = col2, pattern = ' ')[1],
-##     ## o código da variável está contido entre o primeiro
-##     ## caracter e o espaço ' ' encontrado no passo anterior
-##     var = substr(col2, start = 1, stop = sep_col2),
-##     ## removem-se então os espaços redundantes
-##     var = str_trim(var),
-##     ## e converte-se o conteúdo da variável para letras
-##     ## minúsculas.
-##     var = str_to_lower(var),
-##     ## o comprimento do campo no microdado encontra-se entre
-##     ## o espaço ' ' e o final da linha referente à coluna
-##     ## col2.
-##     nchars = substr(col2, start = sep_col2 + 1, stop = 1024),
-##     nchars_dot = str_locate(string = nchars, pattern = '.')[1],
-##     nchars = substr(nchars, start = 1, stop = nchars_dot),
-##     ## a posição final do campo no microdado é formada por
-##     ## pos_ini + nchar - 1
-##     pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
-##     ## removem-se então os espaços redundantes da coluna col3
-##     col3 = str_trim(col3),
-##     ## e converte-se o conteúdo da variável para letras
-##     ## minúsculas
-##     col3 = str_to_lower(col3),
-##     ## a coluna 3 traz tanto o enunciado da pergunta no censo
-##     ## quanto o dicionário de variáveis com códigos e textos
-##     ## de resposta separados por hífen '-'. O passo a seguir
-##     ## localiza a posição do hífen '-' no texto da coluna 3.
-##     sep_col3 = str_locate(string = col3, pattern = '-')[1],
-##     ## quando não é encontrado um hífen '-', trata-se da linha
-##     ## com o enunciado da variável do censo.
-##     q_desc = case_when(
-##       is.na(sep_col3) ~ col3,
-##       TRUE ~ NA
-##     ),
-##     ## quando é encontrado um hífen '-', código da resposta
-##     ## encontra-se entre o primeiro caracter e o caracter
-##     ## imediatamente anterior ao hífen.
-##     a_code = case_when(
-##       !is.na(sep_col3) ~ substr(col3, start = 1, stop = sep_col3 - 1),
-##       TRUE ~ NA
-##     ),
-##     ## em seguida removem-se os espaços redundantes do código
-##     ## da resposta.
-##     a_code = str_trim(a_code),
-##     ## ainda no caso de ser possível encontrar um hífen '-'
-##     ## na coluna col3, o texto da resposta encontra-se entre o
-##     ## hífen '-' e o último caracter do texto da coluna 3.
-##     a_desc = case_when(
-##       !is.na(sep_col3) ~ substr(col3, start = sep_col3 + 1, stop = 1024),
-##       TRUE ~ NA
-##     ),
-##     ## em seguida removem-se os espaços redundantes do texto
-##     ## da resposta.
-##     a_desc = str_trim(a_desc),
-##     ## inclui um marcado para o caso de a variável ter seu
-##     ## dicionário localizado como um arquivo auxiliar. Isso
-##     ## ocorre sempre que há a palavra 'arquivo' na coluna 3
-##     tipo = case_when(
-##       var %in% c(
-##         ## variáveis comuns aos microdados de domicílios,
-##         ## pessoas e famílias
-##         'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
-##         ## variáveis exclusivas dos microdados de pessoas
-##         'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
-##         'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
-##         'v4451', 'v4461'
-##       ) ~ 'auxiliar',
-##       TRUE ~ NA
-##     )
-##   ) %>%
-##   ## a partir de agora não é mais necessário operar linha a linha
-##   ## por isso ungroup() reverte o comando rowwise()
-##   ungroup() %>%
-##   ## em seguida deve-se remover os registros cuja coluna 3
-##   ## contenham 'arquivo' ou 'branco' em seu conteúdo, pois
-##   ## fazem referência a arquivos auxiliares que demandam
-##   ## tratamento específico (código de município, mesorregião,
-##   ## microrregião, região metropolitana, ocupação, atividade,
-##   ## cursos superiores, religião) ou detalham o que significa
-##   ## uma entrada vazia no microdado para as variáveis que
-##   ## estão detalhadas nos scripts/macros de leitura do
-##   ## software SAS.
-##   filter(
-##     !grepl('arquivo|branco', col3, ignore.case = TRUE)
-##   ) %>%
-##   ## preenche as linhas cujo conteúdo é NA na coluna q_desc
-##   fill(q_desc) %>%
-##   ## 
-##   transmute(
-##     base = 'domi',
-##     q_code = var,
-##     pos_ini,
-##     nchars,
-##     pos_fin,
-##     cut_character_arg = paste0(pos_ini,'-',pos_fin),
-##     q_desc,
-##     a_code,
-##     a_desc,
-##     tipo
-##   )
-
+## argumento character do comando cut
+output_domi %>% 
+  filter(qa=='q') %>%
+  summarise(
+    args = str_flatten(cut_arg, ',')
+  ) %>%
+  write_lines(
+    file = paste0( proc_data, 'cut_character_args_domi.txt')
+  )
 
 
 ## -------------------------------------------------------------
 ##    base de pessoas
 ## -------------------------------------------------------------
-aux_pess <-
+input_pess <-
   ## o dicionário de variáveis do Censo 2000 decorre diretamente
   ## do script/macro de leitura do software SAS, não restando
   ## outra alternativa, para trabalhar com o GNU R, a não ser
@@ -407,8 +280,8 @@ aux_pess <-
   )
 
 
-aux_pess <-
-  aux_pess %>%
+output_pess <-
+  input_pess %>%
   filter(row_number() <= n() -8) %>% 
   rowwise() %>%
   mutate(
@@ -464,26 +337,34 @@ aux_pess <-
   ungroup()
 
 
-## aux_pess %>%
-##   filter(
-##     grepl(pattern = '[a-z]+-[a-z]+', col3, ignore.case = TRUE)
-##   ) %>% View
-
-
-aux_pess %>% 
+## código e enunciado das variáveis
+output_pess %>% 
   filter(qa=='q') %>%
   transmute(
     base = 'pess',
     q_code,
-    q_desc,
-    cut_arg,
-    pos_ini,
-    nchars,
-    pos_fin,
-    tipo
-  ) %>% View
+    q_desc
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_qdesc_pess.txt' ),
+    delim = '|',
+    col_names = TRUE
+  )
+
+## argumento character do comando cut
+output_pess %>% 
+  filter(qa=='q') %>%
+  summarise(
+    args = str_flatten(cut_arg, ',')
+  ) %>%
+  write_lines(
+    file = paste0( proc_data, 'cut_character_args_pess.txt')
+  )
 
 
+
+## dicionário de variáveis
+## códigos e respostas de variáveis presentes nos scripts SAS
 aux_pess %>% 
   select( q_code, a_code, a_desc) %>%
   fill(q_code) %>% 
@@ -493,134 +374,143 @@ aux_pess %>%
     select(q_code, q_desc, tipo)
   ) %>% 
   filter(is.na(tipo)) %>%
-  filter(!is.na(a_code), !grepl('branco', a_code, ignore.case = TRUE)) %>%
+  filter(
+    !is.na(a_code),
+    !grepl('branco', a_code, ignore.case = TRUE),
+    q_code != 'v0455',
+    q_code != 'v0220'
+  ) %>%
   View
 
 
-  
+## -------------------------------------------------------------
+##    base de famílias
+## -------------------------------------------------------------
+input_fami <-
+  ## o dicionário de variáveis do Censo 2000 decorre diretamente
+  ## do script/macro de leitura do software SAS, não restando
+  ## outra alternativa, para trabalhar com o GNU R, a não ser
+  ## tratar o dicionário de variáveis como um arquivo de formato
+  ## largura fixa.
+  ## Originalmente o arquivo contém caracteres binários, aspas
+  ## comentários (/* e */), tabulação (\t), por isso um script
+  ## shell o trata antes da importação no GNU R que ocorre nas
+  ## próximas linhas.
+  read_fwf(
+    file = paste0(raw_data, 'SAS/LE_FAMILIAS.sas'),
+    col_positions = fwf_widths(
+      c(
+        6,     # 1-6   >> contador de linha               =col1=
+        14,    # 7-16  >> variável e número de caracteres =col2=
+        1024   # 17-   >> dicionário de variáveis         =col3=
+      ),
+      c('col1', 'col2', 'col3')
+    ),
+    ## as primeiras 20 linhas são relevantes somente para a
+    ## leitura dos microdados no software SAS, motivo pelo
+    ## qual essas linhas são ignoradas (puladas) na importação
+    ## no GNU R.
+    skip = 20, 
+    show_col_types = FALSE,
+    ## importa 100% dos dados como texto
+    col_types = cols(.default = 'c'),
+    ## muito provavelmente o software SAS utilizado pelo IBGE
+    ## foi utilizado no sistema operacional Microsoft Windows
+    ## para salvar o script de importação. Isso introduz
+    ## divergências na codificação do arquivo, motivo pelo
+    ## qual é necessário ler no sistema operacional GNU/Linux
+    ## o arquivo com a codificação mais próxima da original
+    locale = readr::locale(encoding = "ISO-8859-1")
+  ) 
 
-## cut_desc_pess <-
-##   aux_pess %>%
-##   ## ignora as últimas 8 linhas pelo mesmo motivo mais acima
-##   ## na explicação sobre ignorar as primeiras 20 linhas.
-##   filter(row_number() <= n() -8) %>% 
-##   ## preenche as linhas cujo conteúdo é NA nas colunas col1
-##   ## e col2
-##   fill(col1, col2) %>%
-##   ## a seguir será necessário operar linha-a-linha no
-##   ## tratamento das informações, por isso é necessário
-##   ## formalmente ativar a instrução rowwise()
-##   rowwise() %>%
-##   mutate(
-##     ## a coluna 1 traz a posição inicial da variável
-##     ## no microdado do censo
-##     pos_ini = str_remove_all(string = col1, pattern = '@'),
-##     ## a coluna 2 traz tanto o código da variável quando o
-##     ## comprimento do campo nos microdados e ambos são
-##     ## separados por espaço ' ' no script SAS. De modo a
-##     ## viabilizar a separação dessas informações mais
-##     ## adiante, é necessário saber a posição do primeiro
-##     ## espaço ' ' dentro da coluna col2.
-##     sep_col2 = str_locate(string = col2, pattern = ' ')[1],
-##     ## o código da variável está contido entre o primeiro
-##     ## caracter e o espaço ' ' encontrado no passo anterior
-##     var = substr(col2, start = 1, stop = sep_col2),
-##     ## removem-se então os espaços redundantes
-##     var = str_trim(var),
-##     ## e converte-se o conteúdo da variável para letras
-##     ## minúsculas.
-##     var = str_to_lower(var),
-##     ## o comprimento do campo no microdado encontra-se entre
-##     ## o espaço ' ' e o final da linha referente à coluna
-##     ## col2.
-##     nchars = substr(col2, start = sep_col2 + 1, stop = 1024),
-##     nchars_dot = str_locate(string = nchars, pattern = '.')[1],
-##     nchars = substr(nchars, start = 1, stop = nchars_dot),
-##     ## a posição final do campo no microdado é formada por
-##     ## pos_ini + nchar - 1
-##     pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
-##     ## removem-se então os espaços redundantes da coluna col3
-##     col3 = str_trim(col3),
-##     ## e converte-se o conteúdo da variável para letras
-##     ## minúsculas
-##     col3 = str_to_lower(col3),
-##     ## a coluna 3 traz tanto o enunciado da pergunta no censo
-##     ## quanto o dicionário de variáveis com códigos e textos
-##     ## de resposta separados por hífen '-'. O passo a seguir
-##     ## localiza a posição do hífen '-' no texto da coluna 3.
-##     sep_col3 = str_locate(string = col3, pattern = '-')[1],
-##     ## quando não é encontrado um hífen '-', trata-se da linha
-##     ## com o enunciado da variável do censo.
-##     q_desc = case_when(
-##       is.na(sep_col3) ~ col3,
-##       TRUE ~ NA
-##     ),
-##     ## quando é encontrado um hífen '-', código da resposta
-##     ## encontra-se entre o primeiro caracter e o caracter
-##     ## imediatamente anterior ao hífen.
-##     a_code = case_when(
-##       !is.na(sep_col3) ~ substr(col3, start = 1, stop = sep_col3 - 1),
-##       TRUE ~ NA
-##     ),
-##     ## em seguida removem-se os espaços redundantes do código
-##     ## da resposta.
-##     a_code = str_trim(a_code),
-##     ## ainda no caso de ser possível encontrar um hífen '-'
-##     ## na coluna col3, o texto da resposta encontra-se entre o
-##     ## hífen '-' e o último caracter do texto da coluna 3.
-##     a_desc = case_when(
-##       !is.na(sep_col3) ~ substr(col3, start = sep_col3 + 1, stop = 1024),
-##       TRUE ~ NA
-##     ),
-##     ## em seguida removem-se os espaços redundantes do texto
-##     ## da resposta.
-##     a_desc = str_trim(a_desc),
-##     ## inclui um marcado para o caso de a variável ter seu
-##     ## dicionário localizado como um arquivo auxiliar. Isso
-##     ## ocorre sempre que há a palavra 'arquivo' na coluna 3
-##     tipo = case_when(
-##       var %in% c(
-##         ## variáveis comuns aos microdados de domicílios,
-##         ## pessoas e famílias
-##         'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
-##         ## variáveis exclusivas dos microdados de pessoas
-##         'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
-##         'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
-##         'v4451', 'v4461'
-##       ) ~ 'auxiliar',
-##       TRUE ~ NA
-##     )
-##   ) %>% 
-##   ## a partir de agora não é mais necessário operar linha a linha
-##   ## por isso ungroup() reverte o comando rowwise()
-##   ungroup() %>%
-##   ## em seguida deve-se remover os registros cuja coluna 3
-##   ## contenham 'arquivo' ou 'branco' em seu conteúdo, pois
-##   ## fazem referência a arquivos auxiliares que demandam
-##   ## tratamento específico (código de município, mesorregião,
-##   ## microrregião, região metropolitana, ocupação, atividade,
-##   ## cursos superiores, religião) ou detalham o que significa
-##   ## uma entrada vazia no microdado para as variáveis que
-##   ## estão detalhadas nos scripts/macros de leitura do
-##   ## software SAS.
-##   filter(
-##     !grepl('arquivo|branco', col3, ignore.case = TRUE)
-##   ) %>%
-##   ## preenche as linhas cujo conteúdo é NA na coluna q_desc
-##   fill(q_desc) %>%
-##   ## 
-##   transmute(
-##     base = 'pess',
-##     q_code = var,
-##     pos_ini,
-##     nchars,
-##     pos_fin,
-##     cut_character_arg = paste0(pos_ini,'-',pos_fin),
-##     q_desc,
-##     a_code,
-##     a_desc,
-##     tipo
-##   )
+
+output_fami <-
+  input_fami %>%
+  filter(row_number() <= n() -7) %>% 
+  rowwise() %>%
+  mutate(
+    ## correção manual do nome da variável
+    col2 = ifelse(
+      grepl( pattern = '94', col1),
+      'CODV4615_7400 2.',
+      col2
+    ),
+    ## q: enunciado da questão
+    ## a: dicionário da resposta
+    qa = ifelse( is.na(col1), 'a', 'q'),
+    col2_space = str_locate(string = col2, pattern = ' ')[1],
+    ## posições inicial e final e número de caracteres nos microdados
+    pos_ini = str_remove_all(string = col1, pattern = '@'),
+    nchars = str_sub(string = col2, start = col2_space + 1),
+    dot = str_locate(string = nchars, pattern = '[.]')[1],
+    nchars = ifelse(
+      is.na(dot),
+      nchars,
+      str_sub(string = nchars, start = 1, end = dot - 1)
+    ),
+    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
+    ## argumento character do commando cut
+    cut_arg = glue('{pos_ini}-{pos_fin}'),
+    ## código e enunciado da variável
+    q_code = str_sub(string = col2, start = 1, end = col2_space - 1),
+    q_code = str_to_lower(q_code),
+    q_desc = ifelse(is.na(col1), NA, col3),
+    q_desc = ifelse( !grepl('^[.]', q_desc), q_desc, str_sub( string = q_desc, start = 3)),
+    q_desc = str_trim(q_desc),
+    q_desc = str_to_lower(q_desc),
+    ## código e descrição da resposta
+    col3_hifen = str_locate(string = col3, pattern = '-')[1],
+    a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_hifen - 1), NA),
+    a_code = str_to_lower(a_code), 
+    a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_hifen + 1), NA),
+    a_desc = str_trim(a_desc),
+    a_desc = str_to_lower(a_desc),
+    ## se 'branco' faz parte da coluna 3, a_code e a_desc devem ser NA
+    a_code = ifelse(col3_hifen > 5, NA, a_code),
+    a_desc = ifelse(col3_hifen > 5, NA, a_desc),
+    ## inclui um marcador para o caso de a variável ter seu
+    ## dicionário localizado como um arquivo auxiliar. Isso
+    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
+    tipo = case_when(
+      q_code %in% c(
+        ## variáveis comuns aos microdados de domicílios,
+        ## pessoas e famílias
+        'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
+        ## variáveis exclusivas dos microdados de pessoas
+        'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
+        'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
+        'v4451', 'v4461', 'v1103'
+      ) ~ 'auxiliar',
+      TRUE ~ NA
+    )    
+  ) %>%
+  ungroup()
+
+## código e enunciado das variáveis
+output_fami %>% 
+  filter(qa=='q') %>%
+  transmute(
+    base = 'fami',
+    q_code,
+    q_desc
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_qdesc_fami.txt' ),
+    delim = '|',
+    col_names = TRUE
+  )
+
+## argumento character do comando cut
+output_fami %>% 
+  filter(qa=='q') %>%
+  summarise(
+    args = str_flatten(cut_arg, ',')
+  ) %>%
+  write_lines(
+    file = paste0( proc_data, 'cut_character_args_fami.txt')
+  )
+
+
 #+end_src
 
 ** tratamento individual das variáveis
