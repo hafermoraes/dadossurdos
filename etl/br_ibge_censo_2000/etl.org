@@ -152,7 +152,8 @@ aux_domi <-
     locale = readr::locale(encoding = "ISO-8859-1")
   )
 
-aux_domi %>% 
+cut_desc_domi <-
+  aux_domi %>% 
   ## ignora as últimas 7 linhas pelo mesmo motivo mais acima
   ## na explicação sobre ignorar as primeiras 20 linhas.
   filter(row_number() <= n() -7) %>%
@@ -272,8 +273,8 @@ aux_domi %>%
     a_code,
     a_desc,
     tipo
-  ) %>%
-  View
+  )
+
 
 
 aux_pess <-
@@ -313,10 +314,79 @@ aux_pess <-
     locale = readr::locale(encoding = "ISO-8859-1")
   )
 
+
+aux_pess <-
+  aux_pess %>%
+  filter(row_number() <= n() -8) %>% 
+  rowwise() %>%
+  mutate(
+    ## q: enunciado da questão
+    ## a: dicionário da resposta
+    qa = ifelse( is.na(col1), 'a', 'q'),
+    col2_space = str_locate(string = col2, pattern = ' ')[1],
+    ## posições inicial e final e número de caracteres nos microdados
+    pos_ini = str_remove_all(string = col1, pattern = '@'),
+    nchars = str_sub(string = col2, start = col2_space + 1),
+    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
+    ## argumento character do commando cut
+    cut_arg = glue('{pos_ini}-{pos_fin}'),
+    ## código e enunciado da variável
+    q_code = str_sub(string = col2, start = 1, end = col2_space - 1),
+    q_code = str_to_lower(q_code),
+    q_desc = ifelse(is.na(col1), NA, col3),
+    q_desc = ifelse( !grepl('^[.]', q_desc), q_desc, str_sub( string = q_desc, start = 3)),
+    q_desc = str_trim(q_desc),
+    q_desc = str_to_lower(q_desc),
+    ## código e descrição da resposta
+    col3_space = str_locate(string = col3, pattern = '-')[1],
+    a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_space - 1), NA),
+    a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_space + 1), NA),
+    a_desc = str_trim(a_desc),
+    a_desc = str_to_lower(a_desc),
+    ## inclui um marcador para o caso de a variável ter seu
+    ## dicionário localizado como um arquivo auxiliar. Isso
+    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
+    tipo = case_when(
+      q_code %in% c(
+        ## variáveis comuns aos microdados de domicílios,
+        ## pessoas e famílias
+        'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
+        ## variáveis exclusivas dos microdados de pessoas
+        'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
+        'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
+        'v4451', 'v4461'
+      ) ~ 'auxiliar',
+      TRUE ~ NA
+    )    
+  )
+
+
+
+aux_pess %>% View
+  filter(qa=='q', grepl('[.]', q_desc))  %>% View
+
+
 aux_pess %>%
-  ## ignora as últimas 7 linhas pelo mesmo motivo mais acima
+  filter(qa=='q') %>%
+  transmute(
+    base = 'pess',
+    q_code,
+    q_desc,
+    cut_arg,
+    pos_ini,
+    nchars,
+    pos_fin,
+    tipo
+  ) %>% View
+
+
+  
+
+cut_desc_pess <-
+  aux_pess %>%
+  ## ignora as últimas 8 linhas pelo mesmo motivo mais acima
   ## na explicação sobre ignorar as primeiras 20 linhas.
-  filter(row_number() <= n() -7) %>%
+  filter(row_number() <= n() -8) %>% 
   ## preenche as linhas cujo conteúdo é NA nas colunas col1
   ## e col2
   fill(col1, col2) %>%
@@ -348,7 +418,10 @@ aux_pess %>%
     ## col2.
     nchars = substr(col2, start = sep_col2 + 1, stop = 1024),
     nchars_dot = str_locate(string = nchars, pattern = '.')[1],
-    nchars = substr(nchars, start = 1, stop = nchars_dot -1),
+    nchars = substr(nchars, start = 1, stop = nchars_dot),
+    ## a posição final do campo no microdado é formada por
+    ## pos_ini + nchar - 1
+    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
     ## removem-se então os espaços redundantes da coluna col3
     col3 = str_trim(col3),
     ## e converte-se o conteúdo da variável para letras
@@ -400,7 +473,7 @@ aux_pess %>%
       ) ~ 'auxiliar',
       TRUE ~ NA
     )
-  ) %>%
+  ) %>% 
   ## a partir de agora não é mais necessário operar linha a linha
   ## por isso ungroup() reverte o comando rowwise()
   ungroup() %>%
@@ -423,14 +496,14 @@ aux_pess %>%
     base = 'pess',
     q_code = var,
     pos_ini,
-    q_desc,
     nchars,
+    pos_fin,
+    cut_character_arg = paste0(pos_ini,'-',pos_fin),
+    q_desc,
     a_code,
     a_desc,
     tipo
-  ) %>%
-  View
-
+  )
 #+end_src
 
 ** tratamento individual das variáveis
@@ -2433,6 +2506,7 @@ input %>%
   )
 #+end_src
 
+*** dicionário de variáveis oriundos dos scripts SAS
 
 * orquestração do tratamento dos microdados do censo
 
