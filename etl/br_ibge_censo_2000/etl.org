@@ -547,7 +547,7 @@ input <-
     micro = 2               # segunda coluna traz o nome da microrregião
   ) %>%
   transmute(
-    q_code = 'v1002',
+    q_code = 'v1003',
     a_code = cod_4,
     a_desc = micro
   ) 
@@ -850,7 +850,7 @@ input %>%
 ## br_ibge_censo_2000
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável 'religião'
+## Preparação da variável 'código da religião'
 ## -------------------------------------------------------------------
 ##
 
@@ -1043,7 +1043,9 @@ Dicionário de variáveis comuns às questões
 ## br_ibge_censo_2000
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável código da uf ou país de nascimento'
+## Preparação da variável 'código da uf ou país de nascimento'
+##   v4210 código da uf ou país de nascimento
+##   v4260 código da uf ou país de residência em 31/07/1995
 ## -------------------------------------------------------------------
 ##
 
@@ -1371,7 +1373,7 @@ input %>%
 ## br_ibge_censo_2000
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável 'ocupação'
+## Preparação da variável 'código novo da ocupação'
 ## -------------------------------------------------------------------
 ##
 
@@ -1962,7 +1964,7 @@ tribble(
 ## br_ibge_censo_2000
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável 'código da atividade'
+## Preparação da variável 'código novo da atividade'
 ## -------------------------------------------------------------------
 ##
 
@@ -2028,7 +2030,8 @@ input %>%
 ## br_ibge_censo_2000
 ##
 ## -------------------------------------------------------------------
-## Preparação da variável 'curso superior'
+## Preparação da variável 'código do curso mais elevado concluído
+## (concla)'
 ## -------------------------------------------------------------------
 ##
 
@@ -2429,6 +2432,7 @@ input %>%
     delim = '|'
   )
 #+end_src
+
 
 * orquestração do tratamento dos microdados do censo
 
