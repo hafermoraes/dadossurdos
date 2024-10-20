@@ -293,7 +293,7 @@ input <-
 
 expand_grid(
   base = c('domi', 'fami'),
-  var = c('v0103'),
+  q_code = c('v0103'),
   input
 ) %>%
   write_delim(
@@ -307,7 +307,7 @@ expand_grid(
 
 expand_grid(
   base = c('pess'),
-  var = c('v1103'),
+  q_code = c('v1103'),
   input
 ) %>%
   write_delim(
@@ -581,7 +581,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2000/'
 ##       Libreoffice Calc e exportar os dados já tratados nas linhas de
 ##       código a seguir.
 input <- tribble(
-  ~var,     ~a_code, ~a_desc,
+  ~q_code,     ~a_code, ~a_desc,
   'v4090',    '110', 'Católica Apostólica Romana',
   'v4090',    '111', 'Católica Carismática, Católica Pentecostal',
   'v4090',    '112', 'Católica Armênia; Católica Ucraniana',
@@ -803,7 +803,7 @@ input <-
 
 expand_grid(
   base = 'pess',
-  var = c('v4210', 'v4260'),
+  q_code = c('v4210', 'v4260'),
   input
 ) %>% 
   write_delim(
@@ -1149,7 +1149,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2000/'
 ##       Libreoffice Calc e exportar os dados já tratados nas linhas de
 ##       código a seguir.
 input <- tribble(
-  ~var,     ~a_code, ~a_desc,
+  ~q_code,     ~a_code, ~a_desc,
   'v4452',   '0100', 'MILITARES DA AERONÁUTICA',
   'v4452',   '0200', 'MILITARES DO EXÉRCITO',
   'v4452',   '0300', 'MILITARES DA MARINHA',
@@ -2656,6 +2656,17 @@ output_fami %>%
 
 ** prepara dicionário de variáveis usando o GNU R
 
+#+begin_src R :tangle ./gnur_parse_variables_dictionary.R
+## gnur_parse_variables_dictionary.R
+##
+## br_ibge_censo_2000
+
+
+
+#+end_src
+
+
+
 #+begin_src sh
 parse_variables_dictionary_using_GNU_R(){
 
@@ -2667,7 +2678,7 @@ parse_variables_dictionary_using_GNU_R(){
         R CMD BATCH --quiet --vanilla $gnur_script
     done
 
-    # R CMD BATCH --quiet --vanilla ./gnur_parse_variables_dictionary.R
+    R CMD BATCH --quiet --vanilla ./gnur_parse_variables_dictionary.R
     
     rm *.Rout
 
