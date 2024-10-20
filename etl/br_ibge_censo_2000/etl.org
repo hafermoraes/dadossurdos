@@ -116,6 +116,23 @@ raw_data <- paste0(src_dir, 'raw/')
 proc_data <- paste0(src_dir, 'data/')
 
 
+## variáveis auxiliares disponíveis em arquivos próprios,
+## fora dos scripts/macros do SAS
+aux_vars_common <- c(
+  ## variáveis comuns aos microdados de domicílios,
+  ## pessoas e famílias
+  'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap'
+  )
+aux_vars_pess <- c(
+  ## variáveis exclusivas dos microdados de pessoas
+  'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
+  'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
+  'v4451', 'v4461', 'v1103'  
+)
+aux_vars <- c(aux_vars_common, aux_vars_pess)
+
+
+
 ## -------------------------------------------------------------
 ##    base de domicílios
 ## -------------------------------------------------------------
@@ -183,6 +200,7 @@ output_domi <-
     cut_arg = glue('{pos_ini}-{pos_fin}'),
     ## código e enunciado da variável
     q_code = str_sub(string = col2, start = 1, end = col2_space - 1),
+    q_code = str_trim(q_code),
     q_code = str_to_lower(q_code),
     q_desc = ifelse(is.na(col1), NA, col3),
     q_desc = ifelse( !grepl('^[.]', q_desc), q_desc, str_sub( string = q_desc, start = 3)),
@@ -199,15 +217,7 @@ output_domi <-
     ## dicionário localizado como um arquivo auxiliar. Isso
     ## ocorre sempre que há a palavra 'arquivo' na coluna 3
     tipo = case_when(
-      q_code %in% c(
-        ## variáveis comuns aos microdados de domicílios,
-        ## pessoas e famílias
-        'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
-        ## variáveis exclusivas dos microdados de pessoas
-        'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
-        'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
-        'v4451', 'v4461', 'v1103'
-      ) ~ 'auxiliar',
+      q_code %in% aux_vars ~ 'auxiliar',
       TRUE ~ NA
     )    
   ) %>%
@@ -228,6 +238,7 @@ output_domi %>%
     col_names = TRUE
   )
 
+
 ## argumento character do comando cut
 output_domi %>% 
   filter(qa=='q') %>%
@@ -237,6 +248,40 @@ output_domi %>%
   write_lines(
     file = paste0( proc_data, 'cut_character_args_domi.txt')
   )
+
+
+## vdict_sasfiles.txt
+output_domi %>% 
+  fill(q_code) %>% 
+  filter(
+    qa=='a',
+    !(q_code %in% aux_vars),
+    !is.na(a_code),
+    !grepl(pattern = 'branc', a_code, ignore.case = TRUE)
+  ) %>%
+  transmute(
+    base = 'domi',
+    q_code,
+    a_code,
+    a_desc
+  ) %>%
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = FALSE
+  )
+
+
+tribble(
+    ~base,   ~q_code, ~a_code, ~a_desc,
+    'domi',  'v0220',     '2',   'não',
+  ) %>%
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = TRUE
+  )
+
 
 
 ## -------------------------------------------------------------
@@ -362,25 +407,36 @@ output_pess %>%
   )
 
 
-
-## dicionário de variáveis
-## códigos e respostas de variáveis presentes nos scripts SAS
-aux_pess %>% 
-  select( q_code, a_code, a_desc) %>%
-  fill(q_code) %>% 
-  left_join(
-    aux_pess %>%
-    filter(qa=='q') %>%
-    select(q_code, q_desc, tipo)
-  ) %>% 
-  filter(is.na(tipo)) %>%
-  filter(
-    !is.na(a_code),
-    !grepl('branco', a_code, ignore.case = TRUE),
-    q_code != 'v0455',
-    q_code != 'v0220'
+## vdict_sasfiles.txt
+tribble(
+    ~base,   ~q_code, ~a_code, ~a_desc,
+    'pess',  'v0455',     '1',   'sim',
   ) %>%
-  View
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = TRUE
+  )
+
+output_pess %>% 
+  fill(q_code) %>%
+  filter(
+    qa=='a',
+    !(q_code %in% aux_vars),
+    !is.na(a_code),
+    !grepl(pattern = 'branc|00', a_code, ignore.case = TRUE)
+  ) %>%
+  transmute(
+    base = 'pess',
+    q_code,
+    a_code,
+    a_desc
+  ) %>% 
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = TRUE
+  )
 
 
 ## -------------------------------------------------------------
@@ -510,6 +566,27 @@ output_fami %>%
     file = paste0( proc_data, 'cut_character_args_fami.txt')
   )
 
+
+## vdict_sasfiles.txt
+output_fami %>% 
+  fill(q_code) %>% 
+  filter(
+    qa=='a',
+    !(q_code %in% aux_vars),
+    !is.na(a_code),
+    !grepl(pattern = 'branc|00', a_code, ignore.case = TRUE)
+  ) %>%
+  transmute(
+    base = 'fami',
+    q_code,
+    a_code,
+    a_desc
+  ) %>% View
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = TRUE
+  )
 
 #+end_src
 
