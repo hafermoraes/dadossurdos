@@ -2739,7 +2739,7 @@ fetch_and_convert_microdata_to_parquet_format(){
     base="dom fami"
     #base="pes"
 
-    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO; do
+    for uf in PE; do # AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO; do
 
         echo "Baixando os microdados de ${mdata_url}/${uf}.zip..."
         R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/${uf}.zip' )"
@@ -2764,8 +2764,8 @@ fetch_and_convert_microdata_to_parquet_format(){
                     --output-delimiter=',' \
                     --characters=$cut_args \
                     ${f} | \
-                    tr -d '^M' | \
-                    tr -d '^Z' | \
+                    sed -e 's/\r//g' | \
+                    tr -d '\032' | \
                     tr -d ' ' > \
                     ${proc_data}/microdata_${b}_${uf}.csv
 
@@ -2783,7 +2783,7 @@ fetch_and_convert_microdata_to_parquet_format(){
     done
 
     # remove arquivos temporários do GNU R do diretório
-    rm *.{Rout,out}
+    rm -rf *.{Rout,out}
 }
 #+end_src
 
