@@ -581,7 +581,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2000/'
 ##       Libreoffice Calc e exportar os dados já tratados nas linhas de
 ##       código a seguir.
 input <- tribble(
-  ~q_code,     ~a_code, ~a_desc,
+  ~q_code,  ~a_code, ~a_desc,
   'v4090',    '110', 'Católica Apostólica Romana',
   'v4090',    '111', 'Católica Carismática, Católica Pentecostal',
   'v4090',    '112', 'Católica Armênia; Católica Ucraniana',
@@ -1149,7 +1149,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2000/'
 ##       Libreoffice Calc e exportar os dados já tratados nas linhas de
 ##       código a seguir.
 input <- tribble(
-  ~q_code,     ~a_code, ~a_desc,
+  ~q_code,  ~a_code, ~a_desc,
   'v4452',   '0100', 'MILITARES DA AERONÁUTICA',
   'v4452',   '0200', 'MILITARES DO EXÉRCITO',
   'v4452',   '0300', 'MILITARES DA MARINHA',
@@ -2298,7 +2298,7 @@ output_domi %>%
     q_desc
   ) %>%
   write_delim(
-    file = paste0(proc_data, 'vdict_qdesc_domi.txt' ),
+    file = paste0(proc_data, 'vdict_qdesc_dom.txt' ),
     delim = '|',
     col_names = TRUE
   )
@@ -2311,7 +2311,7 @@ output_domi %>%
     args = str_flatten(cut_arg, ',')
   ) %>%
   write_lines(
-    file = paste0( proc_data, 'cut_character_args_domi.txt')
+    file = paste0( proc_data, 'cut_character_args_dom.txt')
   )
 
 
@@ -2456,7 +2456,7 @@ output_pess %>%
     q_desc
   ) %>%
   write_delim(
-    file = paste0(proc_data, 'vdict_qdesc_pess.txt' ),
+    file = paste0(proc_data, 'vdict_qdesc_pes.txt' ),
     delim = '|',
     col_names = TRUE
   )
@@ -2468,7 +2468,7 @@ output_pess %>%
     args = str_flatten(cut_arg, ',')
   ) %>%
   write_lines(
-    file = paste0( proc_data, 'cut_character_args_pess.txt')
+    file = paste0( proc_data, 'cut_character_args_pes.txt')
   )
 
 
@@ -2656,12 +2656,47 @@ output_fami %>%
 
 ** prepara dicionário de variáveis usando o GNU R
 
-#+begin_src R :tangle ./gnur_parse_variables_dictionary.R
-## gnur_parse_variables_dictionary.R
+#+begin_src R :tangle ./gnur_aggregating_variables_dictionary.R
+## gnur_aggregating_variables_dictionary.R
 ##
 ## br_ibge_censo_2000
 
+library(readr)  # read_delim, write_delim
+library(dplyr)  # bind_rows
+library(tibble) # tribble
 
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+vdict_paths <-
+  list.files(
+    path = base_dir,
+    pattern = 'files',
+    ignore.case = TRUE,
+    full.names = TRUE
+  )
+
+vdict <- tribble(
+  ~base, ~q_code, ~a_code, ~a_desc,
+)
+
+for (f in vdict_paths){
+  vdict <- bind_rows(
+    vdict, 
+    read_delim(
+      file = f,
+      delim = '|',
+      col_names = TRUE,
+      col_types = cols(.default = 'c')
+    )
+  )
+}
+
+vdict %>%
+  write_delim(
+    file = paste0(base_dir, 'data//vdict.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
 
 #+end_src
 
@@ -2678,11 +2713,195 @@ parse_variables_dictionary_using_GNU_R(){
         R CMD BATCH --quiet --vanilla $gnur_script
     done
 
-    R CMD BATCH --quiet --vanilla ./gnur_parse_variables_dictionary.R
+    echo 'Consolidando os dicionários de variáveis tratadas em um único arquivo...'
+    R CMD BATCH --quiet --vanilla ./gnur_aggregating_variables_dictionary.R
     
     rm *.Rout
 
 }
+#+end_src
+
+
+* microdados
+
+** download e conversão dos microdados para arquivos csv
+
+#+begin_src sh
+fetch_and_convert_microdata_to_parquet_format(){
+
+    # Censo 2000 possui 3 arquivos por estado:
+    #  - dom, base de domicílios
+    #  - pes, base de pessoas
+    #  - fami, base de famílias
+    base="dom pes fami"
+
+    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO; do
+
+        echo "Baixando os microdados de ${mdata_url}/${uf}.zip..."
+        R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/${uf}.zip' )"
+
+        echo "Descompactando os microdados do arquivo ${uf}.zip em ${raw_data}/${uf}..."
+        unzip ${raw_data}/$uf.zip -d ${raw_data}
+
+        echo "Removendo da pasta temporária o arquivo compactado ${uf}.zip..."
+        rm -rf ${raw_data}/$uf.zip
+
+        echo "Tratando as bases de ${uf}..."
+
+        for b in ${base}; do
+
+            echo "  Base: ${b}"
+            cut_args=$(cat ${proc_data}/cut_character_args_${b}.txt )
+
+            for f in $(find ${raw_data}/ -print | grep -i ${b}); do
+
+                echo "    Convertendo para csv o arquivo ${f}..."
+                cut \
+                    --output-delimiter=',' \
+                    --characters=$cut_args \
+                    ${f} | \
+                    tr -d ' ' > \
+                    ${proc_data}/microdata_${b}_${uf}.csv
+
+                echo "    Removendo arquivo original ${f}..."
+                rm ${f}
+
+                echo "    Convertendo a base de csv para parquet em ${parq_data}/${b}/${uf}..."
+                R CMD BATCH --quiet --vanilla "--args base='${b}' uf='${uf}'" ./gnur_transform_csv_into_parquet.R
+
+                echo "    Removendo o arquivo ${proc_data}/microdata_${b}_${uf}.csv..."
+                rm ${proc_data}/microdata_${b}_${uf}.csv
+            done
+        done
+
+    done
+
+    # remove arquivos temporários do GNU R do diretório
+    rm *.{Rout,out}
+}
+#+end_src
+
+** conversão dos microdados em formato parquet
+
+#+begin_src R :tangle ./gnur_transform_csv_into_parquet.R
+## gnur_transform_csv_into_parquet.R
+##
+## Converte microdados do formato texto para o formato parquet usando library(arrow)
+##
+## Função é chamada como
+##  R CMD BATCH --quiet --vanilla "--args base='pes' uf='SP'" ./gnur_transform_csv_into_parquet.R
+
+## recupera os argumentos passados via linha de comando
+args <- commandArgs(TRUE)
+
+for(i in 1:length(args)){
+  eval(parse(text=args[[i]]))
+}
+
+library(arrow)  # open_dataset, write_dataset
+library(readr)  # read_delim
+library(glue)   # glue
+
+## pastas nas quais alocados os dados tratados e em formato parquet
+src_dir <- '/tmp/etl/br_ibge_censo_2000/'
+proc_data <- paste0(src_dir, 'data')
+parq_data <- paste0(src_dir, 'parquet')
+
+## importa todos os campos como string
+col_names <-
+    read_delim(
+      file = glue('{proc_data}/vdict_qdesc_{base}.txt'),
+      delim='|',
+      show_col_types = FALSE
+    )
+## adaptado de https://stackoverflow.com/a/71305598
+csv_schema <- schema(
+  purrr::map( col_names$q_code, ~Field$create(name = .x, type = string()))
+)
+
+## leitura dos microdados delimitados por ',' via
+## pacote 'arrow'.
+microdata_pipe_delimited <-
+  open_dataset(
+    glue('{proc_data}/microdata_{base}_{uf}.csv'),
+    format="csv",
+    schema = csv_schema,
+    col_names = TRUE,
+    skip = 0
+  )
+
+## escrita dos microdados tratados em formato 'parquet'
+## para agilidade e menor espaço em disco
+  write_dataset(
+    microdata_pipe_delimited, 
+    path = glue('{parq_data}/{base}/{uf}'),
+    format = 'parquet'
+  )
+#+end_src
+
+
+#+begin_src R :eval no :tangle no
+library(arrow)  # open_dataset
+library(dplyr)  # %>%, group_by, count
+library(glue)   # glue
+
+## pastas nas quais alocados os dados tratados e em formato parquet
+src_dir <- '/tmp/etl/br_ibge_censo_2000/'
+proc_data <- paste0(src_dir, 'data')
+parq_data <- paste0(src_dir, 'parquet')
+
+base <- 'pes'
+
+## leitura dos microdados delimitados por ',' via
+## pacote 'arrow'.
+
+## método japonês
+mdata_pess <-
+  open_dataset(
+    list.files(
+      glue('{parq_data}/pess'),
+      recursive = TRUE,
+      full.names = TRUE
+    )
+  )
+
+mdata_pess %>% group_by(v0615) %>% count() %>% collect()
+
+
+## método alemão
+mdata <-
+  open_dataset(
+    c(
+      file.path = glue('{parq_data}/{base}/AC/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/AL/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/AM/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/AP/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/BA/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/CE/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/DF/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/ES/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/GO/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MA/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MG/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MS/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MT/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PA/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PB/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PE/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PI/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PR/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RJ/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RN/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RO/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RR/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RS/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SC/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SE/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SP/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/TO/part-0.parquet')
+    ),
+    format="parquet"
+  )
 #+end_src
 
 
@@ -2697,7 +2916,7 @@ main(){
 
     parse_variables_dictionary_using_GNU_R
 
-    # fetch_and_convert_microdata_to_parquet_format
+    fetch_and_convert_microdata_to_parquet_format
 
 }
 
