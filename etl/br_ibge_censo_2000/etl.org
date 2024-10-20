@@ -98,503 +98,9 @@ Os dicionários de variáveis do Censo de 2000 decorrem diretamente dos scripts/
 
 Parte das informações como códigos de países, ocupações, atividade, religião, cursos superiores (graduação, mestrado e doutorado), códigos de mesorregiões, microrregiões e regiões metropolitanas estão disponíveis em arquivos auxiliares que precisam ser tratados individualmente antes de serem usados nas análises.
 
-#+begin_src R :tangle ./gnur_vardict_understanding.R
-## gnur_vardict_understanding.R
-##
-## entendimento do dicionário de variáveis do censo demográfico brasileiro de 2000 (br_ibge_censo_2000)
+** dicionário de variáveis em arquivos auxiliares (externo aos scripts SAS)
 
-library(readxl)   # read_excel
-library(dplyr)    # mutate, transmute, filter, rename, bind_rows, arrange
-library(stringr)  # str_split, str_to_lower, str_trim, str_locate
-library(tidyr)    # unnest
-library(glue)     # glue
-library(readr)    # write_delim, write_lines
-
-## caminhos até os dados do censo 2000
-src_dir <- '/tmp/etl/br_ibge_censo_2000/'
-raw_data <- paste0(src_dir, 'raw/')
-proc_data <- paste0(src_dir, 'data/')
-
-
-## variáveis auxiliares disponíveis em arquivos próprios,
-## fora dos scripts/macros do SAS
-aux_vars_common <- c(
-  ## variáveis comuns aos microdados de domicílios,
-  ## pessoas e famílias
-  'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap'
-  )
-aux_vars_pess <- c(
-  ## variáveis exclusivas dos microdados de pessoas
-  'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
-  'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
-  'v4451', 'v4461', 'v1103'  
-)
-aux_vars <- c(aux_vars_common, aux_vars_pess)
-
-
-
-## -------------------------------------------------------------
-##    base de domicílios
-## -------------------------------------------------------------
-
-## importação do dicionário de variáveis
-input_domi <-
-  ## o dicionário de variáveis do Censo 2000 decorre diretamente
-  ## do script/macro de leitura do software SAS, não restando
-  ## outra alternativa, para trabalhar com o GNU R, a não ser
-  ## tratar o dicionário de variáveis como um arquivo de formato
-  ## largura fixa.
-  ## Originalmente o arquivo contém caracteres binários, aspas
-  ## comentários (/* e */), tabulação (\t), por isso um script
-  ## shell o trata antes da importação no GNU R que ocorre nas
-  ## próximas linhas.
-  read_fwf(
-    file = paste0(raw_data, 'SAS/LE_DOMIC.sas'),
-    col_positions = fwf_widths(
-      c(
-        6,     # 1-6   >> contador de linha               =col1=
-        13,    # 7-19  >> variável e número de caracteres =col2=
-        1024   # 20-   >> dicionário de variáveis         =col3=
-      ),
-      c('col1', 'col2', 'col3')
-    ),
-    ## as primeiras 20 linhas são relevantes somente para a
-    ## leitura dos microdados no software SAS, motivo pelo
-    ## qual essas linhas são ignoradas (puladas) na importação
-    ## no GNU R.
-    skip = 20, 
-    show_col_types = FALSE,
-    ## importa 100% dos dados como texto
-    col_types = cols(.default = 'c'),
-    ## muito provavelmente o software SAS utilizado pelo IBGE
-    ## foi utilizado no sistema operacional Microsoft Windows
-    ## para salvar o script de importação. Isso introduz
-    ## divergências na codificação do arquivo, motivo pelo
-    ## qual é necessário ler no sistema operacional GNU/Linux
-    ## o arquivo com a codificação mais próxima da original
-    locale = readr::locale(encoding = "ISO-8859-1")
-  )
-
-
-output_domi <-
-  input_domi %>%
-  filter(row_number() <= n() -7) %>% 
-  rowwise() %>%
-  mutate(
-    ## q: enunciado da questão
-    ## a: dicionário da resposta
-    qa = ifelse( is.na(col1), 'a', 'q'),
-    ## posição do espaço ' ' que separa q_code e q_desc
-    col2_space = str_locate(string = col2, pattern = ' ')[1],
-    ## posições inicial e final e número de caracteres nos microdados
-    pos_ini = str_remove_all(string = col1, pattern = '@'),
-    nchars = str_sub(string = col2, start = col2_space + 1),
-    dot = str_locate(string = nchars, pattern = '[.]')[1],
-    nchars = ifelse(
-      is.na(dot),
-      nchars,
-      str_sub(string = nchars, start = 1, end = dot - 1)
-    ),
-    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
-    ## argumento character do commando cut
-    cut_arg = glue('{pos_ini}-{pos_fin}'),
-    ## código e enunciado da variável
-    q_code = str_sub(string = col2, start = 1, end = col2_space - 1),
-    q_code = str_trim(q_code),
-    q_code = str_to_lower(q_code),
-    q_desc = ifelse(is.na(col1), NA, col3),
-    q_desc = ifelse( !grepl('^[.]', q_desc), q_desc, str_sub( string = q_desc, start = 3)),
-    q_desc = str_trim(q_desc),
-    q_desc = str_to_lower(q_desc),
-    ## código e descrição da resposta
-    col3_hifen = str_locate(string = col3, pattern = '-')[1],
-    a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_hifen - 1), NA),
-    a_code = str_to_lower(a_code),
-    a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_hifen + 1), NA),
-    a_desc = str_trim(a_desc),
-    a_desc = str_to_lower(a_desc),
-    ## inclui um marcador para o caso de a variável ter seu
-    ## dicionário localizado como um arquivo auxiliar. Isso
-    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
-    tipo = case_when(
-      q_code %in% aux_vars ~ 'auxiliar',
-      TRUE ~ NA
-    )    
-  ) %>%
-  ungroup()
-
-
-## código e enunciado das variáveis
-output_domi %>% 
-  filter(qa=='q') %>%
-  transmute(
-    base = 'domi',
-    q_code,
-    q_desc
-  ) %>%
-  write_delim(
-    file = paste0(proc_data, 'vdict_qdesc_domi.txt' ),
-    delim = '|',
-    col_names = TRUE
-  )
-
-
-## argumento character do comando cut
-output_domi %>% 
-  filter(qa=='q') %>%
-  summarise(
-    args = str_flatten(cut_arg, ',')
-  ) %>%
-  write_lines(
-    file = paste0( proc_data, 'cut_character_args_domi.txt')
-  )
-
-
-## vdict_sasfiles.txt
-output_domi %>% 
-  fill(q_code) %>% 
-  filter(
-    qa=='a',
-    !(q_code %in% aux_vars),
-    !is.na(a_code),
-    !grepl(pattern = 'branc', a_code, ignore.case = TRUE)
-  ) %>%
-  transmute(
-    base = 'domi',
-    q_code,
-    a_code,
-    a_desc
-  ) %>%
-  write_delim(
-    file = paste0( proc_data, 'vdict_sasfiles.txt'),
-    delim = '|',
-    append = FALSE
-  )
-
-
-tribble(
-    ~base,   ~q_code, ~a_code, ~a_desc,
-    'domi',  'v0220',     '2',   'não',
-  ) %>%
-  write_delim(
-    file = paste0( proc_data, 'vdict_sasfiles.txt'),
-    delim = '|',
-    append = TRUE
-  )
-
-
-
-## -------------------------------------------------------------
-##    base de pessoas
-## -------------------------------------------------------------
-input_pess <-
-  ## o dicionário de variáveis do Censo 2000 decorre diretamente
-  ## do script/macro de leitura do software SAS, não restando
-  ## outra alternativa, para trabalhar com o GNU R, a não ser
-  ## tratar o dicionário de variáveis como um arquivo de formato
-  ## largura fixa.
-  ## Originalmente o arquivo contém caracteres binários, aspas
-  ## comentários (/* e */), tabulação (\t), por isso um script
-  ## shell o trata antes da importação no GNU R que ocorre nas
-  ## próximas linhas.
-  read_fwf(
-    file = paste0(raw_data, 'SAS/LE_PESSOAS.sas'),
-    col_positions = fwf_widths(
-      c(
-        6,     # 1-6   >> contador de linha               =col1=
-        10,    # 7-16  >> variável e número de caracteres =col2=
-        1024   # 17-   >> dicionário de variáveis         =col3=
-      ),
-      c('col1', 'col2', 'col3')
-    ),
-    ## as primeiras 20 linhas são relevantes somente para a
-    ## leitura dos microdados no software SAS, motivo pelo
-    ## qual essas linhas são ignoradas (puladas) na importação
-    ## no GNU R.
-    skip = 20, 
-    show_col_types = FALSE,
-    ## importa 100% dos dados como texto
-    col_types = cols(.default = 'c'),
-    ## muito provavelmente o software SAS utilizado pelo IBGE
-    ## foi utilizado no sistema operacional Microsoft Windows
-    ## para salvar o script de importação. Isso introduz
-    ## divergências na codificação do arquivo, motivo pelo
-    ## qual é necessário ler no sistema operacional GNU/Linux
-    ## o arquivo com a codificação mais próxima da original
-    locale = readr::locale(encoding = "ISO-8859-1")
-  )
-
-
-output_pess <-
-  input_pess %>%
-  filter(row_number() <= n() -8) %>% 
-  rowwise() %>%
-  mutate(
-    ## q: enunciado da questão
-    ## a: dicionário da resposta
-    qa = ifelse( is.na(col1), 'a', 'q'),
-    col2_space = str_locate(string = col2, pattern = ' ')[1],
-    ## posições inicial e final e número de caracteres nos microdados
-    pos_ini = str_remove_all(string = col1, pattern = '@'),
-    nchars = str_sub(string = col2, start = col2_space + 1),
-    dot = str_locate(string = nchars, pattern = '[.]')[1],
-    nchars = ifelse(
-      is.na(dot),
-      nchars,
-      str_sub(string = nchars, start = 1, end = dot - 1)
-    ),
-    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
-    ## argumento character do commando cut
-    cut_arg = glue('{pos_ini}-{pos_fin}'),
-    ## código e enunciado da variável
-    q_code = str_sub(string = col2, start = 1, end = col2_space - 1),
-    q_code = str_to_lower(q_code),
-    q_desc = ifelse(is.na(col1), NA, col3),
-    q_desc = ifelse( !grepl('^[.]', q_desc), q_desc, str_sub( string = q_desc, start = 3)),
-    q_desc = str_trim(q_desc),
-    q_desc = str_to_lower(q_desc),
-    ## código e descrição da resposta
-    col3_hifen = str_locate(string = col3, pattern = '-')[1],
-    a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_hifen - 1), NA),
-    a_code = str_to_lower(a_code), 
-    a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_hifen + 1), NA),
-    a_desc = str_trim(a_desc),
-    a_desc = str_to_lower(a_desc),
-    ## se 'branco' faz parte da coluna 3, a_code e a_desc devem ser NA
-    a_code = ifelse(col3_hifen > 5, NA, a_code),
-    a_desc = ifelse(col3_hifen > 5, NA, a_desc),
-    ## inclui um marcador para o caso de a variável ter seu
-    ## dicionário localizado como um arquivo auxiliar. Isso
-    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
-    tipo = case_when(
-      q_code %in% c(
-        ## variáveis comuns aos microdados de domicílios,
-        ## pessoas e famílias
-        'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
-        ## variáveis exclusivas dos microdados de pessoas
-        'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
-        'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
-        'v4451', 'v4461', 'v1103'
-      ) ~ 'auxiliar',
-      TRUE ~ NA
-    )    
-  ) %>%
-  ungroup()
-
-
-## código e enunciado das variáveis
-output_pess %>% 
-  filter(qa=='q') %>%
-  transmute(
-    base = 'pess',
-    q_code,
-    q_desc
-  ) %>%
-  write_delim(
-    file = paste0(proc_data, 'vdict_qdesc_pess.txt' ),
-    delim = '|',
-    col_names = TRUE
-  )
-
-## argumento character do comando cut
-output_pess %>% 
-  filter(qa=='q') %>%
-  summarise(
-    args = str_flatten(cut_arg, ',')
-  ) %>%
-  write_lines(
-    file = paste0( proc_data, 'cut_character_args_pess.txt')
-  )
-
-
-## vdict_sasfiles.txt
-tribble(
-    ~base,   ~q_code, ~a_code, ~a_desc,
-    'pess',  'v0455',     '1',   'sim',
-  ) %>%
-  write_delim(
-    file = paste0( proc_data, 'vdict_sasfiles.txt'),
-    delim = '|',
-    append = TRUE
-  )
-
-output_pess %>% 
-  fill(q_code) %>%
-  filter(
-    qa=='a',
-    !(q_code %in% aux_vars),
-    !is.na(a_code),
-    !grepl(pattern = 'branc|00', a_code, ignore.case = TRUE)
-  ) %>%
-  transmute(
-    base = 'pess',
-    q_code,
-    a_code,
-    a_desc
-  ) %>% 
-  write_delim(
-    file = paste0( proc_data, 'vdict_sasfiles.txt'),
-    delim = '|',
-    append = TRUE
-  )
-
-
-## -------------------------------------------------------------
-##    base de famílias
-## -------------------------------------------------------------
-input_fami <-
-  ## o dicionário de variáveis do Censo 2000 decorre diretamente
-  ## do script/macro de leitura do software SAS, não restando
-  ## outra alternativa, para trabalhar com o GNU R, a não ser
-  ## tratar o dicionário de variáveis como um arquivo de formato
-  ## largura fixa.
-  ## Originalmente o arquivo contém caracteres binários, aspas
-  ## comentários (/* e */), tabulação (\t), por isso um script
-  ## shell o trata antes da importação no GNU R que ocorre nas
-  ## próximas linhas.
-  read_fwf(
-    file = paste0(raw_data, 'SAS/LE_FAMILIAS.sas'),
-    col_positions = fwf_widths(
-      c(
-        6,     # 1-6   >> contador de linha               =col1=
-        14,    # 7-16  >> variável e número de caracteres =col2=
-        1024   # 17-   >> dicionário de variáveis         =col3=
-      ),
-      c('col1', 'col2', 'col3')
-    ),
-    ## as primeiras 20 linhas são relevantes somente para a
-    ## leitura dos microdados no software SAS, motivo pelo
-    ## qual essas linhas são ignoradas (puladas) na importação
-    ## no GNU R.
-    skip = 20, 
-    show_col_types = FALSE,
-    ## importa 100% dos dados como texto
-    col_types = cols(.default = 'c'),
-    ## muito provavelmente o software SAS utilizado pelo IBGE
-    ## foi utilizado no sistema operacional Microsoft Windows
-    ## para salvar o script de importação. Isso introduz
-    ## divergências na codificação do arquivo, motivo pelo
-    ## qual é necessário ler no sistema operacional GNU/Linux
-    ## o arquivo com a codificação mais próxima da original
-    locale = readr::locale(encoding = "ISO-8859-1")
-  ) 
-
-
-output_fami <-
-  input_fami %>%
-  filter(row_number() <= n() -7) %>% 
-  rowwise() %>%
-  mutate(
-    ## correção manual do nome da variável
-    col2 = ifelse(
-      grepl( pattern = '94', col1),
-      'CODV4615_7400 2.',
-      col2
-    ),
-    ## q: enunciado da questão
-    ## a: dicionário da resposta
-    qa = ifelse( is.na(col1), 'a', 'q'),
-    col2_space = str_locate(string = col2, pattern = ' ')[1],
-    ## posições inicial e final e número de caracteres nos microdados
-    pos_ini = str_remove_all(string = col1, pattern = '@'),
-    nchars = str_sub(string = col2, start = col2_space + 1),
-    dot = str_locate(string = nchars, pattern = '[.]')[1],
-    nchars = ifelse(
-      is.na(dot),
-      nchars,
-      str_sub(string = nchars, start = 1, end = dot - 1)
-    ),
-    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
-    ## argumento character do commando cut
-    cut_arg = glue('{pos_ini}-{pos_fin}'),
-    ## código e enunciado da variável
-    q_code = str_sub(string = col2, start = 1, end = col2_space - 1),
-    q_code = str_to_lower(q_code),
-    q_desc = ifelse(is.na(col1), NA, col3),
-    q_desc = ifelse( !grepl('^[.]', q_desc), q_desc, str_sub( string = q_desc, start = 3)),
-    q_desc = str_trim(q_desc),
-    q_desc = str_to_lower(q_desc),
-    ## código e descrição da resposta
-    col3_hifen = str_locate(string = col3, pattern = '-')[1],
-    a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_hifen - 1), NA),
-    a_code = str_to_lower(a_code), 
-    a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_hifen + 1), NA),
-    a_desc = str_trim(a_desc),
-    a_desc = str_to_lower(a_desc),
-    ## se 'branco' faz parte da coluna 3, a_code e a_desc devem ser NA
-    a_code = ifelse(col3_hifen > 5, NA, a_code),
-    a_desc = ifelse(col3_hifen > 5, NA, a_desc),
-    ## inclui um marcador para o caso de a variável ter seu
-    ## dicionário localizado como um arquivo auxiliar. Isso
-    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
-    tipo = case_when(
-      q_code %in% c(
-        ## variáveis comuns aos microdados de domicílios,
-        ## pessoas e famílias
-        'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
-        ## variáveis exclusivas dos microdados de pessoas
-        'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
-        'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
-        'v4451', 'v4461', 'v1103'
-      ) ~ 'auxiliar',
-      TRUE ~ NA
-    )    
-  ) %>%
-  ungroup()
-
-## código e enunciado das variáveis
-output_fami %>% 
-  filter(qa=='q') %>%
-  transmute(
-    base = 'fami',
-    q_code,
-    q_desc
-  ) %>%
-  write_delim(
-    file = paste0(proc_data, 'vdict_qdesc_fami.txt' ),
-    delim = '|',
-    col_names = TRUE
-  )
-
-## argumento character do comando cut
-output_fami %>% 
-  filter(qa=='q') %>%
-  summarise(
-    args = str_flatten(cut_arg, ',')
-  ) %>%
-  write_lines(
-    file = paste0( proc_data, 'cut_character_args_fami.txt')
-  )
-
-
-## vdict_sasfiles.txt
-output_fami %>% 
-  fill(q_code) %>% 
-  filter(
-    qa=='a',
-    !(q_code %in% aux_vars),
-    !is.na(a_code),
-    !grepl(pattern = 'branc|00', a_code, ignore.case = TRUE)
-  ) %>%
-  transmute(
-    base = 'fami',
-    q_code,
-    a_code,
-    a_desc
-  ) %>% View
-  write_delim(
-    file = paste0( proc_data, 'vdict_sasfiles.txt'),
-    delim = '|',
-    append = TRUE
-  )
-
-#+end_src
-
-** tratamento individual das variáveis
-
-*** dicionário de variáveis em arquivos auxiliares (externo aos scripts SAS)
-
-**** v1002 codigo da mesorregião
+*** v1002 codigo da mesorregião
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v1002.R
 ## gnur_vardict_auxfiles_v1002.R
@@ -611,6 +117,8 @@ output_fami %>%
 library(readxl)   # read_excel
 library(dplyr)    # %>%, transmute, rename
 library(readr)    # write_delim
+library(tibble)   # tribble
+library(tidyr)    # expand_grid
 
 ## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
 ## era o endereço da fonte primária no momento em que este script
@@ -646,7 +154,10 @@ input <-
     a_desc = meso
   ) 
 
-input %>%
+expand_grid(
+  base = c('domi', 'pess', 'fami'),
+  input 
+) %>% 
   write_delim(
     file = paste0(
       base_dir,
@@ -657,7 +168,7 @@ input %>%
   )
 #+end_src
 
-**** v1003 codigo da microrregião
+*** v1003 codigo da microrregião
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v1003.R
 ## gnur_vardict_auxfiles_v1003.R
@@ -674,6 +185,8 @@ input %>%
 library(readxl)   # read_excel
 library(dplyr)    # %>%, transmute, rename
 library(readr)    # write_delim
+library(tibble)   # tribble
+library(tidyr)    # expand_grid
 
 ## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
 ## era o endereço da fonte primária no momento em que este script
@@ -709,7 +222,10 @@ input <-
     a_desc = micro
   ) 
 
-input %>%
+expand_grid(
+  base = c('domi', 'pess', 'fami'),
+  input 
+) %>% 
   write_delim(
     file = paste0(
       base_dir,
@@ -720,7 +236,7 @@ input %>%
   )
 #+end_src
 
-**** v0103/v1103 codigo do município
+*** v0103/v1103 codigo do município
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v0103v1103.R
 ## gnur_vardict_auxfiles_v0103v1103.R
@@ -740,6 +256,7 @@ library(readxl)   # read_excel
 library(dplyr)    # %>%, transmute, rename
 library(readr)    # write_delim
 library(tidyr)    # expand_grid
+library(tibble)   # tribble
 
 ## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
 ## era o endereço da fonte primária no momento em que este script
@@ -775,20 +292,35 @@ input <-
   ) 
 
 expand_grid(
-  var = c('v0103', 'v1103'),
+  base = c('domi', 'fami'),
+  var = c('v0103'),
   input
 ) %>%
   write_delim(
     file = paste0(
       base_dir,
       'data/',
-      'vdict_auxfiles_v0103v1103.txt'
+      'vdict_auxfiles_v0103.txt'
+    ),
+    delim = '|'
+  )
+
+expand_grid(
+  base = c('pess'),
+  var = c('v1103'),
+  input
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v1103.txt'
     ),
     delim = '|'
   )
 #+end_src
 
-**** v0104 codigo do distrito
+*** v0104 codigo do distrito
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v0104.R
 ## gnur_vardict_auxfiles_v0104.R
@@ -805,6 +337,8 @@ expand_grid(
 library(readxl)   # read_excel
 library(dplyr)    # %>%, transmute, rename
 library(readr)    # write_delim
+library(tibble)   # tribble
+library(tidyr)    # expand_grid
 
 ## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
 ## era o endereço da fonte primária no momento em que este script
@@ -840,7 +374,10 @@ input <-
     a_desc = distr
   ) 
 
-input %>%
+expand_grid(
+  base = c('domi', 'pess', 'fami'),
+  input 
+) %>% 
   write_delim(
     file = paste0(
       base_dir,
@@ -851,7 +388,7 @@ input %>%
   )
 #+end_src
 
-**** v0105 codigo do subdistrito
+*** v0105 codigo do subdistrito
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v0105.R
 ## gnur_vardict_auxfiles_v0105.R
@@ -868,6 +405,8 @@ input %>%
 library(readxl)   # read_excel
 library(dplyr)    # %>%, transmute, rename
 library(readr)    # write_delim
+library(tibble)   # tribble
+library(tidyr)    # expand_grid
 
 ## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
 ## era o endereço da fonte primária no momento em que este script
@@ -903,7 +442,10 @@ input <-
     a_desc = subdistr
   ) 
 
-input %>%
+expand_grid(
+  base = c('domi', 'pess', 'fami'),
+  input 
+) %>% 
   write_delim(
     file = paste0(
       base_dir,
@@ -914,7 +456,7 @@ input %>%
   )
 #+end_src
 
-**** v1004 região metropolitana
+*** v1004 região metropolitana
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v1004.R
 ## gnur_vardict_auxfiles_v1004.R
@@ -931,6 +473,8 @@ input %>%
 library(readr)    # read_lines, write_delim
 library(dplyr)    # %>%, transmute, rename
 library(stringr)  # str_remove_all
+library(tibble)   # tribble
+library(tidyr)    # expand_grid
 
 ## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
 ## era o endereço da fonte primária no momento em que este script
@@ -987,7 +531,10 @@ input <-
     a_desc = col2
   )
 
-input %>%
+expand_grid(
+  base = c('domi', 'pess', 'fami'),
+  input 
+) %>% 
   write_delim(
     file = paste0(
       base_dir,
@@ -998,7 +545,7 @@ input %>%
   )
 #+end_src
 
-**** v4090 código da religião
+*** v4090 código da religião
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v4090.R
 ## gnur_vardict_auxfiles_v4090.R
@@ -1015,6 +562,7 @@ input %>%
 library(dplyr)    # %>%
 library(readr)    # write_delim
 library(tibble)   # tribble
+library(tidyr)    # expand_grid
 
 ## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
 ## era o endereço da fonte primária no momento em que este script
@@ -1032,7 +580,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2000/'
 ##       por converter os dados manualmente em uma planilha no software
 ##       Libreoffice Calc e exportar os dados já tratados nas linhas de
 ##       código a seguir.
-tribble(
+input <- tribble(
   ~var,     ~a_code, ~a_desc,
   'v4090',    '110', 'Católica Apostólica Romana',
   'v4090',    '111', 'Católica Carismática, Católica Pentecostal',
@@ -1176,7 +724,12 @@ tribble(
   'v4090',    '895', 'Declaração Múltipla de Religiosidade Católica/Candomblé',
   'v4090',    '896', 'Declaração Múltipla de Religiosidade Católica/Kardecista',
   'v4090',    '990', 'SEM DECLARAÇAO',
-  ) %>%
+  )
+
+expand_grid(
+  base = 'pess',
+  input
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -1187,7 +740,7 @@ tribble(
   )
 #+end_src
 
-**** v4210/v4260 código da uf ou país de nascimento
+*** v4210/v4260 código da uf ou país de nascimento
 
 Dicionário de variáveis comuns às questões
 - v4210 código da uf ou país de nascimento
@@ -1249,6 +802,7 @@ input <-
   ) 
 
 expand_grid(
+  base = 'pess',
   var = c('v4210', 'v4260'),
   input
 ) %>% 
@@ -1262,7 +816,7 @@ expand_grid(
   )
 #+end_src
 
-**** v4230 código da uf ou país de residência anterior
+*** v4230 código da uf ou país de residência anterior
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v4230.R
 ## gnur_vardict_auxfiles_v4230.R
@@ -1312,6 +866,7 @@ input <-
     grepl(pattern = '[0-9]+', cod_2)
   ) %>% 
   transmute(
+    base = 'pess',
     q_code = 'v4230',
     a_code = cod_2,
     a_desc = nome
@@ -1328,7 +883,7 @@ input %>%
   )
 #+end_src
 
-**** v4250 código do município de residência
+*** v4250 código do município de residência
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v4250.R
 ## gnur_vardict_auxfiles_v4250.R
@@ -1375,6 +930,7 @@ input <-
     mun = 2                 # segunda coluna traz o nome do município
   ) %>%
   transmute(
+    base = 'pess',
     q_code = 'v4250',
     a_code = cod_7,
     a_desc = mun
@@ -1391,7 +947,7 @@ input %>%
   )
 #+end_src
 
-**** v4276 código do município e uf ou país estrangeiro que trabalha ou estuda
+*** v4276 código do município e uf ou país estrangeiro que trabalha ou estuda
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v4276.R
 ## gnur_vardict_auxfiles_v4276.R
@@ -1439,6 +995,7 @@ input <-
     mun = 2                 # segunda coluna traz o nome do município
   ) %>%
   transmute(
+    base = 'pess',
     q_code = 'v4276',
     a_code = cod_7,
     a_desc = mun
@@ -1455,7 +1012,7 @@ input %>%
   )
 #+end_src
 
-**** v4355 código do curso mais elevado concluído
+*** v4355 código do curso mais elevado concluído
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v4355.R
 ## gnur_vardict_auxfiles_v4355.R
@@ -1505,6 +1062,7 @@ input <-
     grepl(pattern = '[0-9]+', cod_2)
   ) %>%
   transmute(
+    base = 'pess',
     q_code = 'v4355',
     a_code = cod_2,
     a_desc = mun
@@ -1521,7 +1079,7 @@ input %>%
   )
 #+end_src
 
-**** v4452 código novo da ocupação
+*** v4452 código novo da ocupação
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v4452.R
 ## gnur_vardict_auxfiles_v4452.R
@@ -1538,6 +1096,7 @@ input %>%
 library(dplyr)    # %>%
 library(readr)    # write_delim
 library(tibble)   # tribble
+library(tidyr)    # expand_grid
 
 ## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
 ## era o endereço da fonte primária no momento em que este script
@@ -1589,7 +1148,7 @@ base_dir <- '/tmp/etl/br_ibge_censo_2000/'
 ##       por converter os dados manualmente em uma planilha no software
 ##       Libreoffice Calc e exportar os dados já tratados nas linhas de
 ##       código a seguir.
-tribble(
+input <- tribble(
   ~var,     ~a_code, ~a_desc,
   'v4452',   '0100', 'MILITARES DA AERONÁUTICA',
   'v4452',   '0200', 'MILITARES DO EXÉRCITO',
@@ -2101,7 +1660,12 @@ tribble(
   'v4452',   '9914', 'MANTENEDORES DE EDIFICAÇÕES',
   'v4452',   '9921', 'TRABALHADORES ELEMENTARES DE SERVIÇOS DE MANUTENÇÃO',
   'v4452',   '9922', 'TRABALHADORES ELEMENTARES DE CONSERVAÇÃO DE VIAS PERMANENTES'
-  ) %>%
+  )
+
+expand_grid(
+  base = 'pess',
+  input
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -2112,7 +1676,7 @@ tribble(
   )
 #+end_src
 
-**** v4462 código novo da atividade
+*** v4462 código novo da atividade
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v4462.R
 ## gnur_vardict_auxfiles_v4462.R
@@ -2162,6 +1726,7 @@ input <-
     grepl(pattern = '[0-9]{5}', cod_5)
   ) %>% 
   transmute(
+    base = 'pess',
     q_code = 'v4462',
     a_code = cod_5,
     a_desc = cnae
@@ -2178,7 +1743,7 @@ input %>%
   )
 #+end_src
 
-**** v4354 código do curso mais elevado concluído (concla)
+*** v4354 código do curso mais elevado concluído (concla)
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v4354.R
 ## gnur_vardict_auxfiles_v4354.R
@@ -2225,6 +1790,7 @@ input <-
   rename(areadet = 1) %>%
   filter(!is.na(areadet)) %>%
   transmute(
+    base = 'pess',
     q_code = 'v4354',
     a_code = substr(areadet, start = 1, stop = 3),
     a_desc = substr(areadet, start = 4, stop = 1024),
@@ -2242,7 +1808,7 @@ input %>%
   )
 #+end_src
 
-**** v4219 código da uf ou país de nascimento (onu)
+*** v4219 código da uf ou país de nascimento (onu)
 
 Dicionário de variáveis comuns às questões
 - v4219 código da uf ou país de nascimento (onu)
@@ -2302,6 +1868,7 @@ input <-
   )
 
 expand_grid(
+  base = 'pess',
   q_code = c('v4219', 'v4269'),
   input
 ) %>% 
@@ -2315,7 +1882,7 @@ expand_grid(
   )
 #+end_src
 
-**** v4239 código da uf ou país (onu) de residência anterior
+*** v4239 código da uf ou país (onu) de residência anterior
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v4239.R
 ## gnur_vardict_auxfiles_v4239.R
@@ -2366,6 +1933,7 @@ input <-
     grepl(pattern = '[0-9]{3}', cod_3)
   ) %>% 
   transmute(
+    base = 'pess',
     q_code = 'v4239',
     a_code = cod_3,
     a_desc = nome
@@ -2382,7 +1950,7 @@ input %>%
   )
 #+end_src
 
-**** v4279 código do país estrangeiro (onu) que trabalha ou estuda
+*** v4279 código do país estrangeiro (onu) que trabalha ou estuda
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v4279.R
 ## gnur_vardict_auxfiles_v4279.R
@@ -2433,6 +2001,7 @@ input <-
     grepl(pattern = '[0-9]{3}', cod_3)
   ) %>% 
   transmute(
+    base = 'pess',
     q_code = 'v4279',
     a_code = cod_3,
     a_desc = nome
@@ -2449,7 +2018,7 @@ input %>%
   )
 #+end_src
 
-**** v4451 código antigo da ocupação
+*** v4451 código antigo da ocupação
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v4451.R
 ## gnur_vardict_auxfiles_v4451.R
@@ -2501,6 +2070,7 @@ input <-
     str_length(cod_3) == 3
   ) %>% 
   transmute(
+    base = 'pess',
     q_code = 'v4451',
     a_code = cod_3,
     a_desc = nome
@@ -2509,9 +2079,9 @@ input <-
 bind_rows(
   input,
   tribble(
-    ~q_code, ~a_code, ~a_desc,
-    'v4451',   '927', 'OUTRAS OCUPACOES OU OCUPACOES MAL DEFINIDAS',
-    'v4451',   '000', 'OUTRAS OCUPACOES OU OCUPACOES MAL DEFINIDAS'
+    ~base,  ~q_code, ~a_code, ~a_desc,
+    'pess', 'v4451',   '927', 'OUTRAS OCUPACOES OU OCUPACOES MAL DEFINIDAS',
+    'pess', 'v4451',   '000', 'OUTRAS OCUPACOES OU OCUPACOES MAL DEFINIDAS'
   )
 ) %>% 
   write_delim(
@@ -2524,7 +2094,7 @@ bind_rows(
   )
 #+end_src
 
-**** v4461 código antigo da atividade
+*** v4461 código antigo da atividade
 
 #+begin_src R :tangle ./gnur_vardict_auxfiles_v4461.R
 ## gnur_vardict_auxfiles_v4461.R
@@ -2574,6 +2144,7 @@ input <-
     grepl(pattern = '[0-9]{3}', cod_3)
   ) %>% 
   transmute(
+    base = 'pess',
     q_code = 'v4461',
     a_code = cod_3,
     a_desc = cnae
@@ -2590,7 +2161,519 @@ input %>%
   )
 #+end_src
 
-*** dicionário de variáveis oriundos dos scripts SAS
+** dicionário de variáveis oriundos dos scripts SAS
+
+#+begin_src R :tangle ./gnur_vardict_sasfiles.R
+## gnur_vardict_sasfiles.R
+##
+## entendimento do dicionário de variáveis do censo demográfico brasileiro de 2000 (br_ibge_censo_2000)
+
+library(readxl)   # read_excel
+library(dplyr)    # mutate, transmute, filter, rename, bind_rows, arrange
+library(stringr)  # str_split, str_to_lower, str_trim, str_locate
+library(tidyr)    # unnest
+library(glue)     # glue
+library(readr)    # write_delim, write_lines
+
+## caminhos até os dados do censo 2000
+src_dir <- '/tmp/etl/br_ibge_censo_2000/'
+raw_data <- paste0(src_dir, 'raw/')
+proc_data <- paste0(src_dir, 'data/')
+
+
+## variáveis auxiliares disponíveis em arquivos próprios,
+## fora dos scripts/macros do SAS
+aux_vars_common <- c(
+  ## variáveis comuns aos microdados de domicílios,
+  ## pessoas e famílias
+  'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap'
+  )
+aux_vars_pess <- c(
+  ## variáveis exclusivas dos microdados de pessoas
+  'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
+  'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
+  'v4451', 'v4461', 'v1103'  
+)
+aux_vars <- c(aux_vars_common, aux_vars_pess)
+
+
+
+## -------------------------------------------------------------
+##    base de domicílios
+## -------------------------------------------------------------
+
+## importação do dicionário de variáveis
+input_domi <-
+  ## o dicionário de variáveis do Censo 2000 decorre diretamente
+  ## do script/macro de leitura do software SAS, não restando
+  ## outra alternativa, para trabalhar com o GNU R, a não ser
+  ## tratar o dicionário de variáveis como um arquivo de formato
+  ## largura fixa.
+  ## Originalmente o arquivo contém caracteres binários, aspas
+  ## comentários (/* e */), tabulação (\t), por isso um script
+  ## shell o trata antes da importação no GNU R que ocorre nas
+  ## próximas linhas.
+  read_fwf(
+    file = paste0(raw_data, 'SAS/LE_DOMIC.sas'),
+    col_positions = fwf_widths(
+      c(
+        6,     # 1-6   >> contador de linha               =col1=
+        13,    # 7-19  >> variável e número de caracteres =col2=
+        1024   # 20-   >> dicionário de variáveis         =col3=
+      ),
+      c('col1', 'col2', 'col3')
+    ),
+    ## as primeiras 20 linhas são relevantes somente para a
+    ## leitura dos microdados no software SAS, motivo pelo
+    ## qual essas linhas são ignoradas (puladas) na importação
+    ## no GNU R.
+    skip = 20, 
+    show_col_types = FALSE,
+    ## importa 100% dos dados como texto
+    col_types = cols(.default = 'c'),
+    ## muito provavelmente o software SAS utilizado pelo IBGE
+    ## foi utilizado no sistema operacional Microsoft Windows
+    ## para salvar o script de importação. Isso introduz
+    ## divergências na codificação do arquivo, motivo pelo
+    ## qual é necessário ler no sistema operacional GNU/Linux
+    ## o arquivo com a codificação mais próxima da original
+    locale = readr::locale(encoding = "ISO-8859-1")
+  )
+
+
+output_domi <-
+  input_domi %>%
+  filter(row_number() <= n() -7) %>% 
+  rowwise() %>%
+  mutate(
+    ## q: enunciado da questão
+    ## a: dicionário da resposta
+    qa = ifelse( is.na(col1), 'a', 'q'),
+    ## posição do espaço ' ' que separa q_code e q_desc
+    col2_space = str_locate(string = col2, pattern = ' ')[1],
+    ## posições inicial e final e número de caracteres nos microdados
+    pos_ini = str_remove_all(string = col1, pattern = '@'),
+    nchars = str_sub(string = col2, start = col2_space + 1),
+    dot = str_locate(string = nchars, pattern = '[.]')[1],
+    nchars = ifelse(
+      is.na(dot),
+      nchars,
+      str_sub(string = nchars, start = 1, end = dot - 1)
+    ),
+    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
+    ## argumento character do commando cut
+    cut_arg = glue('{pos_ini}-{pos_fin}'),
+    ## código e enunciado da variável
+    q_code = str_sub(string = col2, start = 1, end = col2_space - 1),
+    q_code = str_trim(q_code),
+    q_code = str_to_lower(q_code),
+    q_desc = ifelse(is.na(col1), NA, col3),
+    q_desc = ifelse( !grepl('^[.]', q_desc), q_desc, str_sub( string = q_desc, start = 3)),
+    q_desc = str_trim(q_desc),
+    q_desc = str_to_lower(q_desc),
+    ## código e descrição da resposta
+    col3_hifen = str_locate(string = col3, pattern = '-')[1],
+    a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_hifen - 1), NA),
+    a_code = str_to_lower(a_code),
+    a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_hifen + 1), NA),
+    a_desc = str_trim(a_desc),
+    a_desc = str_to_lower(a_desc),
+    ## inclui um marcador para o caso de a variável ter seu
+    ## dicionário localizado como um arquivo auxiliar. Isso
+    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
+    tipo = case_when(
+      q_code %in% aux_vars ~ 'auxiliar',
+      TRUE ~ NA
+    )    
+  ) %>%
+  ungroup()
+
+
+## código e enunciado das variáveis
+output_domi %>% 
+  filter(qa=='q') %>%
+  transmute(
+    base = 'domi',
+    q_code,
+    q_desc
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_qdesc_domi.txt' ),
+    delim = '|',
+    col_names = TRUE
+  )
+
+
+## argumento character do comando cut
+output_domi %>% 
+  filter(qa=='q') %>%
+  summarise(
+    args = str_flatten(cut_arg, ',')
+  ) %>%
+  write_lines(
+    file = paste0( proc_data, 'cut_character_args_domi.txt')
+  )
+
+
+## vdict_sasfiles.txt
+output_domi %>% 
+  fill(q_code) %>% 
+  filter(
+    qa=='a',
+    !(q_code %in% aux_vars),
+    !is.na(a_code),
+    !grepl(pattern = 'branc', a_code, ignore.case = TRUE)
+  ) %>%
+  transmute(
+    base = 'domi',
+    q_code,
+    a_code,
+    a_desc
+  ) %>%
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = FALSE
+  )
+
+
+tribble(
+    ~base,   ~q_code, ~a_code, ~a_desc,
+    'domi',  'v0220',     '2',   'não',
+  ) %>%
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = TRUE
+  )
+
+
+
+## -------------------------------------------------------------
+##    base de pessoas
+## -------------------------------------------------------------
+input_pess <-
+  ## o dicionário de variáveis do Censo 2000 decorre diretamente
+  ## do script/macro de leitura do software SAS, não restando
+  ## outra alternativa, para trabalhar com o GNU R, a não ser
+  ## tratar o dicionário de variáveis como um arquivo de formato
+  ## largura fixa.
+  ## Originalmente o arquivo contém caracteres binários, aspas
+  ## comentários (/* e */), tabulação (\t), por isso um script
+  ## shell o trata antes da importação no GNU R que ocorre nas
+  ## próximas linhas.
+  read_fwf(
+    file = paste0(raw_data, 'SAS/LE_PESSOAS.sas'),
+    col_positions = fwf_widths(
+      c(
+        6,     # 1-6   >> contador de linha               =col1=
+        10,    # 7-16  >> variável e número de caracteres =col2=
+        1024   # 17-   >> dicionário de variáveis         =col3=
+      ),
+      c('col1', 'col2', 'col3')
+    ),
+    ## as primeiras 20 linhas são relevantes somente para a
+    ## leitura dos microdados no software SAS, motivo pelo
+    ## qual essas linhas são ignoradas (puladas) na importação
+    ## no GNU R.
+    skip = 20, 
+    show_col_types = FALSE,
+    ## importa 100% dos dados como texto
+    col_types = cols(.default = 'c'),
+    ## muito provavelmente o software SAS utilizado pelo IBGE
+    ## foi utilizado no sistema operacional Microsoft Windows
+    ## para salvar o script de importação. Isso introduz
+    ## divergências na codificação do arquivo, motivo pelo
+    ## qual é necessário ler no sistema operacional GNU/Linux
+    ## o arquivo com a codificação mais próxima da original
+    locale = readr::locale(encoding = "ISO-8859-1")
+  )
+
+
+output_pess <-
+  input_pess %>%
+  filter(row_number() <= n() -8) %>% 
+  rowwise() %>%
+  mutate(
+    ## q: enunciado da questão
+    ## a: dicionário da resposta
+    qa = ifelse( is.na(col1), 'a', 'q'),
+    col2_space = str_locate(string = col2, pattern = ' ')[1],
+    ## posições inicial e final e número de caracteres nos microdados
+    pos_ini = str_remove_all(string = col1, pattern = '@'),
+    nchars = str_sub(string = col2, start = col2_space + 1),
+    dot = str_locate(string = nchars, pattern = '[.]')[1],
+    nchars = ifelse(
+      is.na(dot),
+      nchars,
+      str_sub(string = nchars, start = 1, end = dot - 1)
+    ),
+    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
+    ## argumento character do commando cut
+    cut_arg = glue('{pos_ini}-{pos_fin}'),
+    ## código e enunciado da variável
+    q_code = str_sub(string = col2, start = 1, end = col2_space - 1),
+    q_code = str_to_lower(q_code),
+    q_desc = ifelse(is.na(col1), NA, col3),
+    q_desc = ifelse( !grepl('^[.]', q_desc), q_desc, str_sub( string = q_desc, start = 3)),
+    q_desc = str_trim(q_desc),
+    q_desc = str_to_lower(q_desc),
+    ## código e descrição da resposta
+    col3_hifen = str_locate(string = col3, pattern = '-')[1],
+    a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_hifen - 1), NA),
+    a_code = str_to_lower(a_code), 
+    a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_hifen + 1), NA),
+    a_desc = str_trim(a_desc),
+    a_desc = str_to_lower(a_desc),
+    ## se 'branco' faz parte da coluna 3, a_code e a_desc devem ser NA
+    a_code = ifelse(col3_hifen > 5, NA, a_code),
+    a_desc = ifelse(col3_hifen > 5, NA, a_desc),
+    ## inclui um marcador para o caso de a variável ter seu
+    ## dicionário localizado como um arquivo auxiliar. Isso
+    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
+    tipo = case_when(
+      q_code %in% c(
+        ## variáveis comuns aos microdados de domicílios,
+        ## pessoas e famílias
+        'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
+        ## variáveis exclusivas dos microdados de pessoas
+        'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
+        'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
+        'v4451', 'v4461', 'v1103'
+      ) ~ 'auxiliar',
+      TRUE ~ NA
+    )    
+  ) %>%
+  ungroup()
+
+
+## código e enunciado das variáveis
+output_pess %>% 
+  filter(qa=='q') %>%
+  transmute(
+    base = 'pess',
+    q_code,
+    q_desc
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_qdesc_pess.txt' ),
+    delim = '|',
+    col_names = TRUE
+  )
+
+## argumento character do comando cut
+output_pess %>% 
+  filter(qa=='q') %>%
+  summarise(
+    args = str_flatten(cut_arg, ',')
+  ) %>%
+  write_lines(
+    file = paste0( proc_data, 'cut_character_args_pess.txt')
+  )
+
+
+## vdict_sasfiles.txt
+tribble(
+    ~base,   ~q_code, ~a_code, ~a_desc,
+    'pess',  'v0455',     '1',   'sim',
+  ) %>%
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = TRUE
+  )
+
+output_pess %>% 
+  fill(q_code) %>%
+  filter(
+    qa=='a',
+    !(q_code %in% aux_vars),
+    !is.na(a_code),
+    !grepl(pattern = 'branc|00', a_code, ignore.case = TRUE)
+  ) %>%
+  transmute(
+    base = 'pess',
+    q_code,
+    a_code,
+    a_desc
+  ) %>% 
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = TRUE
+  )
+
+
+## -------------------------------------------------------------
+##    base de famílias
+## -------------------------------------------------------------
+input_fami <-
+  ## o dicionário de variáveis do Censo 2000 decorre diretamente
+  ## do script/macro de leitura do software SAS, não restando
+  ## outra alternativa, para trabalhar com o GNU R, a não ser
+  ## tratar o dicionário de variáveis como um arquivo de formato
+  ## largura fixa.
+  ## Originalmente o arquivo contém caracteres binários, aspas
+  ## comentários (/* e */), tabulação (\t), por isso um script
+  ## shell o trata antes da importação no GNU R que ocorre nas
+  ## próximas linhas.
+  read_fwf(
+    file = paste0(raw_data, 'SAS/LE_FAMILIAS.sas'),
+    col_positions = fwf_widths(
+      c(
+        6,     # 1-6   >> contador de linha               =col1=
+        14,    # 7-16  >> variável e número de caracteres =col2=
+        1024   # 17-   >> dicionário de variáveis         =col3=
+      ),
+      c('col1', 'col2', 'col3')
+    ),
+    ## as primeiras 20 linhas são relevantes somente para a
+    ## leitura dos microdados no software SAS, motivo pelo
+    ## qual essas linhas são ignoradas (puladas) na importação
+    ## no GNU R.
+    skip = 20, 
+    show_col_types = FALSE,
+    ## importa 100% dos dados como texto
+    col_types = cols(.default = 'c'),
+    ## muito provavelmente o software SAS utilizado pelo IBGE
+    ## foi utilizado no sistema operacional Microsoft Windows
+    ## para salvar o script de importação. Isso introduz
+    ## divergências na codificação do arquivo, motivo pelo
+    ## qual é necessário ler no sistema operacional GNU/Linux
+    ## o arquivo com a codificação mais próxima da original
+    locale = readr::locale(encoding = "ISO-8859-1")
+  ) 
+
+
+output_fami <-
+  input_fami %>%
+  filter(row_number() <= n() -7) %>% 
+  rowwise() %>%
+  mutate(
+    ## correção manual do nome da variável
+    col2 = ifelse(
+      grepl( pattern = '94', col1),
+      'CODV4615_7400 2.',
+      col2
+    ),
+    ## q: enunciado da questão
+    ## a: dicionário da resposta
+    qa = ifelse( is.na(col1), 'a', 'q'),
+    col2_space = str_locate(string = col2, pattern = ' ')[1],
+    ## posições inicial e final e número de caracteres nos microdados
+    pos_ini = str_remove_all(string = col1, pattern = '@'),
+    nchars = str_sub(string = col2, start = col2_space + 1),
+    dot = str_locate(string = nchars, pattern = '[.]')[1],
+    nchars = ifelse(
+      is.na(dot),
+      nchars,
+      str_sub(string = nchars, start = 1, end = dot - 1)
+    ),
+    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
+    ## argumento character do commando cut
+    cut_arg = glue('{pos_ini}-{pos_fin}'),
+    ## código e enunciado da variável
+    q_code = str_sub(string = col2, start = 1, end = col2_space - 1),
+    q_code = str_to_lower(q_code),
+    q_desc = ifelse(is.na(col1), NA, col3),
+    q_desc = ifelse( !grepl('^[.]', q_desc), q_desc, str_sub( string = q_desc, start = 3)),
+    q_desc = str_trim(q_desc),
+    q_desc = str_to_lower(q_desc),
+    ## código e descrição da resposta
+    col3_hifen = str_locate(string = col3, pattern = '-')[1],
+    a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_hifen - 1), NA),
+    a_code = str_to_lower(a_code), 
+    a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_hifen + 1), NA),
+    a_desc = str_trim(a_desc),
+    a_desc = str_to_lower(a_desc),
+    ## se 'branco' faz parte da coluna 3, a_code e a_desc devem ser NA
+    a_code = ifelse(col3_hifen > 5, NA, a_code),
+    a_desc = ifelse(col3_hifen > 5, NA, a_desc),
+    ## inclui um marcador para o caso de a variável ter seu
+    ## dicionário localizado como um arquivo auxiliar. Isso
+    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
+    tipo = case_when(
+      q_code %in% c(
+        ## variáveis comuns aos microdados de domicílios,
+        ## pessoas e famílias
+        'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
+        ## variáveis exclusivas dos microdados de pessoas
+        'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
+        'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
+        'v4451', 'v4461', 'v1103'
+      ) ~ 'auxiliar',
+      TRUE ~ NA
+    )    
+  ) %>%
+  ungroup()
+
+## código e enunciado das variáveis
+output_fami %>% 
+  filter(qa=='q') %>%
+  transmute(
+    base = 'fami',
+    q_code,
+    q_desc
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_qdesc_fami.txt' ),
+    delim = '|',
+    col_names = TRUE
+  )
+
+## argumento character do comando cut
+output_fami %>% 
+  filter(qa=='q') %>%
+  summarise(
+    args = str_flatten(cut_arg, ',')
+  ) %>%
+  write_lines(
+    file = paste0( proc_data, 'cut_character_args_fami.txt')
+  )
+
+
+## vdict_sasfiles.txt
+output_fami %>% 
+  fill(q_code) %>% 
+  filter(
+    qa=='a',
+    !(q_code %in% aux_vars),
+    !is.na(a_code),
+    !grepl(pattern = 'branc|00', a_code, ignore.case = TRUE)
+  ) %>%
+  transmute(
+    base = 'fami',
+    q_code,
+    a_code,
+    a_desc
+  ) %>% 
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = TRUE
+  )
+#+end_src
+
+** prepara dicionário de variáveis usando o GNU R
+
+#+begin_src sh
+parse_variables_dictionary_using_GNU_R(){
+
+    echo 'Prepara o dicionário de variáveis e tratamento dos microdados usando o GNU R'
+
+    for gnur_script in ./gnur_vardict*.R
+    do
+        echo "Executando $gnur_script..."
+        R CMD BATCH --quiet --vanilla $gnur_script
+    done
+
+    # R CMD BATCH --quiet --vanilla ./gnur_parse_variables_dictionary.R
+    
+    rm *.Rout
+
+}
+#+end_src
+
 
 * orquestração do tratamento dos microdados do censo
 
@@ -2601,7 +2684,7 @@ main(){
 
     fetch_variables_dictionary
 
-    # parse_variables_dictionary_using_GNU_R
+    parse_variables_dictionary_using_GNU_R
 
     # fetch_and_convert_microdata_to_parquet_format
 
