@@ -2736,8 +2736,7 @@ fetch_and_convert_microdata_to_parquet_format(){
     #  - dom, base de domicílios
     #  - pes, base de pessoas
     #  - fami, base de famílias
-    base="dom fami"
-    #base="pes"
+    base="dom pes fami"
 
     for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO; do
 
@@ -2764,7 +2763,9 @@ fetch_and_convert_microdata_to_parquet_format(){
                 #     dom: 170
                 #      pes: 390
                 # esse passo é necessário pois há linhas de arquivos com menos
-                # caracteres conforme relação acima
+                # caracteres conforme relação acima.
+                # esses números estão no argumento LRECL na linha que começa
+                # com FILENAME dos scripts do SAS.
 
                 if [ "$b" = "dom" ]; then
                     # completa cada linha da base de domicílios com 170 caracteres
