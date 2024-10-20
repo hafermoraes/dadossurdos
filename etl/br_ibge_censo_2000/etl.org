@@ -146,7 +146,7 @@ input <-
     range = 'A2:B138',     # intervalo de células dos dados
     col_types = 'text',    # ignora tipos de dados
     col_names = FALSE      # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_4 = 1,             # primeira coluna traz o código da mesorregião
     meso = 2               # segunda coluna traz o nome da mesorregião
@@ -155,12 +155,12 @@ input <-
     q_code = 'v1002',
     a_code = cod_4,
     a_desc = meso
-  ) 
+  )
 
 expand_grid(
   base = c('domi', 'pess', 'fami'),
-  input 
-) %>% 
+  input
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -214,7 +214,7 @@ input <-
     range = 'A2:B559',      # intervalo de células dos dados
     col_types = 'text',     # ignora tipos de dados
     col_names = FALSE       # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_4 = 1,              # primeira coluna traz o código da microrregião
     micro = 2               # segunda coluna traz o nome da microrregião
@@ -223,12 +223,12 @@ input <-
     q_code = 'v1003',
     a_code = cod_4,
     a_desc = micro
-  ) 
+  )
 
 expand_grid(
   base = c('domi', 'pess', 'fami'),
-  input 
-) %>% 
+  input
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -284,7 +284,7 @@ input <-
     range = 'A2:B5508',     # intervalo de células dos dados
     col_types = 'text',     # ignora tipos de dados
     col_names = FALSE       # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_7 = 1,              # primeira coluna traz o código do município
     mun = 2                 # segunda coluna traz o nome do município
@@ -292,7 +292,7 @@ input <-
   transmute(
     a_code = cod_7,
     a_desc = mun
-  ) 
+  )
 
 expand_grid(
   base = c('domi', 'fami'),
@@ -366,7 +366,7 @@ input <-
     range = 'A2:B9849',     # intervalo de células dos dados
     col_types = 'text',     # ignora tipos de dados
     col_names = FALSE       # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_9 = 1,              # primeira coluna traz o código do distrito
     distr = 2               # segunda coluna traz o nome do distrito
@@ -375,12 +375,12 @@ input <-
     q_code = 'v0104',
     a_code = cod_9,
     a_desc = distr
-  ) 
+  )
 
 expand_grid(
   base = c('domi', 'pess', 'fami'),
-  input 
-) %>% 
+  input
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -434,7 +434,7 @@ input <-
     range = 'A2:B9849',     # intervalo de células dos dados
     col_types = 'text',     # ignora tipos de dados
     col_names = FALSE       # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_11 = 1,             # primeira coluna traz o código do subdistrito
     subdistr = 2            # segunda coluna traz o nome do subdistrito
@@ -443,12 +443,12 @@ input <-
     q_code = 'v0105',
     a_code = cod_11,
     a_desc = subdistr
-  ) 
+  )
 
 expand_grid(
   base = c('domi', 'pess', 'fami'),
-  input 
-) %>% 
+  input
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -506,7 +506,7 @@ input <-
       c('col1', 'col2')
     ),
     ## ignora as 6 primeiras linhas do arquivo de texto
-    skip = 6, 
+    skip = 6,
     show_col_types = FALSE,
     ## importa 100% dos dados como texto
     col_types = cols(.default = 'c'),
@@ -516,18 +516,18 @@ input <-
     ## qual é necessário ler no sistema operacional GNU/Linux
     ## o arquivo com a codificação mais próxima da original
     locale = readr::locale(encoding = "ISO-8859-1")
-  ) %>% 
-  as_tibble() %>% 
+  ) %>%
+  as_tibble() %>%
   rename(
     col1 = 1,            # primeira coluna traz o código
     col2 = 2             # segunda coluna traz o nome
-  ) %>% 
+  ) %>%
   mutate(
     col1 = str_remove_all(string = col1, pattern = '-')
-  ) %>% 
+  ) %>%
   filter(
     !grepl(pattern = 'br', col1, ignore.case = TRUE)
-  ) %>% 
+  ) %>%
   transmute(
     q_code = 'v1004',
     a_code = col1,
@@ -536,8 +536,8 @@ input <-
 
 expand_grid(
   base = c('domi', 'pess', 'fami'),
-  input 
-) %>% 
+  input
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -791,24 +791,24 @@ input <-
     range = 'A4:B117',               # intervalo de células dos dados
     col_types = 'text',              # ignora tipos de dados
     col_names = FALSE                # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_2 = 1,             # primeira coluna traz o código da uf/país
     nome = 2               # segunda coluna traz o nome da uf/país
   ) %>%
   filter(
     grepl(pattern = '[0-9]+', cod_2)
-  ) %>% 
+  ) %>%
   transmute(
     a_code = cod_2,
     a_desc = nome
-  ) 
+  )
 
 expand_grid(
   base = 'pess',
   q_code = c('v4210', 'v4260'),
   input
-) %>% 
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -860,22 +860,22 @@ input <-
     range = 'A4:B119',               # intervalo de células dos dados
     col_types = 'text',              # ignora tipos de dados
     col_names = FALSE                # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_2 = 1,             # primeira coluna traz o código da uf/país
     nome = 2               # segunda coluna traz o nome da uf/país
   ) %>%
   filter(
     grepl(pattern = '[0-9]+', cod_2)
-  ) %>% 
+  ) %>%
   transmute(
     base = 'pess',
     q_code = 'v4230',
     a_code = cod_2,
     a_desc = nome
-  ) 
+  )
 
-input %>% 
+input %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -927,7 +927,7 @@ input <-
     range = 'A2:B5535',           # intervalo de células dos dados
     col_types = 'text',           # ignora tipos de dados
     col_names = FALSE             # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_7 = 1,              # primeira coluna traz o código do município
     mun = 2                 # segunda coluna traz o nome do município
@@ -937,9 +937,9 @@ input <-
     q_code = 'v4250',
     a_code = cod_7,
     a_desc = mun
-  ) 
+  )
 
-input %>% 
+input %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -992,7 +992,7 @@ input <-
     range = 'A2:B5607',                         # intervalo de células dos dados
     col_types = 'text',                         # ignora tipos de dados
     col_names = FALSE                           # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_7 = 1,              # primeira coluna traz o código do município
     mun = 2                 # segunda coluna traz o nome do município
@@ -1002,9 +1002,9 @@ input <-
     q_code = 'v4276',
     a_code = cod_7,
     a_desc = mun
-  ) 
+  )
 
-input %>% 
+input %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -1056,7 +1056,7 @@ input <-
     range = 'B2:C77',                # intervalo de células dos dados
     col_types = 'text',              # ignora tipos de dados
     col_names = FALSE                # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_2 = 1,              # primeira coluna traz o código do curso
     mun = 2                 # segunda coluna traz o nome do curso
@@ -1071,7 +1071,7 @@ input <-
     a_desc = mun
   )
 
-input %>% 
+input %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -1720,14 +1720,14 @@ input <-
     range = 'A5:B360',                # intervalo de células dos dados
     col_types = 'text',              # ignora tipos de dados
     col_names = FALSE                # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_5 = 1,              # primeira coluna traz o código da atividade
     cnae = 2                 # segunda coluna traz o nome da atividade
   ) %>%
   filter(
     grepl(pattern = '[0-9]{5}', cod_5)
-  ) %>% 
+  ) %>%
   transmute(
     base = 'pess',
     q_code = 'v4462',
@@ -1735,7 +1735,7 @@ input <-
     a_desc = cnae
   )
 
-input %>% 
+input %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -1789,7 +1789,7 @@ input <-
     range = 'C7:C120',               # intervalo de células dos dados
     col_types = 'text',              # ignora tipos de dados
     col_names = FALSE                # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(areadet = 1) %>%
   filter(!is.na(areadet)) %>%
   transmute(
@@ -1800,7 +1800,7 @@ input <-
     a_desc = str_trim(a_desc)
   )
 
-input %>% 
+input %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -1857,7 +1857,7 @@ input <-
     range = 'A6:B280',            # intervalo de células dos dados
     col_types = 'text',           # ignora tipos de dados
     col_names = FALSE             # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     nome = 1,              # primeira coluna traz o nome da uf/país
     cod_3 = 2              # segunda coluna traz o código da uf/país
@@ -1874,7 +1874,7 @@ expand_grid(
   base = 'pess',
   q_code = c('v4219', 'v4269'),
   input
-) %>% 
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -1927,22 +1927,22 @@ input <-
     range = 'A6:B282',               # intervalo de células dos dados
     col_types = 'text',              # ignora tipos de dados
     col_names = FALSE                # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     nome = 1,               # primeira coluna traz o nome da uf/país
     cod_3 = 2               # segunda coluna traz o código da uf/país
-  ) %>% 
+  ) %>%
   filter(
     grepl(pattern = '[0-9]{3}', cod_3)
-  ) %>% 
+  ) %>%
   transmute(
     base = 'pess',
     q_code = 'v4239',
     a_code = cod_3,
     a_desc = nome
-  ) 
+  )
 
-input %>% 
+input %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -1995,20 +1995,20 @@ input <-
     range = 'A7:B246',               # intervalo de células dos dados
     col_types = 'text',              # ignora tipos de dados
     col_names = FALSE                # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     nome = 1,               # primeira coluna traz o nome do país
     cod_3 = 2               # segunda coluna traz o código do país
-  ) %>% 
+  ) %>%
   filter(
     grepl(pattern = '[0-9]{3}', cod_3)
-  ) %>% 
+  ) %>%
   transmute(
     base = 'pess',
     q_code = 'v4279',
     a_code = cod_3,
     a_desc = nome
-  ) 
+  )
 
 input %>%
   write_delim(
@@ -2064,20 +2064,20 @@ input <-
     range = 'A4:B472',               # intervalo de células dos dados
     col_types = 'text',              # ignora tipos de dados
     col_names = FALSE                # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_3 = 1,             # primeira coluna traz o código da ocupação
     nome = 2               # segunda coluna traz o nome da ocupação
-  ) %>% 
+  ) %>%
   filter(
     str_length(cod_3) == 3
-  ) %>% 
+  ) %>%
   transmute(
     base = 'pess',
     q_code = 'v4451',
     a_code = cod_3,
     a_desc = nome
-  ) 
+  )
 
 bind_rows(
   input,
@@ -2086,7 +2086,7 @@ bind_rows(
     'pess', 'v4451',   '927', 'OUTRAS OCUPACOES OU OCUPACOES MAL DEFINIDAS',
     'pess', 'v4451',   '000', 'OUTRAS OCUPACOES OU OCUPACOES MAL DEFINIDAS'
   )
-) %>% 
+) %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -2138,14 +2138,14 @@ input <-
     range = 'A2:B196',               # intervalo de células dos dados
     col_types = 'text',              # ignora tipos de dados
     col_names = FALSE                # ignora nomes de colunas
-  ) %>% 
+  ) %>%
   rename(
     cod_3 = 1,              # primeira coluna traz o código da atividade
     cnae = 2                 # segunda coluna traz o nome da atividade
   ) %>%
   filter(
     grepl(pattern = '[0-9]{3}', cod_3)
-  ) %>% 
+  ) %>%
   transmute(
     base = 'pess',
     q_code = 'v4461',
@@ -2153,7 +2153,7 @@ input <-
     a_desc = cnae
   )
 
-input %>% 
+input %>%
   write_delim(
     file = paste0(
       base_dir,
@@ -2195,7 +2195,7 @@ aux_vars_pess <- c(
   ## variáveis exclusivas dos microdados de pessoas
   'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
   'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
-  'v4451', 'v4461', 'v1103'  
+  'v4451', 'v4461', 'v1103'
 )
 aux_vars <- c(aux_vars_common, aux_vars_pess)
 
@@ -2230,7 +2230,7 @@ input_domi <-
     ## leitura dos microdados no software SAS, motivo pelo
     ## qual essas linhas são ignoradas (puladas) na importação
     ## no GNU R.
-    skip = 20, 
+    skip = 20,
     show_col_types = FALSE,
     ## importa 100% dos dados como texto
     col_types = cols(.default = 'c'),
@@ -2246,7 +2246,7 @@ input_domi <-
 
 output_domi <-
   input_domi %>%
-  filter(row_number() <= n() -7) %>% 
+  filter(row_number() <= n() -7) %>%
   rowwise() %>%
   mutate(
     ## q: enunciado da questão
@@ -2287,13 +2287,13 @@ output_domi <-
     tipo = case_when(
       q_code %in% aux_vars ~ 'auxiliar',
       TRUE ~ NA
-    )    
+    )
   ) %>%
   ungroup()
 
 
 ## código e enunciado das variáveis
-output_domi %>% 
+output_domi %>%
   filter(qa=='q') %>%
   transmute(
     base = 'domi',
@@ -2308,7 +2308,7 @@ output_domi %>%
 
 
 ## argumento character do comando cut
-output_domi %>% 
+output_domi %>%
   filter(qa=='q') %>%
   summarise(
     args = str_flatten(cut_arg, ',')
@@ -2319,8 +2319,8 @@ output_domi %>%
 
 
 ## vdict_sasfiles.txt
-output_domi %>% 
-  fill(q_code) %>% 
+output_domi %>%
+  fill(q_code) %>%
   filter(
     qa=='a',
     !(q_code %in% aux_vars),
@@ -2379,7 +2379,7 @@ input_pess <-
     ## leitura dos microdados no software SAS, motivo pelo
     ## qual essas linhas são ignoradas (puladas) na importação
     ## no GNU R.
-    skip = 20, 
+    skip = 20,
     show_col_types = FALSE,
     ## importa 100% dos dados como texto
     col_types = cols(.default = 'c'),
@@ -2395,7 +2395,7 @@ input_pess <-
 
 output_pess <-
   input_pess %>%
-  filter(row_number() <= n() -8) %>% 
+  filter(row_number() <= n() -8) %>%
   rowwise() %>%
   mutate(
     ## q: enunciado da questão
@@ -2424,7 +2424,7 @@ output_pess <-
     ## código e descrição da resposta
     col3_hifen = str_locate(string = col3, pattern = '-')[1],
     a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_hifen - 1), NA),
-    a_code = str_to_lower(a_code), 
+    a_code = str_to_lower(a_code),
     a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_hifen + 1), NA),
     a_desc = str_trim(a_desc),
     a_desc = str_to_lower(a_desc),
@@ -2445,13 +2445,13 @@ output_pess <-
         'v4451', 'v4461', 'v1103'
       ) ~ 'auxiliar',
       TRUE ~ NA
-    )    
+    )
   ) %>%
   ungroup()
 
 
 ## código e enunciado das variáveis
-output_pess %>% 
+output_pess %>%
   filter(qa=='q') %>%
   transmute(
     base = 'pess',
@@ -2465,7 +2465,7 @@ output_pess %>%
   )
 
 ## argumento character do comando cut
-output_pess %>% 
+output_pess %>%
   filter(qa=='q') %>%
   summarise(
     args = str_flatten(cut_arg, ',')
@@ -2486,7 +2486,7 @@ tribble(
     append = TRUE
   )
 
-output_pess %>% 
+output_pess %>%
   fill(q_code) %>%
   filter(
     qa=='a',
@@ -2499,7 +2499,7 @@ output_pess %>%
     q_code,
     a_code,
     a_desc
-  ) %>% 
+  ) %>%
   write_delim(
     file = paste0( proc_data, 'vdict_sasfiles.txt'),
     delim = '|',
@@ -2534,7 +2534,7 @@ input_fami <-
     ## leitura dos microdados no software SAS, motivo pelo
     ## qual essas linhas são ignoradas (puladas) na importação
     ## no GNU R.
-    skip = 20, 
+    skip = 20,
     show_col_types = FALSE,
     ## importa 100% dos dados como texto
     col_types = cols(.default = 'c'),
@@ -2545,12 +2545,12 @@ input_fami <-
     ## qual é necessário ler no sistema operacional GNU/Linux
     ## o arquivo com a codificação mais próxima da original
     locale = readr::locale(encoding = "ISO-8859-1")
-  ) 
+  )
 
 
 output_fami <-
   input_fami %>%
-  filter(row_number() <= n() -7) %>% 
+  filter(row_number() <= n() -7) %>%
   rowwise() %>%
   mutate(
     ## correção manual do nome da variável
@@ -2585,7 +2585,7 @@ output_fami <-
     ## código e descrição da resposta
     col3_hifen = str_locate(string = col3, pattern = '-')[1],
     a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_hifen - 1), NA),
-    a_code = str_to_lower(a_code), 
+    a_code = str_to_lower(a_code),
     a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_hifen + 1), NA),
     a_desc = str_trim(a_desc),
     a_desc = str_to_lower(a_desc),
@@ -2606,12 +2606,12 @@ output_fami <-
         'v4451', 'v4461', 'v1103'
       ) ~ 'auxiliar',
       TRUE ~ NA
-    )    
+    )
   ) %>%
   ungroup()
 
 ## código e enunciado das variáveis
-output_fami %>% 
+output_fami %>%
   filter(qa=='q') %>%
   transmute(
     base = 'fami',
@@ -2625,7 +2625,7 @@ output_fami %>%
   )
 
 ## argumento character do comando cut
-output_fami %>% 
+output_fami %>%
   filter(qa=='q') %>%
   summarise(
     args = str_flatten(cut_arg, ',')
@@ -2636,8 +2636,8 @@ output_fami %>%
 
 
 ## vdict_sasfiles.txt
-output_fami %>% 
-  fill(q_code) %>% 
+output_fami %>%
+  fill(q_code) %>%
   filter(
     qa=='a',
     !(q_code %in% aux_vars),
@@ -2649,7 +2649,7 @@ output_fami %>%
     q_code,
     a_code,
     a_desc
-  ) %>% 
+  ) %>%
   write_delim(
     file = paste0( proc_data, 'vdict_sasfiles.txt'),
     delim = '|',
@@ -2684,7 +2684,7 @@ vdict <- tribble(
 
 for (f in vdict_paths){
   vdict <- bind_rows(
-    vdict, 
+    vdict,
     read_delim(
       file = f,
       delim = '|',
@@ -2718,7 +2718,7 @@ parse_variables_dictionary_using_GNU_R(){
 
     echo 'Consolidando os dicionários de variáveis tratadas em um único arquivo...'
     R CMD BATCH --quiet --vanilla ./gnur_aggregating_variables_dictionary.R
-    
+
     rm *.Rout
 
 }
@@ -2736,8 +2736,8 @@ fetch_and_convert_microdata_to_parquet_format(){
     #  - dom, base de domicílios
     #  - pes, base de pessoas
     #  - fami, base de famílias
-    # base="dom pes fami"
     base="dom fami"
+    #base="pes"
 
     for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO; do
 
@@ -2745,7 +2745,7 @@ fetch_and_convert_microdata_to_parquet_format(){
         R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/${uf}.zip' )"
 
         echo "Descompactando os microdados do arquivo ${uf}.zip em ${raw_data}/${uf}..."
-        unzip ${raw_data}/$uf.zip -d ${raw_data}
+        unzip -o ${raw_data}/$uf.zip -d ${raw_data}
 
         echo "Removendo da pasta temporária o arquivo compactado ${uf}.zip..."
         rm -rf ${raw_data}/$uf.zip
@@ -2837,7 +2837,7 @@ microdata_pipe_delimited <-
 ## escrita dos microdados tratados em formato 'parquet'
 ## para agilidade e menor espaço em disco
   write_dataset(
-    microdata_pipe_delimited, 
+    microdata_pipe_delimited,
     path = glue('{parq_data}/{base}/{uf}'),
     format = 'parquet'
   )
