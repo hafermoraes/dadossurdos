@@ -2739,7 +2739,7 @@ fetch_and_convert_microdata_to_parquet_format(){
     base="dom fami"
     #base="pes"
 
-    for uf in PE; do # AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO; do
+    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO; do
 
         echo "Baixando os microdados de ${mdata_url}/${uf}.zip..."
         R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/${uf}.zip' )"
@@ -2758,6 +2758,40 @@ fetch_and_convert_microdata_to_parquet_format(){
             cut_args=$(cat ${proc_data}/cut_character_args_${b}.txt )
 
             for f in $(find ${raw_data}/ -print | grep -i txt | grep -i ${b}); do
+
+                # cada arquivo precisa ter um tamanho fixo de linhas
+                #   fami: 118
+                #     dom: 170
+                #      pes: 390
+                # esse passo é necessário pois há linhas de arquivos com menos
+                # caracteres conforme relação acima
+
+                if [ "$b" = "dom" ]; then
+                    # completa cada linha da base de domicílios com 170 caracteres
+                    # linhas com menos de 170 serão completadas com espaços ' ' à
+                    # direita.
+                    echo "    Consertando txt original ${f}..."
+                    printf "%-170s\\n" $(cat ${f}) > /tmp/tmpfile
+                    mv -f /tmp/tmpfile ${f}
+                fi
+
+                if [ "$b" = "fami" ]; then
+                    # completa cada linha da base de famílias com 118 caracteres
+                    # linhas com menos de 118 serão completadas com espaços ' ' à
+                    # direita.
+                    echo "    Consertando txt original ${f}..."
+                    printf "%-118s\\n" $(cat ${f}) > /tmp/tmpfile
+                    mv -f /tmp/tmpfile ${f}
+                fi
+
+                if [ "$b" = "pes" ]; then
+                    # completa cada linha da base de pessoas com 390 caracteres
+                    # linhas com menos de 390 serão completadas com espaços ' ' à
+                    # direita.
+                    echo "    Consertando txt original ${f}..."
+                    printf "%-390s\\n" $(cat ${f}) > /tmp/tmpfile
+                    mv -f /tmp/tmpfile ${f}
+                fi
 
                 echo "    Convertendo para csv o arquivo ${f}..."
                 cut \
@@ -2916,11 +2950,11 @@ mdata <-
 #+begin_src sh
 main(){
 
-    # create_temporary_directories
+    create_temporary_directories
 
-    # fetch_variables_dictionary
+    fetch_variables_dictionary
 
-    # parse_variables_dictionary_using_GNU_R
+    parse_variables_dictionary_using_GNU_R
 
     fetch_and_convert_microdata_to_parquet_format
 
