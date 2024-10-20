@@ -2764,6 +2764,8 @@ fetch_and_convert_microdata_to_parquet_format(){
                     --output-delimiter=',' \
                     --characters=$cut_args \
                     ${f} | \
+                    tr -d '^M' | \
+                    tr -d '^Z' | \
                     tr -d ' ' > \
                     ${proc_data}/microdata_${b}_${uf}.csv
 
