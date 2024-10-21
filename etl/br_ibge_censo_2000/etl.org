@@ -2738,7 +2738,7 @@ fetch_and_convert_microdata_to_parquet_format(){
     #  - fami, base de famílias
     base="dom pes fami"
 
-    for uf in MG; do # AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO; do
+    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO; do
 
         echo "Baixando os microdados de ${mdata_url}/${uf}.zip..."
         R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/${uf}.zip' )"
@@ -2801,30 +2801,44 @@ fetch_and_convert_microdata_to_parquet_format(){
                 # sem isso o tratamento dos dados quebra...
                 #
                 line_length=$(awk '{print length}' ${f} | uniq | wc -l)
-                echo "    Arquivo ${f} contagem de linhas é ${line_length}"
+                # linha-a-linha demora muito e inviabiliza o tratamento dos dados
+                #
+                #    while read -r line; do
+                #        printf "%-170s\n" "$line" >> /tmp/tmpfix;
+                #    done < ${f}
+                #    mv -f /tmp/tmpfix ${f}
+                
+                # variante com awk é muito mais rápida...
+                #   https://www.linuxquestions.org/questions/programming-9/shell-question-pad-end-of-each-line-with-spaces-to-%3D-80-chars-875082/
+                #
+                #   awk '{printf "%-170s\n", $1}' ${f} > /tmp/tmpfix
+                #
+                line_count=$(wc -l ${f})
 
                 if [ "$b" = "dom" ]; then
                     if [ $line_length != 1 ]; then
+
                         # completa cada linha da base de domicílios com 170 caracteres
                         # linhas com menos de 170 serão completadas com espaços ' ' à
                         # direita.
-                        echo "    Consertando txt original ${f} linha a linha..."
-                        while read -r line; do
-                            printf "%-170s\n" "$line" >> /tmp/tmpfix;
-                        done < ${f}
-                        mv -f /tmp/tmpfix ${f}
+
+                        echo "    Consertando linha a linha as $line_count linhas do txt original..."
+
+                        awk '{printf "%-170s\n", $1}' ${f} > /tmp/tmpfix
+                        mv -f /tmp/tmpfix ${f}                        
                     fi
                 fi
 
                 if [ "$b" = "fami" ]; then
                     if [ $line_length != 1 ]; then
+
                         # completa cada linha da base de famílias com 118 caracteres
                         # linhas com menos de 118 serão completadas com espaços ' ' à
                         # direita.
-                        echo "    Consertando txt original ${f} linha a linha..."
-                        while read -r line; do
-                            printf "%-118s\n" "$line" >> /tmp/tmpfix;
-                        done < ${f}
+                        
+                        echo "    Consertando linha a linha as ${line_count} linhas do txt original..."
+
+                        awk '{printf "%-118s\n", $1}' ${f} > /tmp/tmpfix
                         mv -f /tmp/tmpfix ${f}
                     fi
                 fi
@@ -2834,11 +2848,12 @@ fetch_and_convert_microdata_to_parquet_format(){
                         # completa cada linha da base de pessoas com 390 caracteres
                         # linhas com menos de 390 serão completadas com espaços ' ' à
                         # direita.
-                        echo "    Consertando txt original ${f} linha a linha..."
-                        while read -r line; do
-                            printf "%-390s\n" "$line" >> /tmp/tmpfix;
-                        done < ${f}
+
+                        echo "    Consertando linha a linha as ${line_count} linhas do txt original..."
+
+                        awk '{printf "%-390s\n", $1}' ${f} > /tmp/tmpfix
                         mv -f /tmp/tmpfix ${f}
+                        
                     fi
                 fi
 
@@ -2851,13 +2866,13 @@ fetch_and_convert_microdata_to_parquet_format(){
                     ${proc_data}/microdata_${b}_${uf}.csv
 
                 echo "    Removendo arquivo original ${f}..."
-                # rm -rf ${f}
+                rm -rf ${f}
 
                 echo "    Convertendo a base de csv para parquet em ${parq_data}/${b}/${uf}..."
                 R CMD BATCH --quiet --vanilla "--args base='${b}' uf='${uf}'" ./gnur_transform_csv_into_parquet.R
 
                 echo "    Removendo o arquivo ${proc_data}/microdata_${b}_${uf}.csv..."
-                # rm -rf ${proc_data}/microdata_${b}_${uf}.csv
+                rm -rf ${proc_data}/microdata_${b}_${uf}.csv
             done
         done
 
