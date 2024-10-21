@@ -1,0 +1,3033 @@
+#+property: header-args:sh  :tangle ./etl.sh
+
+* orquestração do processo de extração, tratamento e carga dos dados brutos do censo demográfico brasileiro de 2000
+
+Este arquivo -- =etl.org= -- é a base de geração dos códigos nas linguagens *shell* e *GNU R* usadas no tratamento das informações dos microdados.
+
+Arquivos com extensão *.org* correspondem ao modo Org no editor de texto GNU Emacs.
+
+Em cada bloco de código a seguir pode haver a opção denominada *tangle*, que é responsável por realizar a exportação do conteúdo dos scripts em arquivos locais.
+Blocos de código na linguagem *shell* são exportados no arquivo =./etl.sh= que é o script que orquestra a totalidade dos passos necessários para baixar, tratar e disponibilizar os microdados e o dicionário de variáveis.
+
+O comando tangle no editor GNU Emacs pode ser executado com a combinação de teclas =C-c C-v t=, que equivale a executar o comando =org-babel-tangle=.
+
+* cabeçalho do script =etl.sh=
+
+#+begin_src sh
+#!/bin/bash
+
+# (https://askubuntu.com/a/1455039)
+set -eu
+
+echo "extração e preparação dos microdados para =br-ibge-censo-2000=\n"
+#+end_src
+
+* variáveis globais usadas no script =etl.sh=
+
+#+begin_src sh
+# endereço na internet no qual estão armazenados os microdados e o dicionário de variáveis
+base_url=ftp://ftp.ibge.gov.br
+base_url=${base_url}/Censos
+base_url=${base_url}/Censo_Demografico_2000
+base_url=${base_url}/Microdados
+mdata_url=${base_url}
+vdict_url=${base_url}/1_Documentacao_20170908.zip
+
+# diretórios nos quais serão armazenados os dados brutos (raw), tratados (data) e
+# convertidos no formato parquet para agilidade e menor espaço
+src_dir=/tmp/etl/br_ibge_censo_2000
+raw_data=${src_dir}/raw
+proc_data=${src_dir}/data
+parq_data=${src_dir}/parquet
+#+end_src
+
+* criação de diretórios temporários
+
+#+begin_src sh
+create_temporary_directories(){
+
+    echo "Criando diretórios temporários para dados brutos em $raw_data..."
+    rm -rf ${raw_data}
+    mkdir -p ${raw_data}
+
+    echo "Criando diretórios temporários para dados tratados em $proc_data..."
+    rm -rf ${proc_data}
+    mkdir -p ${proc_data}
+
+    echo "Criando diretórios temporários para dados colunares em $parq_data..."
+    rm -rf ${parq_data}
+    mkdir -p ${parq_data}
+    mkdir -p ${parq_data}/dom
+    mkdir -p ${parq_data}/pes
+    mkdir -p ${parq_data}/fami
+
+}
+#+end_src
+
+* dicionário de variáveis
+** download do dicionário de variáveis e arquivos auxiliares
+
+#+begin_src sh
+fetch_variables_dictionary(){
+
+    echo "Baixando o dicionário de variáveis de $vdict_url..."
+    R --quiet --vanilla -e "curl::curl_download( '${vdict_url}', '${raw_data}/vdict.zip' )"
+
+    echo 'Descompactando o dicionário de variáveis do arquivo =vdict.zip=...'
+    unzip ${raw_data}/vdict.zip -d ${raw_data}
+
+    echo 'Removendo da pasta temporária o arquivo compactado =vdict.zip= file...'
+    rm -rf ${raw_data}/vdict.zip
+
+    echo 'Removendo caracteres dos scripts SAS para melhor tratamento no R...'
+    find ${raw_data}/SAS -type f | rename 's/ /_/g'
+    # é necessário remover tabs (\t), aspas duplas, comentários (/* */) e cifrões ($)
+    for f in $(find ${raw_data}/SAS -type f | grep sas); do
+        cat ${f} | \
+                sed 's/\t/    /g' | \
+                sed 's/\$//g' | \
+                sed 's/\"//g' | \
+                sed 's/\/\*//g' | \
+                sed 's/\*\///g' > /tmp/aux
+        mv /tmp/aux $f
+    done
+
+}
+#+end_src
+
+** entendimento do dicionário
+
+Os dicionários de variáveis do Censo de 2000 decorrem diretamente dos scripts/macros de leitura do SAS para base =dom= (domicílios), =pes= (pessoas) e =fami= (famílias).
+
+Parte das informações como códigos de países, ocupações, atividade, religião, cursos superiores (graduação, mestrado e doutorado), códigos de mesorregiões, microrregiões e regiões metropolitanas estão disponíveis em arquivos auxiliares que precisam ser tratados individualmente antes de serem usados nas análises.
+
+** dicionário de variáveis em arquivos auxiliares (externo aos scripts SAS)
+
+*** v1002 codigo da mesorregião
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v1002.R
+## gnur_vardict_auxfiles_v1002.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código da mesorregião'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename
+library(readr)    # write_delim
+library(tibble)   # tribble
+library(tidyr)    # expand_grid
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Divisao Territorial Brasileira.xls'
+    ),                     # caminho até o arquivo
+    sheet = 'Mesorregião', # aba no qual os dados estão disponíveis
+    range = 'A2:B138',     # intervalo de células dos dados
+    col_types = 'text',    # ignora tipos de dados
+    col_names = FALSE      # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_4 = 1,             # primeira coluna traz o código da mesorregião
+    meso = 2               # segunda coluna traz o nome da mesorregião
+  ) %>%
+  transmute(
+    q_code = 'v1002',
+    a_code = cod_4,
+    a_desc = meso
+  )
+
+expand_grid(
+  base = c('domi', 'pess', 'fami'),
+  input
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v1002.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v1003 codigo da microrregião
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v1003.R
+## gnur_vardict_auxfiles_v1003.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código da microrregião'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename
+library(readr)    # write_delim
+library(tibble)   # tribble
+library(tidyr)    # expand_grid
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Divisao Territorial Brasileira.xls'
+    ),                      # caminho até o arquivo
+    sheet = 'Microrregião', # aba no qual os dados estão disponíveis
+    range = 'A2:B559',      # intervalo de células dos dados
+    col_types = 'text',     # ignora tipos de dados
+    col_names = FALSE       # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_4 = 1,              # primeira coluna traz o código da microrregião
+    micro = 2               # segunda coluna traz o nome da microrregião
+  ) %>%
+  transmute(
+    q_code = 'v1003',
+    a_code = cod_4,
+    a_desc = micro
+  )
+
+expand_grid(
+  base = c('domi', 'pess', 'fami'),
+  input
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v1003.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v0103/v1103 codigo do município
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v0103v1103.R
+## gnur_vardict_auxfiles_v0103v1103.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código do município'
+##    v0103 código do muncípio  >> base de domicílios
+##    v1103 código do município >> base de pessoas
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename
+library(readr)    # write_delim
+library(tidyr)    # expand_grid
+library(tibble)   # tribble
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Divisao Territorial Brasileira.xls'
+    ),                      # caminho até o arquivo
+    sheet = 'Município',    # aba no qual os dados estão disponíveis
+    range = 'A2:B5508',     # intervalo de células dos dados
+    col_types = 'text',     # ignora tipos de dados
+    col_names = FALSE       # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_7 = 1,              # primeira coluna traz o código do município
+    mun = 2                 # segunda coluna traz o nome do município
+  ) %>%
+  transmute(
+    a_code = cod_7,
+    a_desc = mun
+  )
+
+expand_grid(
+  base = c('domi', 'fami'),
+  q_code = c('v0103'),
+  input
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v0103.txt'
+    ),
+    delim = '|'
+  )
+
+expand_grid(
+  base = c('pess'),
+  q_code = c('v1103'),
+  input
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v1103.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v0104 codigo do distrito
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v0104.R
+## gnur_vardict_auxfiles_v0104.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código do distrito'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename
+library(readr)    # write_delim
+library(tibble)   # tribble
+library(tidyr)    # expand_grid
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Divisao Territorial Brasileira.xls'
+    ),                      # caminho até o arquivo
+    sheet = 'Distrito',     # aba no qual os dados estão disponíveis
+    range = 'A2:B9849',     # intervalo de células dos dados
+    col_types = 'text',     # ignora tipos de dados
+    col_names = FALSE       # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_9 = 1,              # primeira coluna traz o código do distrito
+    distr = 2               # segunda coluna traz o nome do distrito
+  ) %>%
+  transmute(
+    q_code = 'v0104',
+    a_code = cod_9,
+    a_desc = distr
+  )
+
+expand_grid(
+  base = c('domi', 'pess', 'fami'),
+  input
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v0104.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v0105 codigo do subdistrito
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v0105.R
+## gnur_vardict_auxfiles_v0105.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código do subdistrito'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename
+library(readr)    # write_delim
+library(tibble)   # tribble
+library(tidyr)    # expand_grid
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Divisao Territorial Brasileira.xls'
+    ),                      # caminho até o arquivo
+    sheet = 'Subdistrito',     # aba no qual os dados estão disponíveis
+    range = 'A2:B9849',     # intervalo de células dos dados
+    col_types = 'text',     # ignora tipos de dados
+    col_names = FALSE       # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_11 = 1,             # primeira coluna traz o código do subdistrito
+    subdistr = 2            # segunda coluna traz o nome do subdistrito
+  ) %>%
+  transmute(
+    q_code = 'v0105',
+    a_code = cod_11,
+    a_desc = subdistr
+  )
+
+expand_grid(
+  base = c('domi', 'pess', 'fami'),
+  input
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v0105.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v1004 região metropolitana
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v1004.R
+## gnur_vardict_auxfiles_v1004.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'região metropolitana'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readr)    # read_lines, write_delim
+library(dplyr)    # %>%, transmute, rename
+library(stringr)  # str_remove_all
+library(tibble)   # tribble
+library(tidyr)    # expand_grid
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_fwf(
+    file = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'V1004.txt'
+    ),          # caminho até o arquivo
+    col_positions = fwf_widths(
+      c(
+        4,      # 1-4   >> código da região metropolitana    =col1=
+        1024    # 5-    >> nome da região metropolitana      =col2=
+      ),
+      c('col1', 'col2')
+    ),
+    ## ignora as 6 primeiras linhas do arquivo de texto
+    skip = 6,
+    show_col_types = FALSE,
+    ## importa 100% dos dados como texto
+    col_types = cols(.default = 'c'),
+    ## muito provavelmente foi utilizado o sistema operacional
+    ## Microsoft Windows para salvar o arquivo. Isso introduz
+    ## divergências na codificação do arquivo, motivo pelo
+    ## qual é necessário ler no sistema operacional GNU/Linux
+    ## o arquivo com a codificação mais próxima da original
+    locale = readr::locale(encoding = "ISO-8859-1")
+  ) %>%
+  as_tibble() %>%
+  rename(
+    col1 = 1,            # primeira coluna traz o código
+    col2 = 2             # segunda coluna traz o nome
+  ) %>%
+  mutate(
+    col1 = str_remove_all(string = col1, pattern = '-')
+  ) %>%
+  filter(
+    !grepl(pattern = 'br', col1, ignore.case = TRUE)
+  ) %>%
+  transmute(
+    q_code = 'v1004',
+    a_code = col1,
+    a_desc = col2
+  )
+
+expand_grid(
+  base = c('domi', 'pess', 'fami'),
+  input
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v1004.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4090 código da religião
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4090.R
+## gnur_vardict_auxfiles_v4090.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código da religião'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+library(tidyr)    # expand_grid
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## Nota: O dicionário de variáveis da religão para o censo de 2000 está
+##       disponível somente em formato Microsoft Word, inviabilizando
+##       um tratamente decente dos dados usando softwares livres de forma
+##       automatizada e sem intervenção humana. Por esse motivo, optou-se
+##       por converter os dados manualmente em uma planilha no software
+##       Libreoffice Calc e exportar os dados já tratados nas linhas de
+##       código a seguir.
+input <- tribble(
+  ~q_code,  ~a_code, ~a_desc,
+  'v4090',    '110', 'Católica Apostólica Romana',
+  'v4090',    '111', 'Católica Carismática, Católica Pentecostal',
+  'v4090',    '112', 'Católica Armênia; Católica Ucraniana',
+  'v4090',    '120', 'Católica Apostólica Brasileira',
+  'v4090',    '130', 'Católica Ortodoxa',
+  'v4090',    '140', 'Ortodoxa Cristã',
+  'v4090',    '149', 'Outras',
+  'v4090',    '199', 'Outras Católicas',
+  'v4090',    '210', 'Igrejas Luteranas',
+  'v4090',    '219', 'Outras',
+  'v4090',    '220', 'Igreja Evangélica Presbiteriana',
+  'v4090',    '221', 'Igreja Presbiteriana Independente',
+  'v4090',    '222', 'Igreja Presbiteriana do Brasil',
+  'v4090',    '223', 'Igreja Presbiteriana Unida',
+  'v4090',    '224', 'Presbiteriana Fundamentalista',
+  'v4090',    '225', 'Presbiteriana Renovada',
+  'v4090',    '229', 'Outras',
+  'v4090',    '230', 'Igreja Evangélica Metodista',
+  'v4090',    '231', 'Evangélica Metodista Wesleyana',
+  'v4090',    '232', 'Evangélica Metodista Ortodoxa',
+  'v4090',    '239', 'Outras',
+  'v4090',    '240', 'Igreja Evangélica Batista',
+  'v4090',    '241', 'Convenção Batista Brasileira',
+  'v4090',    '242', 'Convenção Batista Nacional',
+  'v4090',    '243', 'Batista Pentecostal',
+  'v4090',    '244', 'Batista Bíblica',
+  'v4090',    '245', 'Batista Renovada',
+  'v4090',    '249', 'Outras',
+  'v4090',    '250', 'Igreja Evangélica Congregacional',
+  'v4090',    '251', 'Igreja Congregacional Independente',
+  'v4090',    '259', 'Outras',
+  'v4090',    '260', 'Igreja Evangélica Adventista do Sétimo Dia',
+  'v4090',    '261', 'Igreja Evangélica Adventista Movimento de Reforma',
+  'v4090',    '262', 'Igreja Evangélica Adventista da Promessa',
+  'v4090',    '269', 'Outras',
+  'v4090',    '270', 'Igreja Evangélica Episcopal Anglicana',
+  'v4090',    '279', 'Outras',
+  'v4090',    '280', 'Igreja Evangélica Menonita',
+  'v4090',    '289', 'Outras',
+  'v4090',    '300', 'Exército da Salvação',
+  'v4090',    '310', 'Igreja Evangélica Assembléia de Deus',
+  'v4090',    '311', 'Igreja Assembléia de Deus Madureira',
+  'v4090',    '312', 'Igreja Assembléia de Deus Todos os Santos',
+  'v4090',    '319', 'Outras',
+  'v4090',    '320', 'Igreja Congregacional Cristã do Brasil',
+  'v4090',    '329', 'Outras',
+  'v4090',    '330', 'Igreja Evangélica Pentecostal O Brasil Para Cristo',
+  'v4090',    '339', 'Outras',
+  'v4090',    '340', 'Igreja Evangelho Quadrangular',
+  'v4090',    '349', 'Outras',
+  'v4090',    '350', 'Igreja Universal do Reino de Deus',
+  'v4090',    '359', 'Outras',
+  'v4090',    '360', 'Igreja Evangélica Casa da Benção',
+  'v4090',    '369', 'Outras',
+  'v4090',    '370', 'Igreja Evangélica Casa de Oração',
+  'v4090',    '379', 'Outras',
+  'v4090',    '380', 'Igreja Evangélica Pentecostal Deus é Amor',
+  'v4090',    '389', 'Outras',
+  'v4090',    '390', 'Igreja Evangélica Pentecostal Maranata',
+  'v4090',    '399', 'Outras',
+  'v4090',    '400', 'Evangélica Renovada, Restaurada e Reformada Sem Vínculo Institucional',
+  'v4090',    '401', 'Pentecostal Renovada, Restaurada e Reformada Sem Vínculo Institucional',
+  'v4090',    '409', 'Outras',
+  'v4090',    '410', 'Evangélica Pentecostal Sem Vínculo Institucional',
+  'v4090',    '419', 'Outras',
+  'v4090',    '420', 'Igreja Evangélica Comunidade Cristã',
+  'v4090',    '429', 'Outras',
+  'v4090',    '430', 'Igreja de Origem Pentecostal Nova Vida',
+  'v4090',    '439', 'Outras',
+  'v4090',    '440', 'Igreja Evangélica Comunidade Evangélica',
+  'v4090',    '449', 'Outras',
+  'v4090',    '450', 'Outras Igrejas Evangélicas Pentecostais',
+  'v4090',    '460', 'Igreja Pentecostal Avivamento Bíblico',
+  'v4090',    '469', 'Outras',
+  'v4090',    '470', 'Igreja Evangélica Cadeia da Prece',
+  'v4090',    '479', 'Outras',
+  'v4090',    '480', 'Igreja do Nazareno',
+  'v4090',    '489', 'Outras',
+  'v4090',    '490', 'Evangélica Não Determinada',
+  'v4090',    '491', 'Evangélica Sem Vínculo Institucional',
+  'v4090',    '492', 'Declaração Múltipla de Religião Evangélica',
+  'v4090',    '499', 'Outros Evangélicos',
+  'v4090',    '510', 'Igreja de Jesus Cristo dos Santos dos Últimos Dias/Mormons',
+  'v4090',    '519', 'Outras',
+  'v4090',    '520', 'Testemunha de Jeová',
+  'v4090',    '529', 'Outras',
+  'v4090',    '530', 'Legião da Boa Vontade/Religião de Deus',
+  'v4090',    '590', 'Espiritualista',
+  'v4090',    '599', 'Outras',
+  'v4090',    '610', 'Espírita, Kardecista',
+  'v4090',    '619', 'Outras',
+  'v4090',    '620', 'Umbanda',
+  'v4090',    '629', 'Outras',
+  'v4090',    '630', 'Candomblé',
+  'v4090',    '639', 'Outras',
+  'v4090',    '640', 'Religiosidades Afro-Brasileiras',
+  'v4090',    '641', 'Declaração Múltipla de Religiosidade Afro com Outras Religiosidades',
+  'v4090',    '649', 'Outras',
+  'v4090',    '710', 'Judaísmo',
+  'v4090',    '719', 'Outras',
+  'v4090',    '740', 'Hinduísmo',
+  'v4090',    '741', 'Ioga',
+  'v4090',    '749', 'Outras',
+  'v4090',    '750', 'Budismo',
+  'v4090',    '751', 'Nitiren',
+  'v4090',    '752', 'Budismo Theravada',
+  'v4090',    '753', 'Zen Budismo',
+  'v4090',    '754', 'Budismo Tibetano',
+  'v4090',    '755', 'Soka Gakkai',
+  'v4090',    '759', 'Outras',
+  'v4090',    '760', 'Igreja Messiânica Mundial',
+  'v4090',    '761', 'Seicho No-Ie',
+  'v4090',    '762', 'Perfect Liberty',
+  'v4090',    '763', 'Hare Krishna',
+  'v4090',    '764', 'Discipulos Oshoo',
+  'v4090',    '765', 'Tenrykyo',
+  'v4090',    '766', 'Mahicari',
+  'v4090',    '790', 'Religiões Orientais',
+  'v4090',    '791', 'Bahai',
+  'v4090',    '792', 'Shintoismo',
+  'v4090',    '793', 'Taoismo',
+  'v4090',    '799', 'Outras',
+  'v4090',    '810', 'Islamismo',
+  'v4090',    '819', 'Outras',
+  'v4090',    '820', 'Esotérica',
+  'v4090',    '821', 'Racionalismo Cristão',
+  'v4090',    '829', 'Outras',
+  'v4090',    '830', 'Tradições Indígenas',
+  'v4090',    '831', 'Santo Daime',
+  'v4090',    '832', 'União do Vegetal',
+  'v4090',    '833', 'A Barquinha',
+  'v4090',    '834', 'Neoxamânica',
+  'v4090',    '839', 'Outras',
+  'v4090',    '850', 'Religiosidade Cristã Sem Vínculo Institucional',
+  'v4090',    '890', 'Religiosidade Não Determinada/Mal Definida',
+  'v4090',    '891', 'Declaração Múltipla de Religiosidade Católica/Outras Religiosidades',
+  'v4090',    '892', 'Declaração Múltipla de Religiosidade Evangélica/Outras Religiosidades',
+  'v4090',    '893', 'Declaração Múltipla de Religiosidade Católica/Espírita',
+  'v4090',    '894', 'Declaração Múltipla de Religiosidade Católica/Umbanda',
+  'v4090',    '895', 'Declaração Múltipla de Religiosidade Católica/Candomblé',
+  'v4090',    '896', 'Declaração Múltipla de Religiosidade Católica/Kardecista',
+  'v4090',    '990', 'SEM DECLARAÇAO',
+  )
+
+expand_grid(
+  base = 'pess',
+  input
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4090.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4210/v4260 código da uf ou país de nascimento
+
+Dicionário de variáveis comuns às questões
+- v4210 código da uf ou país de nascimento
+- v4260 código da uf ou país de residência em 31/07/1995
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4210v4260.R
+## gnur_vardict_auxfiles_v4210v4260.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código da uf ou país de nascimento'
+##   v4210 código da uf ou país de nascimento
+##   v4260 código da uf ou país de residência em 31/07/1995
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename, filter
+library(readr)    # write_delim
+library(tidyr)    # expand_grid
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Estrutura Migracao V4210, V4260.xls'
+    ),                               # caminho até o arquivo
+    sheet = 'Estrutura de Migração', # aba no qual os dados estão disponíveis
+    range = 'A4:B117',               # intervalo de células dos dados
+    col_types = 'text',              # ignora tipos de dados
+    col_names = FALSE                # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_2 = 1,             # primeira coluna traz o código da uf/país
+    nome = 2               # segunda coluna traz o nome da uf/país
+  ) %>%
+  filter(
+    grepl(pattern = '[0-9]+', cod_2)
+  ) %>%
+  transmute(
+    a_code = cod_2,
+    a_desc = nome
+  )
+
+expand_grid(
+  base = 'pess',
+  q_code = c('v4210', 'v4260'),
+  input
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4210v4260.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4230 código da uf ou país de residência anterior
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4230.R
+## gnur_vardict_auxfiles_v4230.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável código da uf ou país de residência anterior'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename, filter
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Estrutura Migracao V4230.xls'
+    ),                               # caminho até o arquivo
+    sheet = 'Estrutura Migração',    # aba no qual os dados estão disponíveis
+    range = 'A4:B119',               # intervalo de células dos dados
+    col_types = 'text',              # ignora tipos de dados
+    col_names = FALSE                # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_2 = 1,             # primeira coluna traz o código da uf/país
+    nome = 2               # segunda coluna traz o nome da uf/país
+  ) %>%
+  filter(
+    grepl(pattern = '[0-9]+', cod_2)
+  ) %>%
+  transmute(
+    base = 'pess',
+    q_code = 'v4230',
+    a_code = cod_2,
+    a_desc = nome
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4230.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4250 código do município de residência
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4250.R
+## gnur_vardict_auxfiles_v4250.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código do município de residência'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Municipios-V4250.xls'
+    ),                            # caminho até o arquivo
+    sheet = 'Municipios - V4250', # aba no qual os dados estão disponíveis
+    range = 'A2:B5535',           # intervalo de células dos dados
+    col_types = 'text',           # ignora tipos de dados
+    col_names = FALSE             # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_7 = 1,              # primeira coluna traz o código do município
+    mun = 2                 # segunda coluna traz o nome do município
+  ) %>%
+  transmute(
+    base = 'pess',
+    q_code = 'v4250',
+    a_code = cod_7,
+    a_desc = mun
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4250.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4276 código do município e uf ou país estrangeiro que trabalha ou estuda
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4276.R
+## gnur_vardict_auxfiles_v4276.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código do município e uf ou país
+## estrangeiro que trabalha ou estuda'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Municipios e Pais Estrangeiro - V4276.xls'
+    ),                                          # caminho até o arquivo
+    sheet = 'Municipios e Paises Estrangeiro',  # aba no qual os dados estão disponíveis
+    range = 'A2:B5607',                         # intervalo de células dos dados
+    col_types = 'text',                         # ignora tipos de dados
+    col_names = FALSE                           # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_7 = 1,              # primeira coluna traz o código do município
+    mun = 2                 # segunda coluna traz o nome do município
+  ) %>%
+  transmute(
+    base = 'pess',
+    q_code = 'v4276',
+    a_code = cod_7,
+    a_desc = mun
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4276.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4355 código do curso mais elevado concluído
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4355.R
+## gnur_vardict_auxfiles_v4355.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'curso superior'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Cursos Superiores - Estrutura V4535.xls'
+    ),                               # caminho até o arquivo
+    sheet = 'códigos-cursosuperior', # aba no qual os dados estão disponíveis
+    range = 'B2:C77',                # intervalo de células dos dados
+    col_types = 'text',              # ignora tipos de dados
+    col_names = FALSE                # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_2 = 1,              # primeira coluna traz o código do curso
+    mun = 2                 # segunda coluna traz o nome do curso
+  ) %>%
+  filter(
+    grepl(pattern = '[0-9]+', cod_2)
+  ) %>%
+  transmute(
+    base = 'pess',
+    q_code = 'v4355',
+    a_code = cod_2,
+    a_desc = mun
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4355.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4452 código novo da ocupação
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4452.R
+## gnur_vardict_auxfiles_v4452.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código novo da ocupação'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(dplyr)    # %>%
+library(readr)    # write_delim
+library(tibble)   # tribble
+library(tidyr)    # expand_grid
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+
+
+## ## Passos para reproduzir o corpo da tabela:
+## ## 1. abrir o arquivo doc no Libreoffice Writer
+## ## 2. selecionar todo o conteúdo
+## ## 3. CTRL + C no Libreoffice Writer
+## ## 4. CTRL + V no Libreoffice Calc
+## ## 5. salvar  como ocup.xlsx
+## ## 6. executar os códigos abaixo
+
+## library(readxl)   # read_excel
+## library(stringr)  # str_pad
+## library(glue)     # glue
+## library(readr)    # write_lines
+
+## read_excel(
+##   path = '/tmp/ocup.xlsx',
+##   range = 'A4:E1075',                # intervalo de células dos dados
+##   col_types = 'text',              # ignora tipos de dados
+##   col_names = FALSE                # ignora nomes de colunas
+## ) %>%
+##   rename(gde = 1, princ = 2, subg = 3, base  = 4, tit = 5) %>%
+##   filter(grepl( pattern = '[0-9]+', base)) %>%
+##   mutate(
+##     base = str_pad( string = base, width = 4, side = 'left', pad='0'),
+##     bodytribble = glue("'v4452',   '{base}', '{tit}',")
+##   ) %>%
+##   select(bodytribble) %>%
+##   write_delim(
+##     file = '/tmp/ocup.txt',
+##     delim = '|'
+##   )
+
+
+## Nota: O dicionário de variáveis da ocupação para o censo de 2000 está
+##       disponível somente em formato Microsoft Word, inviabilizando
+##       um tratamente decente dos dados usando softwares livres de forma
+##       automatizada e sem intervenção humana. Por esse motivo, optou-se
+##       por converter os dados manualmente em uma planilha no software
+##       Libreoffice Calc e exportar os dados já tratados nas linhas de
+##       código a seguir.
+input <- tribble(
+  ~q_code,  ~a_code, ~a_desc,
+  'v4452',   '0100', 'MILITARES DA AERONÁUTICA',
+  'v4452',   '0200', 'MILITARES DO EXÉRCITO',
+  'v4452',   '0300', 'MILITARES DA MARINHA',
+  'v4452',   '0401', 'CORONÉIS, TENENTES-CORONÉIS E MAJORES DA POLÍCIA MILITAR',
+  'v4452',   '0402', 'CAPITÃES DA POLÍCIA MILITAR',
+  'v4452',   '0403', 'TENENTES DA POLÍCIA MILITAR',
+  'v4452',   '0411', 'PRAÇAS ESPECIAIS DE POLÍCIA MILITAR',
+  'v4452',   '0412', 'SUBTENENTES E SARGENTOS DA POLÍCIA MILITAR',
+  'v4452',   '0413', 'CABOS E SOLDADOS DA POLÍCIA MILITAR',
+  'v4452',   '0501', 'CORONÉIS, TENENTES-CORONÉIS E MAJORES DE BOMBEIRO MILITAR',
+  'v4452',   '0502', 'CAPITÃES DO CORPO DE BOMBEIROS',
+  'v4452',   '0503', 'TENENTES DO CORPO DE BOMBEIROS',
+  'v4452',   '0511', 'PRAÇAS ESPECIAIS DE BOMBEIRO',
+  'v4452',   '0512', 'SUBTENENTES E SARGENTOS DO CORPO DE BOMBEIROS',
+  'v4452',   '0513', 'CABOS E SOLDADOS DO CORPO DE BOMBEIROS',
+  'v4452',   '1111', 'LEGISLADORES',
+  'v4452',   '1112', 'DIRIGENTES GERAIS DA ADMINISTRAÇÃO PÚBLICA',
+  'v4452',   '1113', 'MINISTROS DE TRIBUNAIS',
+  'v4452',   '1122', 'DIRIGENTES DE PRODUÇÃO E OPERAÇÕES DA ADMINISTRAÇÃO PÚBLICA',
+  'v4452',   '1123', 'DIRIGENTES DAS ÁREAS DE APOIO DA ADMINISTRAÇÃO PÚBLICA',
+  'v4452',   '1130', 'CHEFES DE PEQUENAS POPULAÇÕES',
+  'v4452',   '1140', 'DIRIGENTES E ADMINISTRADORES DE ORGANIZAÇÃO DE INTERESSE PÚBLICO',
+  'v4452',   '1210', 'DIRETORES GERAIS',
+  'v4452',   '1219', 'DIRIGENTES DE EMPRESAS - EMPREGADORES COM MAIS DE 5 EMPREGADOS',
+  'v4452',   '1220', 'DIRETORES DE ÁREAS DE PRODUÇÃO E OPERAÇÕES (DPO)',
+  'v4452',   '1230', 'DIRETORES DE ÁREAS DE APOIO',
+  'v4452',   '1310', 'GERENTES DE PRODUÇÃO E OPERAÇÕES',
+  'v4452',   '1320', 'GERENTES DE ÁREAS DE APOIO',
+  'v4452',   '2011', 'PROFISSIONAIS DA BIOENGENHARIA, BIOTECNOLOGIA E ENGENHARIA GENÉTICA',
+  'v4452',   '2012', 'PROFISSIONAIS DA METROLOGIA',
+  'v4452',   '2021', 'ENGENHEIROS MECATRÔNICOS',
+  'v4452',   '2111', 'PROFISSIONAIS DA MATEMÁTICA',
+  'v4452',   '2112', 'PROFISSIONAIS DA ESTATÍSTICA',
+  'v4452',   '2121', 'ESPECIALISTA EM COMPUTAÇÃO',
+  'v4452',   '2122', 'ENGENHEIROS EM COMPUTAÇÃO - DESENVOLVEDORES DE SOFTWARE',
+  'v4452',   '2123', 'ESPECIALISTA EM INFORMÁTICA',
+  'v4452',   '2124', 'ANALISTAS DE SISTEMAS',
+  'v4452',   '2125', 'PROGRAMADORES DE INFORMÁTICA',
+  'v4452',   '2131', 'FÍSICOS',
+  'v4452',   '2132', 'QUÍMICOS',
+  'v4452',   '2133', 'PROFISSIONAIS DO ESPAÇO E DA ATMOSFERA',
+  'v4452',   '2134', 'GEÓLOGOS E GEOFÍSICOS',
+  'v4452',   '2140', 'ENGENHEIROS DE MATERIAIS',
+  'v4452',   '2141', 'ARQUITETOS',
+  'v4452',   '2142', 'ENGENHEIROS CIVIS E AFINS',
+  'v4452',   '2143', 'ENGENHEIROS ELETROELETRÔNICOS E AFINS',
+  'v4452',   '2144', 'ENGENHEIROS MECÂNICOS',
+  'v4452',   '2145', 'ENGENHEIROS QUÍMICOS',
+  'v4452',   '2146', 'ENGENHEIROS METALÚRGICOS',
+  'v4452',   '2147', 'ENGENHEIROS DE MINAS',
+  'v4452',   '2148', 'ENGENHEIROS AGRIMENSORES E DE CARTOGRAFIA',
+  'v4452',   '2149', 'OUTROS ENGENHEIROS, ARQUITETOS E AFINS',
+  'v4452',   '2151', 'OFICIAIS DE CONVÉS',
+  'v4452',   '2152', 'OFICIAIS DE MÁQUINAS',
+  'v4452',   '2153', 'PROFISSIONAIS DA NAVEGAÇÃO AÉREA',
+  'v4452',   '2211', 'BIÓLOGOS E AFINS',
+  'v4452',   '2221', 'AGRÔNOMOS E AFINS',
+  'v4452',   '2231', 'MÉDICOS',
+  'v4452',   '2232', 'CIRURGIÕES-DENTISTAS',
+  'v4452',   '2233', 'VETERINÁRIOS',
+  'v4452',   '2234', 'FARMACÊUTICOS',
+  'v4452',   '2235', 'ENFERMEIROS DE NÍVEL SUPERIOR E AFINS',
+  'v4452',   '2236', 'FISIOTERAPEUTAS E AFINS',
+  'v4452',   '2237', 'NUTRICIONISTAS',
+  'v4452',   '2311', 'PROFESSORES DA EDUCAÇÃO INFANTIL (nível superior)',
+  'v4452',   '2312', 'PROFESSORES DE DISCIPLINAS DA EDUCAÇÃO GERAL DE 1ª A 4ª SÉRIES DO ENSINO FUNDAMENTAL (nível superior)',
+  'v4452',   '2313', 'PROFESSORES DE DISCIPLINAS DA EDUCAÇÃO GERAL DE 5ª A 8ª SÉRIES DO ENSINO FUNDAMENTAL',
+  'v4452',   '2321', 'PROFESSORES DE DISCIPLINAS DA EDUCAÇÃO GERAL DO ENSINO MÉDIO',
+  'v4452',   '2330', 'PROFESSORES E INSTRUTORES DO ENSINO PROFISSIONAL',
+  'v4452',   '2340', 'PROFESSORES DO ENSINO SUPERIOR',
+  'v4452',   '2391', 'PROFESSORES DE EDUCAÇÃO FÍSICA',
+  'v4452',   '2392', 'PROFESSORES DE ALUNOS COM DEFICIÊNCIAS FÍSICAS E MENTAIS',
+  'v4452',   '2394', 'PROGRAMADORES, AVALIADORES E ORIENTADORES DE ENSINO',
+  'v4452',   '2410', 'ADVOGADOS',
+  'v4452',   '2412', 'PROCURADORES DE EMPRESAS E AUTARQUIAS',
+  'v4452',   '2419', 'OUTROS ADVOGADOS AUTÔNOMOS E DE EMPRESAS',
+  'v4452',   '2421', 'JUÍZES E DESEMBARGADORES',
+  'v4452',   '2422', 'PROMOTORES, DEFENSORES PÚBLICOS E AFINS',
+  'v4452',   '2423', 'DELEGADOS DE POLÍCIA',
+  'v4452',   '2511', 'PROFISSIONAIS EM PESQUISA E ANÁLISE ANTROPOLÓGICA E SOCIOLÓGICA',
+  'v4452',   '2512', 'PROFISSIONAIS EM PESQUISA E ANÁLISE ECONÔMICA',
+  'v4452',   '2513', 'PROFISSIONAIS EM PESQUISA E ANÁLISE HISTÓRICA E GEOGRÁFICA',
+  'v4452',   '2514', 'FILÓSOFOS E CIENTISTAS POLÍTICOS',
+  'v4452',   '2515', 'PSICÓLOGOS E PSICANALISTAS',
+  'v4452',   '2516', 'ASSISTENTES SOCIAIS E ECONOMISTAS DOMÉSTICOS',
+  'v4452',   '2521', 'ADMINISTRADORES',
+  'v4452',   '2522', 'CONTADORES E AUDITORES',
+  'v4452',   '2523', 'SECRETÁRIAS EXECUTIVAS E BILINGÜES',
+  'v4452',   '2524', 'PROFISSIONAIS DE RECURSOS HUMANOS',
+  'v4452',   '2525', 'PROFISSIONAIS DA ADMINISTRAÇÃO ECONÔMICO-FINANCEIRA',
+  'v4452',   '2531', 'PROFISSIONAIS DE MARKETING, PUBLICIDADE E COMERCIALIZAÇÃO',
+  'v4452',   '2611', 'PROFISSIONAIS DO JORNALISMO',
+  'v4452',   '2612', 'PROFISSIONAIS DA INFORMAÇÃO',
+  'v4452',   '2613', 'ARQUIVOLOGISTAS E MUSEÓLOGOS',
+  'v4452',   '2614', 'FILÓLOGOS, TRADUTORES E INTÉRPRETES',
+  'v4452',   '2615', 'ESCRITORES E REDATORES',
+  'v4452',   '2616', 'ESPECIALISTAS EM EDITORAÇÃO',
+  'v4452',   '2617', 'LOCUTORES E COMENTARISTAS',
+  'v4452',   '2621', 'PRODUTORES DE ESPETÁCULOS',
+  'v4452',   '2622', 'COREÓGRAFOS E BAILARINOS',
+  'v4452',   '2623', 'ATORES, DIRETORES DE ESPETÁCULOS E AFINS',
+  'v4452',   '2624', 'COMPOSITORES, MÚSICOS E CANTORES',
+  'v4452',   '2625', 'DESENHISTAS INDUSTRIAIS (DESIGNER), ESCULTORES, PINTORES E AFINS',
+  'v4452',   '2627', 'DECORADORES DE INTERIORES E CENÓGRAFOS',
+  'v4452',   '2631', 'MINISTROS DE CULTOS RELIGIOSOS, MISSIONÁRIOS E AFINS',
+  'v4452',   '3001', 'TÉCNICOS EM MECATRÔNICA',
+  'v4452',   '3003', 'TÉCNICOS EM ELETROMECÂNICA',
+  'v4452',   '3011', 'LABORATORISTA INDUSTRIAL',
+  'v4452',   '3012', 'TÉCNICOS DE APOIO À BIOENGENHARIA',
+  'v4452',   '3111', 'TÉCNICOS QUÍMICOS',
+  'v4452',   '3112', 'TÉCNICOS PETROQUÍMICOS',
+  'v4452',   '3113', 'TÉCNICOS EM MATERIAIS DE CERÂMICAS E VIDROS',
+  'v4452',   '3114', 'TÉCNICOS EM FABRICAÇÃO DE PRODUTOS PLÁSTICOS E DE BORRACHA',
+  'v4452',   '3115', 'TÉCNICOS EM CONTROLE AMBIENTAL, UTILIDADES E TRATAMENTO DE EFLUENTES',
+  'v4452',   '3116', 'TÉCNICOS TÊXTEIS',
+  'v4452',   '3117', 'COLORISTAS',
+  'v4452',   '3121', 'TÉCNICOS EM CONSTRUÇÃO CIVIL - EDIFICAÇÕES',
+  'v4452',   '3122', 'TÉCNICOS EM CONSTRUÇÃO CIVIL - OBRAS DE INFRAESTRUTURA',
+  'v4452',   '3123', 'TÉCNICOS EM TOPOGRAFIA, AGRIMENSURA E HIDROGRAFIA',
+  'v4452',   '3131', 'TÉCNICOS EM ELETRICIDADE E ELETROTÉCNICOS',
+  'v4452',   '3132', 'ELETROTÉCNICOS NA MANUTENÇÃO DE MÁQUINAS E EQUIPAMENTOS',
+  'v4452',   '3134', 'TÉCNICOS EM ELETRÔNICA',
+  'v4452',   '3135', 'TÉCNICOS EM TELECOMUNICAÇÕES E TELEFONIA',
+  'v4452',   '3136', 'TÉCNICOS EM CALIBRAÇÃO E INSTRUMENTAÇÃO',
+  'v4452',   '3137', 'TÉCNICOS EM FOTÔNICA',
+  'v4452',   '3141', 'TÉCNICOS MECÂNICOS NA FABRICAÇÃO E MONTAGEM DE MÁQUINAS, SISTEMAS E INSTRUMENTOS',
+  'v4452',   '3142', 'TÉCNICOS MECÂNICOS (FERRAMENTAS)',
+  'v4452',   '3143', 'TÉCNICOS EM MECÂNICA VEICULAR',
+  'v4452',   '3144', 'TÉCNICOS MECÂNICOS NA MANUTENÇÃO DE MÁQUINAS, SISTEMAS E INSTRUMENTOS',
+  'v4452',   '3146', 'TÉCNICOS EM METALURGIA (ESTRUTURAS METÁLICAS)',
+  'v4452',   '3147', 'TÉCNICOS EM SIDERURGIA',
+  'v4452',   '3161', 'TÉCNICOS EM GEOLOGIA, GEOTECNOLOGIA E GEOFÍSICA',
+  'v4452',   '3162', 'TÉCNICOS EM GEODÉSIA E CARTOGRAFIA',
+  'v4452',   '3163', 'TÉCNICOS EM MINERAÇÃO',
+  'v4452',   '3171', 'TÉCNICOS EM PROGRAMAÇÃO',
+  'v4452',   '3172', 'TÉCNICOS EM OPERAÇÃO DE COMPUTADORES',
+  'v4452',   '3189', 'DESENHISTAS TÉCNICOS E MODELISTAS',
+  'v4452',   '3191', 'TÉCNICOS DO VESTUÁRIO',
+  'v4452',   '3192', 'TÉCNICOS DO MOBILIÁRIO E AFINS',
+  'v4452',   '3201', 'TÉCNICOS EM BIOLOGIA',
+  'v4452',   '3210', 'TÉCNICOS AGROPECUÁRIOS',
+  'v4452',   '3211', 'TÉCNICOS AGRÍCOLAS',
+  'v4452',   '3212', 'TÉCNICOS DA PECUÁRIA',
+  'v4452',   '3213', 'TÉCNICOS FLORESTAIS',
+  'v4452',   '3214', 'TÉCNICOS DA PISCICULTURA',
+  'v4452',   '3221', 'TÉCNICOS EM FISIOTERAPIA E AFINS',
+  'v4452',   '3222', 'TÉCNICOS E AUXILIARES DE ENFERMAGEM',
+  'v4452',   '3223', 'ORTOPTISTAS E ÓTICOS',
+  'v4452',   '3224', 'TÉCNICOS DE ODONTOLOGIA',
+  'v4452',   '3225', 'TÉCNICOS DA FABRICAÇÃO DE APARELHOS LOCOMOTORES',
+  'v4452',   '3231', 'TÉCNICOS EM VETERINÁRIA',
+  'v4452',   '3232', 'TÉCNICOS ZOOTECNISTAS',
+  'v4452',   '3241', 'OPERADORES DE EQUIPAMENTOS MÉDICOS E ODONTOLÓGICOS',
+  'v4452',   '3242', 'TÉCNICOS DE LABORATÓRIO DE ANÁLISES CLÍNICAS',
+  'v4452',   '3250', 'TESTADORES SENSORIAIS',
+  'v4452',   '3251', 'TÉCNICOS EM FARMÁCIA',
+  'v4452',   '3252', 'TÉCNICOS EM PRODUÇÃO E CONSERVAÇÃO DE ALIMENTOS',
+  'v4452',   '3253', 'TÉCNICOS DE APOIO A BIOTECNOLOGIA',
+  'v4452',   '3281', 'EMBALSAMADORES E TAXIDERMISTAS',
+  'v4452',   '3311', 'PROFESSORES DE NÍVEL MÉDIO NA EDUCAÇÃO INFANTIL',
+  'v4452',   '3312', 'PROFESSORES DE NÍVEL MÉDIO NO ENSINO FUNDAMENTAL',
+  'v4452',   '3313', 'PROFESSORES DE NÍVEL MÉDIO NO ENSINO PROFISSIONALIZANTE',
+  'v4452',   '3321', 'PROFESSORES LEIGOS NO ENSINO FUNDAMENTAL',
+  'v4452',   '3322', 'PROFESSORES LEIGOS NO ENSINO PROFISSIONALIZANTE',
+  'v4452',   '3331', 'INSTRUTORES E PROFESSORES DE ESCOLAS LIVRES',
+  'v4452',   '3341', 'INSPETORES DE ALUNOS E AFINS',
+  'v4452',   '3411', 'PILOTOS DE AVIAÇÃO COMERCIAL, NAVEGADORES, MECÂNICOS DE VÔO E AFINS',
+  'v4452',   '3412', 'TÉCNICOS MARÍTIMOS, FLUVIÁRIOS E REGIONAIS DE CONVÉS',
+  'v4452',   '3413', 'TÉCNICOS MARÍTIMOS, FLUVIÁRIOS E REGIONAIS DE MÁQUINAS',
+  'v4452',   '3421', 'TÉCNICOS EM TRANSPORTES INTERMODAIS',
+  'v4452',   '3422', 'TÉCNICOS EM TRANSPORTES (ADUANEIROS)',
+  'v4452',   '3423', 'TÉCNICOS EM TRANSPORTES RODOVIÁRIOS',
+  'v4452',   '3424', 'TÉCNICOS EM TRANSPORTES METROFERROVIÁRIOS',
+  'v4452',   '3425', 'TÉCNICOS EM TRANSPORTES AEROVIÁRIOS',
+  'v4452',   '3426', 'TÉCNICOS EM TRANSPORTES DE VIAS NAVEGÁVEIS',
+  'v4452',   '3511', 'TÉCNICOS EM CONTABILIDADE',
+  'v4452',   '3512', 'TÉCNICOS EM ESTATÍSTICA',
+  'v4452',   '3513', 'TÉCNICOS EM ADMINISTRAÇÃO',
+  'v4452',   '3514', 'SERVENTUÁRIOS DA JUSTIÇA E AFINS',
+  'v4452',   '3515', 'TÉCNICOS E FISCAIS DE TRIBUTAÇÃO E ARRECADAÇÃO',
+  'v4452',   '3516', 'TÉCNICOS DE SEGURANÇA DE TRABALHO',
+  'v4452',   '3517', 'TÉCNICOS E ANALISTAS DE SEGUROS E AFINS',
+  'v4452',   '3518', 'INSPETORES DE POLÍCIA E DETETIVES',
+  'v4452',   '3522', 'AGENTES DA SAÚDE E DO MEIO AMBIENTE',
+  'v4452',   '3523', 'AGENTES DE INSPEÇÃO DE PESOS E MEDIDAS',
+  'v4452',   '3524', 'AGENTES DE FISCALIZAÇÃO DE ESPETÁCULOS E MEIOS DE COMUNICAÇÃO',
+  'v4452',   '3525', 'AGENTES SINDICAIS E DE INSPEÇÃO DO TRABALHO',
+  'v4452',   '3531', 'AGENTES DE BOLSA, CÂMBIO E OUTROS SERVIÇOS FINANCEIROS',
+  'v4452',   '3532', 'TÉCNICOS DE OPERAÇÕES E SERVIÇOS BANCÁRIOS',
+  'v4452',   '3541', 'REPRESENTANTES COMERCIAIS E TÉCNICOS DE VENDAS',
+  'v4452',   '3542', 'COMPRADORES',
+  'v4452',   '3543', 'TÉCNICOS EM EXPORTAÇÃO E IMPORTAÇÃO',
+  'v4452',   '3544', 'LEILOEIROS E AVALIADORES',
+  'v4452',   '3545', 'CORRETORES DE SEGUROS',
+  'v4452',   '3546', 'CORRETORES DE IMÓVEIS',
+  'v4452',   '3547', 'CORRETORES DE TÍTULOS E VALORES',
+  'v4452',   '3548', 'TÉCNICOS EM TURISMO',
+  'v4452',   '3711', 'TÉCNICOS EM BIBLIOTECONOMIA',
+  'v4452',   '3712', 'TÉCNICOS EM MUSEOLOGIA',
+  'v4452',   '3713', 'TÉCNICOS EM ARTES GRÁFICAS',
+  'v4452',   '3721', 'CINEGRAFISTAS',
+  'v4452',   '3722', 'FOTÓGRAFOS',
+  'v4452',   '3723', 'TÉCNICOS EM OPERAÇÃO DE MÁQUINAS DE TRANSMISSÃO DE DADOS',
+  'v4452',   '3731', 'TÉCNICOS EM OPERAÇÃO DE ESTAÇÃO DE RÁDIO',
+  'v4452',   '3732', 'TÉCNICOS EM OPERAÇÃO DE ESTAÇÃO DE TELEVISÃO',
+  'v4452',   '3741', 'TÉCNICOS EM OPERAÇÃO DE APARELHOS DE SONORIZAÇÃO',
+  'v4452',   '3742', 'TÉCNICOS EM OPERAÇÃO DE APARELHOS DE CENOGRAFIA',
+  'v4452',   '3743', 'TÉCNICOS EM OPERAÇÃO DE APARELHOS DE PROJEÇÃO',
+  'v4452',   '3751', 'DECORADORES E VITRINISTAS DE NÍVEL MÉDIO',
+  'v4452',   '3761', 'BAILARINOS DE DANÇAS POPULARES',
+  'v4452',   '3762', 'MÚSICOS E CANTORES POPULARES',
+  'v4452',   '3763', 'PALHAÇOS, ACROBATAS E AFINS',
+  'v4452',   '3764', 'APRESENTADORES DE ESPETÁCULOS',
+  'v4452',   '3765', 'MODELOS',
+  'v4452',   '3771', 'TÉCNICOS ESPORTIVOS',
+  'v4452',   '3772', 'ATLETAS PROFISSIONAIS',
+  'v4452',   '3773', 'ÁRBITROS DESPORTIVOS',
+  'v4452',   '3911', 'TÉCNICOS DE PLANEJAMENTO DE PRODUÇÃO',
+  'v4452',   '3912', 'TÉCNICOS DE CONTROLE DA PRODUÇÃO',
+  'v4452',   '4101', 'SUPERVISORES DE SERVIÇOS ADMINISTRATIVOS (Exceto Contabilidade e Controle)',
+  'v4452',   '4102', 'SUPERVISORES DE SERVIÇOS CONTÁBEIS, FINANCEIROS E DE CONTROLE',
+  'v4452',   '4110', 'ESCRITURÁRIOS EM GERAL, AGENTES, ASSISTENTES E AUXILIARES ADMINISTRATIVOS',
+  'v4452',   '4121', 'SECRETÁRIOS DE EXPEDIENTE E ESTENÓGRAFOS',
+  'v4452',   '4122', 'OPERADORES DE MÁQUINAS DE ESCRITÓRIO',
+  'v4452',   '4123', 'CONTÍNUOS',
+  'v4452',   '4131', 'ESCRITURÁRIOS DE CONTABILIDADE',
+  'v4452',   '4132', 'ESCRITURÁRIOS DE FINANÇAS',
+  'v4452',   '4141', 'ALMOXARIFES E ARMAZENISTAS',
+  'v4452',   '4142', 'ESCRITURÁRIOS DE APOIO A PRODUÇÃO',
+  'v4452',   '4151', 'ESCRITURÁRIOS DE SERVIÇOS DE BIBLIOTECA E DOCUMENTAÇÃO',
+  'v4452',   '4152', 'CARTEIROS E AFINS',
+  'v4452',   '4201', 'SUPERVISORES DE TRABALHADORES DE ATENDIMENTO AO PÚBLICO',
+  'v4452',   '4211', 'CAIXAS E BILHETEIROS (EXCETO CAIXA DE BANCO)',
+  'v4452',   '4212', 'CAIXAS DE BANCO E OPERADORES DE CÂMBIO',
+  'v4452',   '4213', 'COLETADORES DE APOSTAS E DE JOGOS',
+  'v4452',   '4214', 'COBRADORES E AFINS',
+  'v4452',   '4221', 'RECEPCIONISTAS',
+  'v4452',   '4222', 'TELEFONISTAS',
+  'v4452',   '4223', 'OPERADORES DE TELEMARKETING',
+  'v4452',   '4231', 'DESPACHANTES DE DOCUMENTOS',
+  'v4452',   '4241', 'ENTREVISTADORES, RECENSEADORES E AFINS',
+  'v4452',   '5101', 'SUPERVISORES DOS SERVIÇOS DE TRANSPORTE, TURISMO, HOTELARIA E ADMINISTRAÇÃO DE EDIFÍCIOS',
+  'v4452',   '5102', 'SUPERVISORES DOS SERVIÇOS DE SAÚDE E CUIDADOS PESSOAIS',
+  'v4452',   '5103', 'SUPERVISORES DOS SERVIÇOS DE PROTEÇÃO, SEGURANÇA E OUTROS SERVIÇOS',
+  'v4452',   '5111', 'TRABALHADORES DOS SERVIÇOS DIRETO AOS PASSAGEIROS',
+  'v4452',   '5112', 'FISCAIS E COBRADORES DOS TRANSPORTES PÚBLICOS',
+  'v4452',   '5114', 'GUIAS DE TURISMO',
+  'v4452',   '5121', 'TRABALHADORES DOS SERVIÇOS DOMÉSTICO EM GERAL',
+  'v4452',   '5131', 'MORDOMOS E GOVERNANTAS',
+  'v4452',   '5132', 'COZINHEIROS',
+  'v4452',   '5133', 'CAMAREIROS, ROUPEIROS E AFINS',
+  'v4452',   '5134', 'GARÇONS, BARMEN E COPEIROS',
+  'v4452',   '5141', 'TRABALHADORES NOS SERVIÇOS DE ADMINISTRAÇÃO DE EDIFÍCIOS',
+  'v4452',   '5142', 'TRABALHADORES NOS SERVIÇOS DE MANUTENÇÃO E CONSERVAÇÃO DE EDIFÍCIOS E LOGRADOUROS',
+  'v4452',   '5151', 'ATENDENTES DE ENFERMAGEM, PARTEIRAS PRÁTICAS E AFINS',
+  'v4452',   '5152', 'AUXILIARES DE LABORATÓRIO DA SAÚDE',
+  'v4452',   '5161', 'TRABALHADORES NOS SERVIÇOS DE HIGIENE E EMBELEZAMENTO',
+  'v4452',   '5162', 'ATENDENTES DE CRECHE E ACOMPANHANTES DE IDOSOS',
+  'v4452',   '5165', 'TRABALHADORES DOS SERVIÇOS FUNERAIS',
+  'v4452',   '5166', 'TRABALHADORES AUXILIARES DOS SERVIÇOS FUNERAIS',
+  'v4452',   '5167', 'ASTRÓLOGOS E ADIVINHOS',
+  'v4452',   '5169', 'TINTUREIROS, LAVADEIROS E AFINS, À MÁQUINA E À MÃO',
+  'v4452',   '5171', 'BOMBEIROS',
+  'v4452',   '5172', 'POLICIAIS E GUARDAS DE TRÂNSITO',
+  'v4452',   '5173', 'VIGILANTES E GUARDAS DE SEGURANÇA',
+  'v4452',   '5174', 'GUARDAS E VIGIAS',
+  'v4452',   '5191', 'ENTREGADORES EXTERNOS (Exceto carteiros)',
+  'v4452',   '5192', 'CATADORES DE SUCATA',
+  'v4452',   '5198', 'TRABALHADORES DO SEXO',
+  'v4452',   '5199', 'OUTROS TRABALHADORES DOS SERVIÇOS',
+  'v4452',   '5201', 'SUPERVISORES DE VENDAS E DE PRESTAÇÃO DE SERVIÇOS DO COMÉRCIO',
+  'v4452',   '5211', 'VENDEDORES E DEMONSTRADORES EM LOJAS OU MERCADOS',
+  'v4452',   '5221', 'REPOSITORES, REMARCADORES DO COMÉRCIO',
+  'v4452',   '5231', 'INSTALADORES DE PRODUTOS E ACESSÓRIOS',
+  'v4452',   '5241', 'VENDEDORES A DOMICÍLIO',
+  'v4452',   '5242', 'VENDEDORES EM QUIOSQUES E BARRACAS',
+  'v4452',   '5243', 'VENDEDORES AMBULANTES',
+  'v4452',   '6110', 'PRODUTORES AGROPECUÁRIOS EM GERAL',
+  'v4452',   '6129', 'PRODUTORES AGRÍCOLAS',
+  'v4452',   '6139', 'PRODUTORES EM PECUÁRIA',
+  'v4452',   '6201', 'SUPERVISORES NA EXPLORAÇÃO AGROPECUÁRIA',
+  'v4452',   '6210', 'TRABALHADORES NA EXPLORAÇÃO AGROPECUÁRIA EM GERAL',
+  'v4452',   '6229', 'TRABALHADORES AGRÍCOLAS',
+  'v4452',   '6239', 'TRABALHADORES NA PECUÁRIA',
+  'v4452',   '6301', 'SUPERVISORES NA EXPLORAÇÃO FLORESTAL, CAÇA E PESCA',
+  'v4452',   '6319', 'PESCADORES E CAÇADORES',
+  'v4452',   '6329', 'EXTRATIVISTAS FLORESTAIS',
+  'v4452',   '6410', 'TRABALHADORES DA MECANIZAÇÃO AGROPECUÁRIA',
+  'v4452',   '6420', 'TRABALHADORES DA MECANIZAÇÃO FLORESTAL',
+  'v4452',   '6430', 'TRABALHADORES DA IRRIGAÇÃO E DRENAGEM',
+  'v4452',   '7101', 'SUPERVISORES DA EXTRAÇÃO MINERAL',
+  'v4452',   '7102', 'SUPERVISORES DA CONSTRUÇÃO CIVIL',
+  'v4452',   '7111', 'TRABALHADORES DA EXTRAÇÃO DE MINERAIS SÓLIDOS - MINEIROS E AFINS',
+  'v4452',   '7112', 'TRABALHADORES DA EXTRAÇÃO DE MINERAIS SÓLIDOS - OPERADORES DE MÁQUINA',
+  'v4452',   '7113', 'TRABALHADORES DA EXTRAÇÃO DE MINERAIS LÍQUIDOS E GASOSOS',
+  'v4452',   '7114', 'GARIMPEIROS E OPERADORES DE SALINAS',
+  'v4452',   '7121', 'TRABALHADORES DE BENEFICIAMENTO DE MINÉRIOS',
+  'v4452',   '7122', 'TRABALHADORES DE BENEFICIAMENTO DE PEDRAS',
+  'v4452',   '7151', 'TRABALHADORES DE TERRAPLENAGEM E FUNDAÇÕES',
+  'v4452',   '7152', 'TRABALHADORES DE ESTRUTURAS DE ALVENARIA',
+  'v4452',   '7153', 'TRABALHADORES DE ESTRUTURAS DE CONCRETO ARMADO',
+  'v4452',   '7154', 'TRABALHADORES NA OPERAÇÃO DE MÁQUINAS DE CONCRETO ARMADO',
+  'v4452',   '7155', 'TRABALHADORES DE MONTAGEM DE ESTRUTURAS DE MADEIRA, METAL E COMPÓSITOS (OBRAS CIVIS E AFINS)',
+  'v4452',   '7156', 'TRABALHADORES DE INSTALAÇÕES ELÉTRICAS',
+  'v4452',   '7157', 'TRABALHADORES DE INSTALAÇÕES DE MATERIAIS ISOLANTES',
+  'v4452',   '7161', 'REVESTIDORES DE CONCRETO ARMADO (REVESTIMENTOS RÍGIDOS)',
+  'v4452',   '7162', 'TELHADORES (REVESTIMENTOS RÍGIDOS)',
+  'v4452',   '7163', 'VIDRACEIROS (REVESTIMENTOS RÍGIDOS)',
+  'v4452',   '7164', 'ESTUCADORES E GESSEIROS',
+  'v4452',   '7165', 'APLICADORES DE REVESTIMENTOS CERÂMICOS, PASTILHAS, PEDRAS E MADEIRAS',
+  'v4452',   '7166', 'PINTORES DE OBRAS E REVESTIDORES DE INTERIORES (REVESTIMENTOS FLEXÍVEIS)',
+  'v4452',   '7170', 'AJUDANTES DE OBRAS CIVIS',
+  'v4452',   '7201', 'SUPERVISORES DE USINAGEM, CONFORMAÇÃO E TRATAMENTO DE METAIS',
+  'v4452',   '7202', 'SUPERVISORES DE MONTAGEM METALMECÂNICA',
+  'v4452',   '7211', 'FERRAMENTEIROS E AFINS',
+  'v4452',   '7212', 'PREPARADORES E OPERADORES DE MÁQUINAS - FERRAMENTA CONVENCIONAL',
+  'v4452',   '7213', 'OPERADORES DE USINAGEM CONVENCIONAL (PRODUÇÃO EM SÉRIE)',
+  'v4452',   '7214', 'AFIADORES E POLIDORES DE METAIS',
+  'v4452',   '7215', 'OPERADORES DE MÁQUINAS E CENTROS DE USINAGEM CNC',
+  'v4452',   '7221', 'TRABALHADORES DE FORJAMENTO DE METAIS',
+  'v4452',   '7222', 'TRABALHADORES DE FUNDIÇÃO DE METAIS E DE COMPÓSITOS',
+  'v4452',   '7223', 'TRABALHADORES DE MOLDAGEM DE METAIS E DE COMPÓSITOS',
+  'v4452',   '7224', 'TRABALHADORES DE TREFILAÇÃO, ESTIRAMENTO E EXTRUSÃO DE METAIS E DE COMPÓSITOS',
+  'v4452',   '7231', 'TRABALHADORES DE TRATAMENTO TÉRMICO DE METAIS E DE COMPÓSITOS',
+  'v4452',   '7232', 'TRABALHADORES DE TRATAMENTO DE SUPERFÍCIES DE METAIS E DE COMPÓSITOS (TERMOQUÍMICOS)',
+  'v4452',   '7233', 'TRABALHADORES DA PINTURA DE EQUIPAMENTOS, VEÍCULOS, ESTRUTURAS METÁLICAS E DE COMPÓSITOS',
+  'v4452',   '7241', 'ENCANADORES E INSTALADORES DE TUBULAÇÕES',
+  'v4452',   '7242', 'TRABALHADORES DE TRAÇAGEM E MONTAGEM DE ESTRUTURA METÁLICA E DE COMPÓSITOS',
+  'v4452',   '7243', 'TRABALHADORES DE SOLDAGEM E CORTE DE METAIS E DE COMPÓSITOS',
+  'v4452',   '7244', 'TRABALHADORES DE CALDEIRARIA E SERRALHERIA',
+  'v4452',   '7245', 'OPERADORES DE MÁQUINAS DE CONFORMAÇÃO DE METAIS',
+  'v4452',   '7246', 'APARELHADORES E EMENDADORES DE CABOS (EXCETO CABOS ELÉTRICOS E DE TELECOMUNICAÇÕES)',
+  'v4452',   '7250', 'AJUSTADORES MECÂNICOS POLIVALENTES',
+  'v4452',   '7251', 'MONTADORES DE APARELHOS E ACESSÓRIOS MECÂNICOS EM LINHAS DE MONTAGEM',
+  'v4452',   '7252', 'MONTADORES DE MÁQUINAS INDUSTRIAIS',
+  'v4452',   '7253', 'MONTADORES DE MÁQUINAS PESADAS',
+  'v4452',   '7254', 'MONTADORES DE MOTORES E TURBINAS',
+  'v4452',   '7255', 'MONTADORES DE VEÍCULOS AUTOMOTORES (LINHA DE MONTAGEM)',
+  'v4452',   '7256', 'MONTADORES DE SISTEMAS E ESTRUTURAS DE AERONAVES',
+  'v4452',   '7257', 'MONTADORES DE INSTALAÇÕES DE VENTILAÇÃO E REFRIGERAÇÃO',
+  'v4452',   '7301', 'SUPERVISORES DE MONTAGENS E INSTALAÇÕES ELETROELETRÔNICAS',
+  'v4452',   '7311', 'MONTADORES DE EQUIPAMENTOS ELETRO-ELETRÔNICOS',
+  'v4452',   '7312', 'MONTADORES DE APARELHOS DE TELECOMUNICAÇÕES',
+  'v4452',   '7313', 'INSTALADORES-REPARADORES DE APARELHOS DE TELECOMUNICAÇÕES',
+  'v4452',   '7321', 'INSTALADORES E REPARADORES DE LINHAS E CABOS ELÉTRICOS, TELEFÔNICOS E DE COMUNICAÇÃO DE DADOS',
+  'v4452',   '7401', 'SUPERVISORES DA MECÂNICA DE PRECISÃO E INSTRUMENTOS MUSICAIS',
+  'v4452',   '7411', 'MECÂNICOS DE INSTRUMENTOS DE PRECISÃO (EXCETO TÉCNICOS)',
+  'v4452',   '7421', 'CONFECCIONADORES DE INSTRUMENTOS MUSICAIS',
+  'v4452',   '7501', 'SUPERVISORES DE JOALHERIA E AFINS',
+  'v4452',   '7502', 'SUPERVISORES DE VIDRARIA, CERÂMICA E AFINS',
+  'v4452',   '7519', 'JOALHEIROS E ARTESÃOS DE METAIS PRECIOSOS E SEMI-PRECIOSOS',
+  'v4452',   '7521', 'SOPRADORES E MOLDADORES DE VIDROS E AFINS',
+  'v4452',   '7522', 'CORTADORES, POLIDORES, JATEADORES E GRAVADORES DE VIDROS E AFINS',
+  'v4452',   '7523', 'CERAMISTAS (PREPARAÇÃO E FABRICAÇÃO)',
+  'v4452',   '7524', 'VIDREIROS E CERAMISTAS (ACABAMENTO E DECORAÇÃO)',
+  'v4452',   '7601', 'SUPERVISORES DA INDÚSTRIA TÊXTIL',
+  'v4452',   '7602', 'SUPERVISORES DA INDÚSTRIA DO CURTIMENTO',
+  'v4452',   '7603', 'SUPERVISORES DA INDÚSTRIA DE CONFECÇÃO DE ROUPAS',
+  'v4452',   '7604', 'SUPERVISORES DA INDÚSTRIA DE CONFECÇÃO DE CALÇADOS',
+  'v4452',   '7605', 'SUPERVISORES DA CONFECÇÃO DE ARTEFATOS DE TECIDOS, COUROS E AFINS',
+  'v4452',   '7606', 'SUPERVISORES DAS ARTES GRÁFICAS',
+  'v4452',   '7610', 'TRABALHADORES POLIVALENTES DAS INDÚSTRIAS TÊXTEIS',
+  'v4452',   '7611', 'TRABALHADORES DA PREPARAÇÃO DA TECELAGEM',
+  'v4452',   '7612', 'OPERADORES DA PREPARAÇÃO DA TECELAGEM',
+  'v4452',   '7613', 'OPERADORES DE TEAR E MÁQUINAS SIMILARES',
+  'v4452',   '7614', 'TRABALHADORES DE ACABAMENTO, TINGIMENTO E ESTAMPARIA DAS INDÚSTRIAS TÊXTEIS',
+  'v4452',   '7618', 'INSPETORES E REVISORES DE PRODUÇÃO TÊXTIL',
+  'v4452',   '7620', 'TRABALHADORES POLIVALENTES DO CURTIMENTO DE COUROS E PELES',
+  'v4452',   '7621', 'TRABALHADORES DA PREPARAÇÃO DE PELES',
+  'v4452',   '7622', 'TRABALHADORES DO CURTIMENTO DE COUROS E PELES',
+  'v4452',   '7623', 'TRABALHADORES DO ACABAMENTO DE COUROS E PELES',
+  'v4452',   '7630', 'TRABALHADORES POLIVALENTES DAS INDÚSTRIAS DA CONFECÇÃO DE ROUPAS',
+  'v4452',   '7631', 'TRABALHADORES DA PREPARAÇÃO DA CONFECÇÃO DE ROUPAS',
+  'v4452',   '7632', 'OPERADORES DE MÁQUINAS DE COSTURA DE ROUPAS',
+  'v4452',   '7633', 'OPERADORES DE MÁQUINAS DE COSTURAS - ACABAMENTO DE ROUPAS',
+  'v4452',   '7640', 'TRABALHADORES POLIVALENTES DA CONFECÇÃO DE CALÇADOS',
+  'v4452',   '7641', 'TRABALHADORES DA PREPARAÇÃO DA CONFECÇÃO DE CALÇADOS',
+  'v4452',   '7642', 'OPERADORES DE MÁQUINAS DE COSTURAR CALÇADOS',
+  'v4452',   '7643', 'OPERADORES DE ACABAMENTO DE CALÇADOS',
+  'v4452',   '7650', 'TRABALHADORES POLIVALENTES DA CONFECÇÃO DE ARTEFATOS DE TECIDOS E COUROS',
+  'v4452',   '7651', 'TRABALHADORES DA PREPARAÇÃO DE ARTEFATOS DE TECIDOS E COUROS',
+  'v4452',   '7652', 'TRABALHADORES DA FABRICAÇÃO E INSTALAÇÃO DE ARTEFATOS DE TECIDOS E COUROS',
+  'v4452',   '7653', 'OPERADORES DE MÁQUINAS NA FABRICAÇÃO DE ARTEFATOS DE TECIDOS E COUROS',
+  'v4452',   '7654', 'TRABALHADORES DO ACABAMENTO DE ARTEFATOS DE TECIDOS E COUROS',
+  'v4452',   '7660', 'TRABALHADORES POLIVALENTES DAS ARTES GRÁFICAS',
+  'v4452',   '7661', 'TRABALHADORES DA PRÉ-IMPRESSÃO GRÁFICA',
+  'v4452',   '7662', 'TRABALHADORES DA IMPRESSÃO GRÁFICA',
+  'v4452',   '7663', 'TRABALHADORES DO ACABAMENTO GRÁFICO',
+  'v4452',   '7664', 'TRABALHADORES DE LABORATÓRIO FOTOGRÁFICO',
+  'v4452',   '7681', 'TRABALHADORES ARTESANAIS DA TECELAGEM',
+  'v4452',   '7682', 'TRABALHADORES ARTESANAIS DA CONFECÇÃO DE ROUPAS',
+  'v4452',   '7683', 'TRABALHADORES ARTESANAIS DA CONFECÇÃO DE CALÇADOS E ARTEFATOS DE COUROS E PELES',
+  'v4452',   '7686', 'TRABALHADORES TIPOGRÁFICOS, LINOTIPISTAS E AFINS',
+  'v4452',   '7687', 'ENCADERNADORES E RECUPERADORES DE LIVROS (PEQUENOS LOTES OU A UNIDADE)',
+  'v4452',   '7701', 'SUPERVISORES DA INDÚSTRIA DA MADEIRA, MOBILIÁRIO E DA CARPINTARIA VEICULAR',
+  'v4452',   '7711', 'MARCENEIROS E AFINS',
+  'v4452',   '7721', 'TRABALHADORES DE TRATAMENTO E PREPARAÇÃO DE MADEIRAS',
+  'v4452',   '7731', 'OPERADORES DE MÁQUINAS DE DESDOBRAMENTO DE MADEIRAS',
+  'v4452',   '7732', 'OPERADORES DE LAMINAÇÃO, AGLOMERAÇÃO E PRENSAGEM DE CHAPAS',
+  'v4452',   '7733', 'PREPARADORES E OPERADORES DE USINAGEM DE MADEIRAS CONVENCIONAL',
+  'v4452',   '7734', 'OPERADORES DE MÁQUINAS DE MADEIRA (PRODUÇÃO EM SÉRIE)',
+  'v4452',   '7735', 'OPERADORES DE MÁQUINAS E CENTROS DE USINAGEM DE MADEIRA CNC',
+  'v4452',   '7741', 'MONTADORES DE MÓVEIS E ARTEFATOS DE MADEIRA',
+  'v4452',   '7751', 'TRABALHADORES DO ACABAMENTO DE MADEIRA E DO MOBILIÁRIO',
+  'v4452',   '7764', 'C0NFECCIONADORES DE ARTEFATOS DE MADEIRA, MÓVEIS DE VIME E AFINS',
+  'v4452',   '7771', 'CARPINTEIROS NAVAIS E DE AERONAVES',
+  'v4452',   '7772', 'CARPINTEIROS DE CARROCERIAS E CARRETAS',
+  'v4452',   '7801', 'SUPERVISORES DE EMBALAGEM E ETIQUETAGEM',
+  'v4452',   '7811', 'OPERADORES DE ROBÔS INDUSTRIAIS',
+  'v4452',   '7813', 'OPERADORES DE VEÍCULOS OPERADOS E CONTROLADOS REMOTAMENTE (ROV, RCV)',
+  'v4452',   '7817', 'TRABALHADORES SUBAQUÁTICOS',
+  'v4452',   '7820', 'CONDUTORES E OPERADORES POLIVALENTES',
+  'v4452',   '7821', 'OPERADORES DE EQUIPAMENTOS DE ELEVAÇÃO',
+  'v4452',   '7822', 'OPERADORES DE EQUIPAMENTOS DE MOVIMENTAÇÃO DE CARGAS',
+  'v4452',   '7823', 'CONDUTORES DE VEÍCULOS SOBRE RODAS (TRANSPORTE PARTICULAR)',
+  'v4452',   '7824', 'CONDUTORES DE VEÍCULOS SOBRE RODAS (TRANSPORTE COLETIVO)',
+  'v4452',   '7825', 'CONDUTORES DE VEÍCULOS SOBRE RODAS (DISTRIBUIDOR DE MERCADORIAS)',
+  'v4452',   '7826', 'CONDUTORES DE VEÍCULOS SOBRE TRILHOS',
+  'v4452',   '7827', 'TRABALHADORES NA NAVEGAÇÃO MARÍTIMA FLUVIAL E REGIONAL',
+  'v4452',   '7828', 'CONDUTORES DE VEÍCULOS DE TRAÇÃO ANIMAL E DE PEDAIS',
+  'v4452',   '7831', 'TRABALHADORES DE MANOBRAS DE TRANSPORTE SOBRE TRILHOS',
+  'v4452',   '7832', 'TRABALHADORES DE CARGAS E DESCARGAS DE MERCADORIAS',
+  'v4452',   '7841', 'TRABALHADORES DE EMBALAGEM E DE ETIQUETAGEM',
+  'v4452',   '7842', 'ALIMENTADORES DE LINHAS DE PRODUÇÃO',
+  'v4452',   '8101', 'SUPERVISORES DAS INDÚSTRIAS QUÍMICAS, PETROQUÍMICAS E AFINS',
+  'v4452',   '8102', 'SUPERVISORES DA INDÚSTRIA DE PLÁSTICOS E BORRACHA',
+  'v4452',   '8103', 'SUPERVISORES DA INDÚSTRIA DE PRODUTOS FARMACÊUTICOS, COSMÉTICOS E AFINS',
+  'v4452',   '8110', 'OPERADORES POLIVALENTES DE INSTALAÇÕES QUÍMICAS, PETROQUÍMICAS, E AFINS',
+  'v4452',   '8111', 'OPERADORES DE MOAGEM E MISTURA DE MATERIAIS (TRATAMENTOS QUÍMICOS E AFINS)',
+  'v4452',   '8112', 'OPERADORES DE PROCESSO TERMOQUÍMICOS E AFINS',
+  'v4452',   '8113', 'OPERADORES DE FILTRAGEM E SEPARAÇÃO',
+  'v4452',   '8114', 'OPERADORES DE DESTILAÇÃO E REAÇÃO',
+  'v4452',   '8115', 'OPERADORES DE PRODUÇÃO E REFINO DE PETRÓLEO E GÁS',
+  'v4452',   '8116', 'OPERADORES DE COQUEIFICAÇÃO',
+  'v4452',   '8117', 'OPERADORES DE INSTALAÇÃOES E MÁQUINAS DE PRODUTOS PLÁSTICOS, DE BORRACHA E PARAFINAS',
+  'v4452',   '8118', 'OPERADORES DE MÁQUINAS E INSTALAÇÕES DE PRODUTOS FARMACÊUTICOS, COSMÉSTICOS E AFINS',
+  'v4452',   '8121', 'TRABALHADORES DA FABRICAÇÃO DE MUNIÇÃO E EXPLOSIVOS QUÍMICOS',
+  'v4452',   '8131', 'OPERADORES DE OUTRAS INSTALAÇÕES QUÍMICAS, PETROQUÍMICAS E AFINS',
+  'v4452',   '8181', 'LABORATORISTAS INDUSTRIAIS AUXILIARES',
+  'v4452',   '8201', 'SUPERVISORES DA SIDERURGIA',
+  'v4452',   '8202', 'SUPERVISORES DE MATERIAIS DE CONSTRUÇÃO (VIDRO, CERÂMICA E COMPÓSITOS)',
+  'v4452',   '8211', 'OPERADORES DE INSTALAÇÕES DE SINTERIZAÇÃO',
+  'v4452',   '8212', 'OPERADORES DE FORNOS DE 1ª FUSÃO E ACIARIA',
+  'v4452',   '8213', 'OPERADORES DE LAMINAÇÃO',
+  'v4452',   '8214', 'OPERADORES DE ACABAMENTO DE CHAPAS E METAIS',
+  'v4452',   '8221', 'FORNEIROS METALÚRGICOS (2ª FUSÃO E REAQUECIMENTO)',
+  'v4452',   '8231', 'OPERADORES DE PREPARAÇÃO DE MASSAS PARA VIDRO, CERÂMICA, PORCELANA E MATERIAIS DE CONSTRUÇÃO',
+  'v4452',   '8232', 'OPERADORES DE INSTALAÇÕES E EQUIPAMENTOS DE FABRICAÇÃO DE CERÂMICAS, VIDROS E PORCELANAS',
+  'v4452',   '8233', 'OPERADORES DE INSTALAÇÕES E EQUIPAMENTOS DE FABRICAÇÃO DE MATERIAIS DE CONSTRUÇÃO',
+  'v4452',   '8281', 'TRABALHADORES ARTESANAIS DE MATERIAIS DE CONSTRUÇÃO',
+  'v4452',   '8301', 'SUPERVISORES DA FABRICAÇÃO DE CELULOSE E PAPEL',
+  'v4452',   '8311', 'PREPARADORES DE PASTA PARA A FABRICAÇÃO DE PAPEL',
+  'v4452',   '8321', 'OPERADORES DE MÁQUINAS DE FABRICAR PAPEL E PAPELÃO',
+  'v4452',   '8339', 'CONFECCIONADORES DE PRODUTOS DE PAPEL E PAPELÃO',
+  'v4452',   '8401', 'SUPERVISORES DA FABRICAÇÃO DE ALIMENTOS, BEBIDAS E FUMO',
+  'v4452',   '8411', 'MOLEIROS',
+  'v4452',   '8412', 'TRABALHADORES DO REFINO DE SAL',
+  'v4452',   '8413', 'TRABALHADORES DA FABRICAÇÃO E REFINO DE AÇÚCAR',
+  'v4452',   '8416', 'TRABALHADORES DA PREPARAÇÃO DE CAFÉ, CACAU E PRODUTOS AFINS',
+  'v4452',   '8417', 'TRABALHADORES DA FABRICAÇÃO DE CACHAÇA, CERVEJA, VINHOS E OUTRAS BEBIDAS',
+  'v4452',   '8421', 'PREPARADORES DE FUMO',
+  'v4452',   '8423', 'CIGARREIROS',
+  'v4452',   '8429', 'CHARUTEIROS E TRABALHADORES ARTESANAIS DA INDÚSTRIA DO FUMO',
+  'v4452',   '8484', 'DEGUSTADORES',
+  'v4452',   '8485', 'MAGAREFES E AFINS',
+  'v4452',   '8491', 'TRABALHADORES DE FABRICAÇÃO E CONSERVAÇÃO DE ALIMENTOS (INCLUSIVE ARTESANAIS)',
+  'v4452',   '8492', 'TRABALHADORES DA PASTEURIZAÇÃO DO LEITE, FABRICAÇÃO DE LATICÍNIOS E AFINS (INCLUSIVE ARTESANAIS)',
+  'v4452',   '8493', 'PADEIROS, CONFEITEIROS E AFINS E OPERADORES NA FABRICAÇÃO DE PÃES, MASSAS E DOCES',
+  'v4452',   '8601', 'SUPERVISORES DE INSTALAÇÕES DE PRODUÇÃO E DISTRIBUIÇÃO DE ENERGIA, UTILIDADES, CAPTAÇÃO, TRATAMENTO E DISTRIBUIÇÃO DE ÁGUA',
+  'v4452',   '8611', 'OPERADORES DE INSTALAÇÕES DE GERAÇÃO DE ENERGIA TÉRMICA, ELÉTRICA E NUCLEAR',
+  'v4452',   '8612', 'OPERADORES DE INSTALAÇÕES DE DISTRIBUIÇÃO DE ENERGIA TÉRMICA, ELÉTRICA E NUCLEAR',
+  'v4452',   '8621', 'OPERADORES DE MÁQUINAS A VAPOR E CALDEIRAS',
+  'v4452',   '8622', 'OPERADORES DE INSTALAÇÕES DE CAPTAÇÃO E DISTRIBUIÇÃO DE ÁGUAS',
+  'v4452',   '8623', 'OPERADORES DE INSTALAÇÕES DE CAPTAÇÃO E TRATAMENTO DE ESGOTOS',
+  'v4452',   '8624', 'OPERADORES DE INSTALAÇÕES DE CAPTAÇÃO, ENGARRAFAMENTO E DISTRIBUIÇÃO DE GASES',
+  'v4452',   '8625', 'OPERADORES DE INSTALAÇÕES DE REFRIGERAÇÃO E AR CONDICIONADO',
+  'v4452',   '8711', 'OUTROS TRABALHADORES ELEMENTARES INDUSTRIAIS',
+  'v4452',   '9101', 'SUPERVISORES DA REPARAÇÃO E MANUTENÇÃO DE MÁQUINAS E EQUIPAMENTOS INDUSTRIAIS, COMERCIAIS E RESIDENCIAIS',
+  'v4452',   '9102', 'SUPERVISORES DA REPARAÇÃO E MANUTENÇÃO VEICULAR',
+  'v4452',   '9109', 'SUPERVISORES DE OUTROS TRABALHADORES DA REPARAÇÃO, CONSERVAÇÃO E MANUTENÇÃO',
+  'v4452',   '9111', 'MECÂNICOS DE MANUTENÇÃO DE BOMBAS, MOTORES, COMPRESSORES E EQUIPAMENTOS DE TRANSMISSÃO',
+  'v4452',   '9112', 'MECÂNICOS DE MANUTENÇÃO DE APARELHOS TÉRMICOS, DE CLIMATIZAÇÃO E DE REFRIGERAÇÃO(EXCETO TÉCNICOS)',
+  'v4452',   '9113', 'MECÂNICOS DE MANUTENÇÃO DE MÁQUINAS INDUSTRIAIS',
+  'v4452',   '9131', 'MECÂNICOS DE MANUTENÇÃO DE MÁQUINAS PESADAS E EQUIPAMENTOS AGRÍCOLAS',
+  'v4452',   '9141', 'MECÂNICOS DE MANUTENÇÃO AERONÁUTICA',
+  'v4452',   '9142', 'MECÂNICOS DE MANUTENÇÃO NAVAL (EM TERRA)',
+  'v4452',   '9143', 'MECÂNICOS DE MANUTENÇÃO METROFERROVIÁRIA',
+  'v4452',   '9144', 'MECÂNICOS DE MANUTENÇÃO DE VEÍCULOS AUTOMOTORES',
+  'v4452',   '9151', 'REPARADORES DE INSTRUMENTOS DE MEDIÇÃO',
+  'v4452',   '9152', 'REPARADORES DE INSTRUMENTOS MUSICAIS',
+  'v4452',   '9153', 'REPARADORES DE EQUIPAMENTOS E INSTRUMENTOS MÉDICO-HOSPITALARES',
+  'v4452',   '9154', 'REPARADORES DE EQUIPAMENTOS FOTOGRÁFICOS',
+  'v4452',   '9191', 'LUBRIFICADORES',
+  'v4452',   '9192', 'TRABALHADORES DE MANUTENÇÃO DE MÁQUINAS PEQUENAS',
+  'v4452',   '9193', 'MECÂNICOS DE MANUTENÇÃO DE BICICLETAS E EQUIPAMENTOS ESPORTIVOS E DE GINÁSTICA',
+  'v4452',   '9501', 'SUPERVISORES DE MANUTENÇÃO ELETROELETRÔNICA INDUSTRIAL, COMERCIAL E RESIDENCIAL',
+  'v4452',   '9502', 'SUPERVISORES DE MANUTENÇÃO ELETROELETRÔNICA VEICULAR',
+  'v4452',   '9503', 'SUPERVISORES DE MANUTENÇÃO ELETROMECÂNICA',
+  'v4452',   '9511', 'ELETRICISTAS-ELETRÔNICOS DE MANUTENÇÃO INDUSTRIAL',
+  'v4452',   '9513', 'INSTALADORES E MANTENEDORES DE SISTEMAS DE ALARMES DE SEGURANÇA E DE INCÊNDIO',
+  'v4452',   '9531', 'ELETRICISTAS-ELETRÔNICOS DE MANUTENÇÃO VEICULAR (AÉREA TERRESTRE E NAVAL)',
+  'v4452',   '9541', 'MANTENEDORES DE ELEVADORES, ESCADAS E PORTAS AUTOMÁTICAS',
+  'v4452',   '9542', 'REPARADORES DE APARELHOS ELETRODOMÉSTICOS',
+  'v4452',   '9543', 'REPARADORES DE EQUIPAMENTOS DE ESCRITÓRIO',
+  'v4452',   '9911', 'CONSERVADORES DE VIAS PERMANENTES (TRILHOS)',
+  'v4452',   '9912', 'MANTENEDORES DE EQUIPAMENTOS DE LAZER',
+  'v4452',   '9913', 'MANTENEDORES DE CARROÇARIAS DE VEÍCULOS',
+  'v4452',   '9914', 'MANTENEDORES DE EDIFICAÇÕES',
+  'v4452',   '9921', 'TRABALHADORES ELEMENTARES DE SERVIÇOS DE MANUTENÇÃO',
+  'v4452',   '9922', 'TRABALHADORES ELEMENTARES DE CONSERVAÇÃO DE VIAS PERMANENTES'
+  )
+
+expand_grid(
+  base = 'pess',
+  input
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4452.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4462 código novo da atividade
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4462.R
+## gnur_vardict_auxfiles_v4462.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código novo da atividade'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'CnaeDom-Estrutura.xls'
+    ),                               # caminho até o arquivo
+    sheet = 'CNAEDOM-ESTRUTURAS',    # aba no qual os dados estão disponíveis
+    range = 'A5:B360',                # intervalo de células dos dados
+    col_types = 'text',              # ignora tipos de dados
+    col_names = FALSE                # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_5 = 1,              # primeira coluna traz o código da atividade
+    cnae = 2                 # segunda coluna traz o nome da atividade
+  ) %>%
+  filter(
+    grepl(pattern = '[0-9]{5}', cod_5)
+  ) %>%
+  transmute(
+    base = 'pess',
+    q_code = 'v4462',
+    a_code = cod_5,
+    a_desc = cnae
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4462.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4354 código do curso mais elevado concluído (concla)
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4354.R
+## gnur_vardict_auxfiles_v4354.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código do curso mais elevado concluído
+## (concla)'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename, filter
+library(readr)    # write_delim
+library(stringr)  # str_trim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Cursos Superiores - Estrutura V4534.xls'
+    ),                               # caminho até o arquivo
+    sheet = 'Plan1',                 # aba no qual os dados estão disponíveis
+    range = 'C7:C120',               # intervalo de células dos dados
+    col_types = 'text',              # ignora tipos de dados
+    col_names = FALSE                # ignora nomes de colunas
+  ) %>%
+  rename(areadet = 1) %>%
+  filter(!is.na(areadet)) %>%
+  transmute(
+    base = 'pess',
+    q_code = 'v4354',
+    a_code = substr(areadet, start = 1, stop = 3),
+    a_desc = substr(areadet, start = 4, stop = 1024),
+    a_desc = str_trim(a_desc)
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4354.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4219 código da uf ou país de nascimento (onu)
+
+Dicionário de variáveis comuns às questões
+- v4219 código da uf ou país de nascimento (onu)
+- v4269 código da uf ou país (onu) de residência em 31/07/1995
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4219v4269.R
+## gnur_vardict_auxfiles_v4219v4269.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código do uf/país de nascimento'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename
+library(readr)    # write_delim
+library(tidyr)    # expand_grid
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Estrutura ONU V4219, V4269.xls'
+    ),                            # caminho até o arquivo
+    sheet = 'Estrutra ONU',       # aba no qual os dados estão disponíveis
+    range = 'A6:B280',            # intervalo de células dos dados
+    col_types = 'text',           # ignora tipos de dados
+    col_names = FALSE             # ignora nomes de colunas
+  ) %>%
+  rename(
+    nome = 1,              # primeira coluna traz o nome da uf/país
+    cod_3 = 2              # segunda coluna traz o código da uf/país
+  ) %>%
+  filter(
+    grepl( pattern = '[0-9]{3}', cod_3)
+  ) %>%
+  transmute(
+    a_code = cod_3,
+    a_desc = nome
+  )
+
+expand_grid(
+  base = 'pess',
+  q_code = c('v4219', 'v4269'),
+  input
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4219v4269.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4239 código da uf ou país (onu) de residência anterior
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4239.R
+## gnur_vardict_auxfiles_v4239.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código da uf ou país de residência
+## anterior'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename, filter
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Estrutura ONU V4239.xls'
+    ),                               # caminho até o arquivo
+    sheet = 'Estrutura ONU',         # aba no qual os dados estão disponíveis
+    range = 'A6:B282',               # intervalo de células dos dados
+    col_types = 'text',              # ignora tipos de dados
+    col_names = FALSE                # ignora nomes de colunas
+  ) %>%
+  rename(
+    nome = 1,               # primeira coluna traz o nome da uf/país
+    cod_3 = 2               # segunda coluna traz o código da uf/país
+  ) %>%
+  filter(
+    grepl(pattern = '[0-9]{3}', cod_3)
+  ) %>%
+  transmute(
+    base = 'pess',
+    q_code = 'v4239',
+    a_code = cod_3,
+    a_desc = nome
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4239.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4279 código do país estrangeiro (onu) que trabalha ou estuda
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4279.R
+## gnur_vardict_auxfiles_v4279.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código do país estrangeiro (onu) que
+## trabalha ou estuda'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename, filter
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Estrutura ONU V4279.xls'
+    ),                               # caminho até o arquivo
+    sheet = 'V4239',                 # aba no qual os dados estão disponíveis
+    range = 'A7:B246',               # intervalo de células dos dados
+    col_types = 'text',              # ignora tipos de dados
+    col_names = FALSE                # ignora nomes de colunas
+  ) %>%
+  rename(
+    nome = 1,               # primeira coluna traz o nome do país
+    cod_3 = 2               # segunda coluna traz o código do país
+  ) %>%
+  filter(
+    grepl(pattern = '[0-9]{3}', cod_3)
+  ) %>%
+  transmute(
+    base = 'pess',
+    q_code = 'v4279',
+    a_code = cod_3,
+    a_desc = nome
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4279.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4451 código antigo da ocupação
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4451.R
+## gnur_vardict_auxfiles_v4451.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código antigo da ocupação'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename, filter, bind_rows
+library(readr)    # write_delim
+library(stringr)  # str_length
+library(tibble)   # tribble
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Ocupacao91-Estrutura.xls'
+    ),                               # caminho até o arquivo
+    sheet = 'Ocupação91',            # aba no qual os dados estão disponíveis
+    range = 'A4:B472',               # intervalo de células dos dados
+    col_types = 'text',              # ignora tipos de dados
+    col_names = FALSE                # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_3 = 1,             # primeira coluna traz o código da ocupação
+    nome = 2               # segunda coluna traz o nome da ocupação
+  ) %>%
+  filter(
+    str_length(cod_3) == 3
+  ) %>%
+  transmute(
+    base = 'pess',
+    q_code = 'v4451',
+    a_code = cod_3,
+    a_desc = nome
+  )
+
+bind_rows(
+  input,
+  tribble(
+    ~base,  ~q_code, ~a_code, ~a_desc,
+    'pess', 'v4451',   '927', 'OUTRAS OCUPACOES OU OCUPACOES MAL DEFINIDAS',
+    'pess', 'v4451',   '000', 'OUTRAS OCUPACOES OU OCUPACOES MAL DEFINIDAS'
+  )
+) %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4451.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+*** v4461 código antigo da atividade
+
+#+begin_src R :tangle ./gnur_vardict_auxfiles_v4461.R
+## gnur_vardict_auxfiles_v4461.R
+##
+##
+## br_ibge_censo_2000
+##
+## -------------------------------------------------------------------
+## Preparação da variável 'código antigo da atividade'
+## -------------------------------------------------------------------
+##
+
+## Pacotes (e suas funções) do GNU R usados no tratamento dos dados
+library(readxl)   # read_excel
+library(dplyr)    # %>%, transmute, rename
+library(readr)    # write_delim
+
+## ftp://ftp.ibge.gov.br/Censos/Censo_Demografico_2000/Microdados/1_Documentacao_20170908.zip
+## era o endereço da fonte primária no momento em que este script
+## foi programado em 19.10.2024.
+##
+## Este arquivo é então descompactado no diretório salvo na variável
+## 'base_dir' a seguir
+##
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+## o tibble 'input' guarda o código (a_code) e o nome por extenso (a_desc)
+## das respostas da variável no censo demográfico de 2000
+input <-
+  read_excel(
+    path = paste0(
+      base_dir,
+      'raw/',
+      'Arquivos Auxiliares/',
+      'Atividade91-Estrutura.xls'
+    ),                               # caminho até o arquivo
+    sheet = 'ATIVIDA91',             # aba no qual os dados estão disponíveis
+    range = 'A2:B196',               # intervalo de células dos dados
+    col_types = 'text',              # ignora tipos de dados
+    col_names = FALSE                # ignora nomes de colunas
+  ) %>%
+  rename(
+    cod_3 = 1,              # primeira coluna traz o código da atividade
+    cnae = 2                 # segunda coluna traz o nome da atividade
+  ) %>%
+  filter(
+    grepl(pattern = '[0-9]{3}', cod_3)
+  ) %>%
+  transmute(
+    base = 'pess',
+    q_code = 'v4461',
+    a_code = cod_3,
+    a_desc = cnae
+  )
+
+input %>%
+  write_delim(
+    file = paste0(
+      base_dir,
+      'data/',
+      'vdict_auxfiles_v4461.txt'
+    ),
+    delim = '|'
+  )
+#+end_src
+
+** dicionário de variáveis oriundos dos scripts SAS
+
+#+begin_src R :tangle ./gnur_vardict_sasfiles.R
+## gnur_vardict_sasfiles.R
+##
+## entendimento do dicionário de variáveis do censo demográfico brasileiro de 2000 (br_ibge_censo_2000)
+
+library(readxl)   # read_excel
+library(dplyr)    # mutate, transmute, filter, rename, bind_rows, arrange
+library(stringr)  # str_split, str_to_lower, str_trim, str_locate
+library(tidyr)    # unnest
+library(glue)     # glue
+library(readr)    # write_delim, write_lines
+
+## caminhos até os dados do censo 2000
+src_dir <- '/tmp/etl/br_ibge_censo_2000/'
+raw_data <- paste0(src_dir, 'raw/')
+proc_data <- paste0(src_dir, 'data/')
+
+
+## variáveis auxiliares disponíveis em arquivos próprios,
+## fora dos scripts/macros do SAS
+aux_vars_common <- c(
+  ## variáveis comuns aos microdados de domicílios,
+  ## pessoas e famílias
+  'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap'
+  )
+aux_vars_pess <- c(
+  ## variáveis exclusivas dos microdados de pessoas
+  'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
+  'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
+  'v4451', 'v4461', 'v1103'
+)
+aux_vars <- c(aux_vars_common, aux_vars_pess)
+
+
+
+## -------------------------------------------------------------
+##    base de domicílios
+## -------------------------------------------------------------
+
+## importação do dicionário de variáveis
+input_domi <-
+  ## o dicionário de variáveis do Censo 2000 decorre diretamente
+  ## do script/macro de leitura do software SAS, não restando
+  ## outra alternativa, para trabalhar com o GNU R, a não ser
+  ## tratar o dicionário de variáveis como um arquivo de formato
+  ## largura fixa.
+  ## Originalmente o arquivo contém caracteres binários, aspas
+  ## comentários (/* e */), tabulação (\t), por isso um script
+  ## shell o trata antes da importação no GNU R que ocorre nas
+  ## próximas linhas.
+  read_fwf(
+    file = paste0(raw_data, 'SAS/LE_DOMIC.sas'),
+    col_positions = fwf_widths(
+      c(
+        6,     # 1-6   >> contador de linha               =col1=
+        13,    # 7-19  >> variável e número de caracteres =col2=
+        1024   # 20-   >> dicionário de variáveis         =col3=
+      ),
+      c('col1', 'col2', 'col3')
+    ),
+    ## as primeiras 20 linhas são relevantes somente para a
+    ## leitura dos microdados no software SAS, motivo pelo
+    ## qual essas linhas são ignoradas (puladas) na importação
+    ## no GNU R.
+    skip = 20,
+    show_col_types = FALSE,
+    ## importa 100% dos dados como texto
+    col_types = cols(.default = 'c'),
+    ## muito provavelmente o software SAS utilizado pelo IBGE
+    ## foi utilizado no sistema operacional Microsoft Windows
+    ## para salvar o script de importação. Isso introduz
+    ## divergências na codificação do arquivo, motivo pelo
+    ## qual é necessário ler no sistema operacional GNU/Linux
+    ## o arquivo com a codificação mais próxima da original
+    locale = readr::locale(encoding = "ISO-8859-1")
+  )
+
+
+output_domi <-
+  input_domi %>%
+  filter(row_number() <= n() -7) %>%
+  rowwise() %>%
+  mutate(
+    ## q: enunciado da questão
+    ## a: dicionário da resposta
+    qa = ifelse( is.na(col1), 'a', 'q'),
+    ## posição do espaço ' ' que separa q_code e q_desc
+    col2_space = str_locate(string = col2, pattern = ' ')[1],
+    ## posições inicial e final e número de caracteres nos microdados
+    pos_ini = str_remove_all(string = col1, pattern = '@'),
+    nchars = str_sub(string = col2, start = col2_space + 1),
+    dot = str_locate(string = nchars, pattern = '[.]')[1],
+    nchars = ifelse(
+      is.na(dot),
+      nchars,
+      str_sub(string = nchars, start = 1, end = dot - 1)
+    ),
+    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
+    ## argumento character do commando cut
+    cut_arg = glue('{pos_ini}-{pos_fin}'),
+    ## código e enunciado da variável
+    q_code = str_sub(string = col2, start = 1, end = col2_space - 1),
+    q_code = str_trim(q_code),
+    q_code = str_to_lower(q_code),
+    q_desc = ifelse(is.na(col1), NA, col3),
+    q_desc = ifelse( !grepl('^[.]', q_desc), q_desc, str_sub( string = q_desc, start = 3)),
+    q_desc = str_trim(q_desc),
+    q_desc = str_to_lower(q_desc),
+    ## código e descrição da resposta
+    col3_hifen = str_locate(string = col3, pattern = '-')[1],
+    a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_hifen - 1), NA),
+    a_code = str_to_lower(a_code),
+    a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_hifen + 1), NA),
+    a_desc = str_trim(a_desc),
+    a_desc = str_to_lower(a_desc),
+    ## inclui um marcador para o caso de a variável ter seu
+    ## dicionário localizado como um arquivo auxiliar. Isso
+    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
+    tipo = case_when(
+      q_code %in% aux_vars ~ 'auxiliar',
+      TRUE ~ NA
+    )
+  ) %>%
+  ungroup()
+
+
+## código e enunciado das variáveis
+output_domi %>%
+  filter(qa=='q') %>%
+  transmute(
+    base = 'domi',
+    q_code,
+    q_desc
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_qdesc_dom.txt' ),
+    delim = '|',
+    col_names = TRUE
+  )
+
+
+## argumento character do comando cut
+output_domi %>%
+  filter(qa=='q') %>%
+  summarise(
+    args = str_flatten(cut_arg, ',')
+  ) %>%
+  write_lines(
+    file = paste0( proc_data, 'cut_character_args_dom.txt')
+  )
+
+
+## vdict_sasfiles.txt
+output_domi %>%
+  fill(q_code) %>%
+  filter(
+    qa=='a',
+    !(q_code %in% aux_vars),
+    !is.na(a_code),
+    !grepl(pattern = 'branc', a_code, ignore.case = TRUE)
+  ) %>%
+  transmute(
+    base = 'domi',
+    q_code,
+    a_code,
+    a_desc
+  ) %>%
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = FALSE
+  )
+
+
+tribble(
+    ~base,   ~q_code, ~a_code, ~a_desc,
+    'domi',  'v0220',     '2',   'não',
+  ) %>%
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = TRUE
+  )
+
+
+
+## -------------------------------------------------------------
+##    base de pessoas
+## -------------------------------------------------------------
+input_pess <-
+  ## o dicionário de variáveis do Censo 2000 decorre diretamente
+  ## do script/macro de leitura do software SAS, não restando
+  ## outra alternativa, para trabalhar com o GNU R, a não ser
+  ## tratar o dicionário de variáveis como um arquivo de formato
+  ## largura fixa.
+  ## Originalmente o arquivo contém caracteres binários, aspas
+  ## comentários (/* e */), tabulação (\t), por isso um script
+  ## shell o trata antes da importação no GNU R que ocorre nas
+  ## próximas linhas.
+  read_fwf(
+    file = paste0(raw_data, 'SAS/LE_PESSOAS.sas'),
+    col_positions = fwf_widths(
+      c(
+        6,     # 1-6   >> contador de linha               =col1=
+        10,    # 7-16  >> variável e número de caracteres =col2=
+        1024   # 17-   >> dicionário de variáveis         =col3=
+      ),
+      c('col1', 'col2', 'col3')
+    ),
+    ## as primeiras 20 linhas são relevantes somente para a
+    ## leitura dos microdados no software SAS, motivo pelo
+    ## qual essas linhas são ignoradas (puladas) na importação
+    ## no GNU R.
+    skip = 20,
+    show_col_types = FALSE,
+    ## importa 100% dos dados como texto
+    col_types = cols(.default = 'c'),
+    ## muito provavelmente o software SAS utilizado pelo IBGE
+    ## foi utilizado no sistema operacional Microsoft Windows
+    ## para salvar o script de importação. Isso introduz
+    ## divergências na codificação do arquivo, motivo pelo
+    ## qual é necessário ler no sistema operacional GNU/Linux
+    ## o arquivo com a codificação mais próxima da original
+    locale = readr::locale(encoding = "ISO-8859-1")
+  )
+
+
+output_pess <-
+  input_pess %>%
+  filter(row_number() <= n() -8) %>%
+  rowwise() %>%
+  mutate(
+    ## q: enunciado da questão
+    ## a: dicionário da resposta
+    qa = ifelse( is.na(col1), 'a', 'q'),
+    col2_space = str_locate(string = col2, pattern = ' ')[1],
+    ## posições inicial e final e número de caracteres nos microdados
+    pos_ini = str_remove_all(string = col1, pattern = '@'),
+    nchars = str_sub(string = col2, start = col2_space + 1),
+    dot = str_locate(string = nchars, pattern = '[.]')[1],
+    nchars = ifelse(
+      is.na(dot),
+      nchars,
+      str_sub(string = nchars, start = 1, end = dot - 1)
+    ),
+    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
+    ## argumento character do commando cut
+    cut_arg = glue('{pos_ini}-{pos_fin}'),
+    ## código e enunciado da variável
+    q_code = str_sub(string = col2, start = 1, end = col2_space - 1),
+    q_code = str_to_lower(q_code),
+    q_desc = ifelse(is.na(col1), NA, col3),
+    q_desc = ifelse( !grepl('^[.]', q_desc), q_desc, str_sub( string = q_desc, start = 3)),
+    q_desc = str_trim(q_desc),
+    q_desc = str_to_lower(q_desc),
+    ## código e descrição da resposta
+    col3_hifen = str_locate(string = col3, pattern = '-')[1],
+    a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_hifen - 1), NA),
+    a_code = str_to_lower(a_code),
+    a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_hifen + 1), NA),
+    a_desc = str_trim(a_desc),
+    a_desc = str_to_lower(a_desc),
+    ## se 'branco' faz parte da coluna 3, a_code e a_desc devem ser NA
+    a_code = ifelse(col3_hifen > 5, NA, a_code),
+    a_desc = ifelse(col3_hifen > 5, NA, a_desc),
+    ## inclui um marcador para o caso de a variável ter seu
+    ## dicionário localizado como um arquivo auxiliar. Isso
+    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
+    tipo = case_when(
+      q_code %in% c(
+        ## variáveis comuns aos microdados de domicílios,
+        ## pessoas e famílias
+        'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
+        ## variáveis exclusivas dos microdados de pessoas
+        'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
+        'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
+        'v4451', 'v4461', 'v1103'
+      ) ~ 'auxiliar',
+      TRUE ~ NA
+    )
+  ) %>%
+  ungroup()
+
+
+## código e enunciado das variáveis
+output_pess %>%
+  filter(qa=='q') %>%
+  transmute(
+    base = 'pess',
+    q_code,
+    q_desc
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_qdesc_pes.txt' ),
+    delim = '|',
+    col_names = TRUE
+  )
+
+## argumento character do comando cut
+output_pess %>%
+  filter(qa=='q') %>%
+  summarise(
+    args = str_flatten(cut_arg, ',')
+  ) %>%
+  write_lines(
+    file = paste0( proc_data, 'cut_character_args_pes.txt')
+  )
+
+
+## vdict_sasfiles.txt
+tribble(
+    ~base,   ~q_code, ~a_code, ~a_desc,
+    'pess',  'v0455',     '1',   'sim',
+  ) %>%
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = TRUE
+  )
+
+output_pess %>%
+  fill(q_code) %>%
+  filter(
+    qa=='a',
+    !(q_code %in% aux_vars),
+    !is.na(a_code),
+    !grepl(pattern = 'branc|00', a_code, ignore.case = TRUE)
+  ) %>%
+  transmute(
+    base = 'pess',
+    q_code,
+    a_code,
+    a_desc
+  ) %>%
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = TRUE
+  )
+
+
+## -------------------------------------------------------------
+##    base de famílias
+## -------------------------------------------------------------
+input_fami <-
+  ## o dicionário de variáveis do Censo 2000 decorre diretamente
+  ## do script/macro de leitura do software SAS, não restando
+  ## outra alternativa, para trabalhar com o GNU R, a não ser
+  ## tratar o dicionário de variáveis como um arquivo de formato
+  ## largura fixa.
+  ## Originalmente o arquivo contém caracteres binários, aspas
+  ## comentários (/* e */), tabulação (\t), por isso um script
+  ## shell o trata antes da importação no GNU R que ocorre nas
+  ## próximas linhas.
+  read_fwf(
+    file = paste0(raw_data, 'SAS/LE_FAMILIAS.sas'),
+    col_positions = fwf_widths(
+      c(
+        6,     # 1-6   >> contador de linha               =col1=
+        14,    # 7-16  >> variável e número de caracteres =col2=
+        1024   # 17-   >> dicionário de variáveis         =col3=
+      ),
+      c('col1', 'col2', 'col3')
+    ),
+    ## as primeiras 20 linhas são relevantes somente para a
+    ## leitura dos microdados no software SAS, motivo pelo
+    ## qual essas linhas são ignoradas (puladas) na importação
+    ## no GNU R.
+    skip = 20,
+    show_col_types = FALSE,
+    ## importa 100% dos dados como texto
+    col_types = cols(.default = 'c'),
+    ## muito provavelmente o software SAS utilizado pelo IBGE
+    ## foi utilizado no sistema operacional Microsoft Windows
+    ## para salvar o script de importação. Isso introduz
+    ## divergências na codificação do arquivo, motivo pelo
+    ## qual é necessário ler no sistema operacional GNU/Linux
+    ## o arquivo com a codificação mais próxima da original
+    locale = readr::locale(encoding = "ISO-8859-1")
+  )
+
+
+output_fami <-
+  input_fami %>%
+  filter(row_number() <= n() -7) %>%
+  rowwise() %>%
+  mutate(
+    ## correção manual do nome da variável
+    col2 = ifelse(
+      grepl( pattern = '94', col1),
+      'CODV4615_7400 2.',
+      col2
+    ),
+    ## q: enunciado da questão
+    ## a: dicionário da resposta
+    qa = ifelse( is.na(col1), 'a', 'q'),
+    col2_space = str_locate(string = col2, pattern = ' ')[1],
+    ## posições inicial e final e número de caracteres nos microdados
+    pos_ini = str_remove_all(string = col1, pattern = '@'),
+    nchars = str_sub(string = col2, start = col2_space + 1),
+    dot = str_locate(string = nchars, pattern = '[.]')[1],
+    nchars = ifelse(
+      is.na(dot),
+      nchars,
+      str_sub(string = nchars, start = 1, end = dot - 1)
+    ),
+    pos_fin = as.numeric(pos_ini) + as.numeric(nchars) - 1,
+    ## argumento character do commando cut
+    cut_arg = glue('{pos_ini}-{pos_fin}'),
+    ## código e enunciado da variável
+    q_code = str_sub(string = col2, start = 1, end = col2_space - 1),
+    q_code = str_to_lower(q_code),
+    q_desc = ifelse(is.na(col1), NA, col3),
+    q_desc = ifelse( !grepl('^[.]', q_desc), q_desc, str_sub( string = q_desc, start = 3)),
+    q_desc = str_trim(q_desc),
+    q_desc = str_to_lower(q_desc),
+    ## código e descrição da resposta
+    col3_hifen = str_locate(string = col3, pattern = '-')[1],
+    a_code = ifelse(qa=='a', str_sub(string = col3, start = 1, end = col3_hifen - 1), NA),
+    a_code = str_to_lower(a_code),
+    a_desc = ifelse(qa=='a', str_sub(string = col3, start = col3_hifen + 1), NA),
+    a_desc = str_trim(a_desc),
+    a_desc = str_to_lower(a_desc),
+    ## se 'branco' faz parte da coluna 3, a_code e a_desc devem ser NA
+    a_code = ifelse(col3_hifen > 5, NA, a_code),
+    a_desc = ifelse(col3_hifen > 5, NA, a_desc),
+    ## inclui um marcador para o caso de a variável ter seu
+    ## dicionário localizado como um arquivo auxiliar. Isso
+    ## ocorre sempre que há a palavra 'arquivo' na coluna 3
+    tipo = case_when(
+      q_code %in% c(
+        ## variáveis comuns aos microdados de domicílios,
+        ## pessoas e famílias
+        'v1002', 'v1003', 'v0103', 'v0104', 'v0105', 'v1004', 'areap',
+        ## variáveis exclusivas dos microdados de pessoas
+        'v4090', 'v4210', 'v4230', 'v4250', 'v4260', 'v4276', 'v4355',
+        'v4452', 'v4462', 'v4354', 'v4219', 'v4239', 'v4269', 'v4279',
+        'v4451', 'v4461', 'v1103'
+      ) ~ 'auxiliar',
+      TRUE ~ NA
+    )
+  ) %>%
+  ungroup()
+
+## código e enunciado das variáveis
+output_fami %>%
+  filter(qa=='q') %>%
+  transmute(
+    base = 'fami',
+    q_code,
+    q_desc
+  ) %>%
+  write_delim(
+    file = paste0(proc_data, 'vdict_qdesc_fami.txt' ),
+    delim = '|',
+    col_names = TRUE
+  )
+
+## argumento character do comando cut
+output_fami %>%
+  filter(qa=='q') %>%
+  summarise(
+    args = str_flatten(cut_arg, ',')
+  ) %>%
+  write_lines(
+    file = paste0( proc_data, 'cut_character_args_fami.txt')
+  )
+
+
+## vdict_sasfiles.txt
+output_fami %>%
+  fill(q_code) %>%
+  filter(
+    qa=='a',
+    !(q_code %in% aux_vars),
+    !is.na(a_code),
+    !grepl(pattern = 'branc|00', a_code, ignore.case = TRUE)
+  ) %>%
+  transmute(
+    base = 'fami',
+    q_code,
+    a_code,
+    a_desc
+  ) %>%
+  write_delim(
+    file = paste0( proc_data, 'vdict_sasfiles.txt'),
+    delim = '|',
+    append = TRUE
+  )
+#+end_src
+
+** prepara dicionário de variáveis usando o GNU R
+
+#+begin_src R :tangle ./gnur_aggregating_variables_dictionary.R
+## gnur_aggregating_variables_dictionary.R
+##
+## br_ibge_censo_2000
+
+library(readr)  # read_delim, write_delim
+library(dplyr)  # bind_rows
+library(tibble) # tribble
+
+base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+
+vdict_paths <-
+  list.files(
+    path = base_dir,
+    pattern = 'files',
+    ignore.case = TRUE,
+    full.names = TRUE
+  )
+
+vdict <- tribble(
+  ~base, ~q_code, ~a_code, ~a_desc,
+)
+
+for (f in vdict_paths){
+  vdict <- bind_rows(
+    vdict,
+    read_delim(
+      file = f,
+      delim = '|',
+      col_names = TRUE,
+      col_types = cols(.default = 'c')
+    )
+  )
+}
+
+vdict %>%
+  write_delim(
+    file = paste0(base_dir, 'data/vdict.txt'),
+    delim = '|',
+    col_names = TRUE
+  )
+
+#+end_src
+
+
+
+#+begin_src sh
+parse_variables_dictionary_using_GNU_R(){
+
+    echo 'Prepara o dicionário de variáveis e tratamento dos microdados usando o GNU R'
+
+    for gnur_script in ./gnur_vardict*.R
+    do
+        echo "Executando $gnur_script..."
+        R CMD BATCH --quiet --vanilla $gnur_script
+    done
+
+    echo 'Consolidando os dicionários de variáveis tratadas em um único arquivo...'
+    R CMD BATCH --quiet --vanilla ./gnur_aggregating_variables_dictionary.R
+
+    rm *.Rout
+
+}
+#+end_src
+
+
+* microdados
+
+** download e conversão dos microdados para arquivos csv
+
+#+begin_src sh
+fetch_and_convert_microdata_to_parquet_format(){
+
+    # Censo 2000 possui 3 arquivos por estado:
+    #  - dom, base de domicílios
+    #  - pes, base de pessoas
+    #  - fami, base de famílias
+    base="dom pes fami"
+
+    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO; do
+
+        echo "Baixando os microdados de ${mdata_url}/${uf}.zip..."
+        R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/${uf}.zip' )"
+
+        echo "Descompactando os microdados do arquivo ${uf}.zip em ${raw_data}/${uf}..."
+        unzip -o ${raw_data}/$uf.zip -d ${raw_data}
+
+        echo "Removendo da pasta temporária o arquivo compactado ${uf}.zip..."
+        rm -rf ${raw_data}/$uf.zip
+
+        echo "Tratando as bases de ${uf}..."
+
+        for b in ${base}; do
+
+            echo "  Base: ${b}"
+            cut_args=$(cat ${proc_data}/cut_character_args_${b}.txt )
+
+            for f in $(find ${raw_data}/ -print | grep -i txt | grep -i ${b}); do
+
+                line_count=$(wc -l ${f} | cut -d' ' -f1)
+
+                # os arquivos originais postados pelo ibge em seu servidor ftp
+                # contém caracteres binários (^M, ^Z, \r) introduzidos no
+                # momento da gravação em disco provavelmente no sistema
+                # operacional windows.
+                # Antes de qualquer outro passo, esses caracteres precisam ser
+                # removidos, sem o que não é possível seguir com o tratamento
+                # dos microdados em sistemas operacionais livres como GNU/Linux
+
+                echo "    Revomendo caracteres especiais de ${f}..."
+                sed -e 's/\r//g' ${f} | \
+                    tr -d '\032' > \
+                       /tmp/mdata
+
+                mv -f /tmp/mdata ${f}
+                
+                # cada arquivo precisa ter um tamanho fixo de linhas
+                #   fami: 118
+                #     dom: 170
+                #      pes: 390
+                # esse passo é necessário pois há linhas de arquivos com menos
+                # caracteres conforme relação acima.
+                #
+                # esses números estão no argumento LRECL na linha que começa
+                # com FILENAME dos scripts do SAS.
+                #
+                # quando esta regra é violada isso indica que o arquivo original
+                # postado pelo IBGE contém linhas com menos caracteres do que o
+                # o número indicado no próprio dicionário de variáveis e o
+                # tratamento de dados não é mais possível.
+
+                # a variável line_length abaixo retorna os comprimentos de linha
+                # distintos do arquivo de microdados.
+                #
+                # se a contagem é igual a 1 então 100% das linhas têm o mesmo
+                # comprimento.
+                #
+                # se a contagem não é igual a 1 é necessário
+                # preencher as linhas com espaços à direita até que o comprimento
+                # seja atingido.
+                #
+                # sem isso o tratamento dos dados quebra...
+                #
+                line_length=$(awk '{print length}' ${f} | uniq | wc -l)
+                # linha-a-linha demora muito e inviabiliza o tratamento dos dados
+                #
+                #    while read -r line; do
+                #        printf "%-170s\n" "$line" >> /tmp/tmpfix;
+                #    done < ${f}
+                #    mv -f /tmp/tmpfix ${f}
+                
+                # variante com awk é muito mais rápida...
+                #   https://www.linuxquestions.org/questions/programming-9/shell-question-pad-end-of-each-line-with-spaces-to-%3D-80-chars-875082/
+                #
+                #   awk '{printf "%-170s\n", $1}' ${f} > /tmp/tmpfix
+                #
+
+                if [ "$b" = "dom" ]; then
+                    if [ $line_length != 1 ]; then
+
+                        # completa cada linha da base de domicílios com 170 caracteres
+                        # linhas com menos de 170 serão completadas com espaços ' ' à
+                        # direita.
+
+                        echo "    Consertando linha a linha as ${line_count} linhas do txt original..."
+
+                        awk '{printf "%-170s\n", $1}' ${f} > /tmp/tmpfix
+                        mv -f /tmp/tmpfix ${f}                        
+                    fi
+                fi
+
+                if [ "$b" = "fami" ]; then
+                    if [ $line_length != 1 ]; then
+
+                        # completa cada linha da base de famílias com 118 caracteres
+                        # linhas com menos de 118 serão completadas com espaços ' ' à
+                        # direita.
+                        
+                        echo "    Consertando linha a linha as ${line_count} linhas do txt original..."
+
+                        awk '{printf "%-118s\n", $1}' ${f} > /tmp/tmpfix
+                        mv -f /tmp/tmpfix ${f}
+                    fi
+                fi
+
+                if [ "$b" = "pes" ]; then
+                    if [ $line_length != 1 ]; then
+                        # completa cada linha da base de pessoas com 390 caracteres
+                        # linhas com menos de 390 serão completadas com espaços ' ' à
+                        # direita.
+
+                        echo "    Consertando linha a linha as ${line_count} linhas do txt original..."
+
+                        awk '{printf "%-390s\n", $1}' ${f} > /tmp/tmpfix
+                        mv -f /tmp/tmpfix ${f}
+                        
+                    fi
+                fi
+
+                echo "    Convertendo para csv o arquivo ${f}..."
+                cut \
+                    --output-delimiter=',' \
+                    --characters=$cut_args \
+                    ${f} | \
+                    tr -d ' ' > \
+                    ${proc_data}/microdata_${b}_${uf}.csv
+
+                echo "    Removendo arquivo original ${f}..."
+                rm -rf ${f}
+
+                echo "    Convertendo a base de csv para parquet em ${parq_data}/${b}/${uf}..."
+                R CMD BATCH --quiet --vanilla "--args base='${b}' uf='${uf}'" ./gnur_transform_csv_into_parquet.R
+
+                echo "    Removendo o arquivo ${proc_data}/microdata_${b}_${uf}.csv..."
+                rm -rf ${proc_data}/microdata_${b}_${uf}.csv
+            done
+        done
+
+    done
+
+    # remove arquivos temporários do GNU R do diretório
+    rm -rf *.{Rout,out}
+}
+#+end_src
+
+** conversão dos microdados em formato parquet
+
+#+begin_src R :tangle ./gnur_transform_csv_into_parquet.R
+## gnur_transform_csv_into_parquet.R
+##
+## Converte microdados do formato texto para o formato parquet usando library(arrow)
+##
+## Função é chamada como
+##  R CMD BATCH --quiet --vanilla "--args base='pes' uf='SP'" ./gnur_transform_csv_into_parquet.R
+
+## recupera os argumentos passados via linha de comando
+args <- commandArgs(TRUE)
+
+for(i in 1:length(args)){
+  eval(parse(text=args[[i]]))
+}
+
+library(arrow)  # open_dataset, write_dataset
+library(readr)  # read_delim
+library(glue)   # glue
+
+## pastas nas quais alocados os dados tratados e em formato parquet
+src_dir <- '/tmp/etl/br_ibge_censo_2000/'
+proc_data <- paste0(src_dir, 'data')
+parq_data <- paste0(src_dir, 'parquet')
+
+## importa todos os campos como string
+col_names <-
+    read_delim(
+      file = glue('{proc_data}/vdict_qdesc_{base}.txt'),
+      delim='|',
+      show_col_types = FALSE
+    )
+## adaptado de https://stackoverflow.com/a/71305598
+csv_schema <- schema(
+  purrr::map( col_names$q_code, ~Field$create(name = .x, type = string()))
+)
+
+## leitura dos microdados delimitados por ',' via
+## pacote 'arrow'.
+microdata_pipe_delimited <-
+  open_dataset(
+    glue('{proc_data}/microdata_{base}_{uf}.csv'),
+    format="csv",
+    schema = csv_schema,
+    col_names = TRUE,
+    skip = 0
+  )
+
+## escrita dos microdados tratados em formato 'parquet'
+## para agilidade e menor espaço em disco
+  write_dataset(
+    microdata_pipe_delimited,
+    path = glue('{parq_data}/{base}/{uf}'),
+    format = 'parquet'
+  )
+#+end_src
+
+
+#+begin_src R :eval no :tangle no
+library(arrow)  # open_dataset
+library(dplyr)  # %>%, group_by, count
+library(glue)   # glue
+
+## pastas nas quais alocados os dados tratados e em formato parquet
+src_dir <- '/tmp/etl/br_ibge_censo_2000/'
+proc_data <- paste0(src_dir, 'data')
+parq_data <- paste0(src_dir, 'parquet')
+
+base <- 'pes'
+
+## leitura dos microdados delimitados por ',' via
+## pacote 'arrow'.
+
+## método japonês
+mdata_pess <-
+  open_dataset(
+    list.files(
+      glue('{parq_data}/pes'),
+      recursive = TRUE,
+      full.names = TRUE
+    )
+  )
+
+mdata_pess %>% group_by(v0615) %>% count() %>% collect()
+
+
+## método alemão
+mdata <-
+  open_dataset(
+    c(
+      file.path = glue('{parq_data}/{base}/AC/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/AL/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/AM/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/AP/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/BA/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/CE/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/DF/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/ES/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/GO/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MA/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MG/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MS/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/MT/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PA/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PB/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PE/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PI/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/PR/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RJ/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RN/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RO/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RR/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/RS/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SC/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SE/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/SP/part-0.parquet'),
+      file.path = glue('{parq_data}/{base}/TO/part-0.parquet')
+    ),
+    format="parquet"
+  )
+#+end_src
+
+
+* orquestração do tratamento dos microdados do censo
+
+#+begin_src sh
+main(){
+
+    create_temporary_directories
+
+    fetch_variables_dictionary
+
+    parse_variables_dictionary_using_GNU_R
+
+    fetch_and_convert_microdata_to_parquet_format
+
+}
+
+main
+
+exit 0
+#+end_src
+
+# Local Variables:
+# eval: (add-hook 'after-save-hook (lambda () (org-babel-tangle) ))
+# End:
