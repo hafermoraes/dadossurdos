@@ -2738,7 +2738,7 @@ fetch_and_convert_microdata_to_parquet_format(){
     #  - fami, base de famílias
     base="dom pes fami"
 
-    for uf in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO; do
+    for uf in MG; do # AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO; do
 
         echo "Baixando os microdados de ${mdata_url}/${uf}.zip..."
         R --quiet --vanilla -e "curl::curl_download( '${mdata_url}/$uf.zip', '${raw_data}/${uf}.zip' )"
@@ -2758,40 +2758,79 @@ fetch_and_convert_microdata_to_parquet_format(){
 
             for f in $(find ${raw_data}/ -print | grep -i txt | grep -i ${b}); do
 
+                # os arquivos originais postados pelo ibge em seu servidor ftp
+                # contém caracteres binários (^M, ^Z, \r) introduzidos no
+                # momento da gravação em disco provavelmente no sistema
+                # operacional windows.
+                # Antes de qualquer outro passo, esses caracteres precisam ser
+                # removidos, sem o que não é possível seguir com o tratamento
+                # dos microdados em sistemas operacionais livres como GNU/Linux
+
+                echo "    Revomendo caracteres especiais de ${f}..."
+                sed -e 's/\r//g' ${f} | \
+                    tr -d '\032' > \
+                       /tmp/tmpfile
+
+                mv -f /tmp/tmpfile ${f}
+                
                 # cada arquivo precisa ter um tamanho fixo de linhas
                 #   fami: 118
                 #     dom: 170
                 #      pes: 390
                 # esse passo é necessário pois há linhas de arquivos com menos
                 # caracteres conforme relação acima.
+                #
                 # esses números estão no argumento LRECL na linha que começa
                 # com FILENAME dos scripts do SAS.
+                #
+                # quando esta regra é violada isso indica que o arquivo original
+                # postado pelo IBGE contém linhas com menos caracteres do que o
+                # o número indicado no próprio dicionário de variáveis e o
+                # tratamento de dados não é mais possível.
+
+                # a variável line_length abaixo retorna os comprimentos de linha
+                # distintos do arquivo de microdados. se a contagem é igual a 1
+                # isso indica que 100% das linhas têm o mesmo comprimento.
+                line_length=$(awk '{print length}' ${f} | uniq | wc -l)
+                echo "    Arquivo ${f} contagem de linhas é ${line_length}"
 
                 if [ "$b" = "dom" ]; then
-                    # completa cada linha da base de domicílios com 170 caracteres
-                    # linhas com menos de 170 serão completadas com espaços ' ' à
-                    # direita.
-                    echo "    Consertando txt original ${f}..."
-                    printf "%-170s\\n" $(cat ${f}) > /tmp/tmpfile
-                    mv -f /tmp/tmpfile ${f}
+                    if [ $line_length != 1 ]; then
+                        # completa cada linha da base de domicílios com 170 caracteres
+                        # linhas com menos de 170 serão completadas com espaços ' ' à
+                        # direita.
+                        echo "    Consertando txt original ${f} linha a linha..."
+                        while read -r line; do
+                            printf "%-170s\n" "$line" >> /tmp/tmpfile;
+                        done < ${f}
+                        mv -f /tmp/tmpfile ${f}
+                    fi
                 fi
 
                 if [ "$b" = "fami" ]; then
-                    # completa cada linha da base de famílias com 118 caracteres
-                    # linhas com menos de 118 serão completadas com espaços ' ' à
-                    # direita.
-                    echo "    Consertando txt original ${f}..."
-                    printf "%-118s\\n" $(cat ${f}) > /tmp/tmpfile
-                    mv -f /tmp/tmpfile ${f}
+                    if [ $line_length != 1 ]; then
+                        # completa cada linha da base de famílias com 118 caracteres
+                        # linhas com menos de 118 serão completadas com espaços ' ' à
+                        # direita.
+                        echo "    Consertando txt original ${f} linha a linha..."
+                        while read -r line; do
+                            printf "%-118s\n" "$line" >> /tmp/tmpfile;
+                        done < ${f}
+                        mv -f /tmp/tmpfile ${f}
+                    fi
                 fi
 
                 if [ "$b" = "pes" ]; then
-                    # completa cada linha da base de pessoas com 390 caracteres
-                    # linhas com menos de 390 serão completadas com espaços ' ' à
-                    # direita.
-                    echo "    Consertando txt original ${f}..."
-                    printf "%-390s\\n" $(cat ${f}) > /tmp/tmpfile
-                    mv -f /tmp/tmpfile ${f}
+                    if [ $line_length != 1 ]; then
+                        # completa cada linha da base de pessoas com 390 caracteres
+                        # linhas com menos de 390 serão completadas com espaços ' ' à
+                        # direita.
+                        echo "    Consertando txt original ${f} linha a linha..."
+                        while read -r line; do
+                            printf "%-390s\n" "$line" >> /tmp/tmpfile;
+                        done < ${f}
+                        mv -f /tmp/tmpfile ${f}
+                    fi
                 fi
 
                 echo "    Convertendo para csv o arquivo ${f}..."
@@ -2799,19 +2838,17 @@ fetch_and_convert_microdata_to_parquet_format(){
                     --output-delimiter=',' \
                     --characters=$cut_args \
                     ${f} | \
-                    sed -e 's/\r//g' | \
-                    tr -d '\032' | \
                     tr -d ' ' > \
                     ${proc_data}/microdata_${b}_${uf}.csv
 
                 echo "    Removendo arquivo original ${f}..."
-                rm -rf ${f}
+                # rm -rf ${f}
 
                 echo "    Convertendo a base de csv para parquet em ${parq_data}/${b}/${uf}..."
                 R CMD BATCH --quiet --vanilla "--args base='${b}' uf='${uf}'" ./gnur_transform_csv_into_parquet.R
 
                 echo "    Removendo o arquivo ${proc_data}/microdata_${b}_${uf}.csv..."
-                rm -rf ${proc_data}/microdata_${b}_${uf}.csv
+                # rm -rf ${proc_data}/microdata_${b}_${uf}.csv
             done
         done
 
