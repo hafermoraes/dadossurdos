@@ -2769,9 +2769,9 @@ fetch_and_convert_microdata_to_parquet_format(){
                 echo "    Revomendo caracteres especiais de ${f}..."
                 sed -e 's/\r//g' ${f} | \
                     tr -d '\032' > \
-                       /tmp/tmpfile
+                       /tmp/mdata
 
-                mv -f /tmp/tmpfile ${f}
+                mv -f /tmp/mdata ${f}
                 
                 # cada arquivo precisa ter um tamanho fixo de linhas
                 #   fami: 118
@@ -2789,8 +2789,17 @@ fetch_and_convert_microdata_to_parquet_format(){
                 # tratamento de dados não é mais possível.
 
                 # a variável line_length abaixo retorna os comprimentos de linha
-                # distintos do arquivo de microdados. se a contagem é igual a 1
-                # isso indica que 100% das linhas têm o mesmo comprimento.
+                # distintos do arquivo de microdados.
+                #
+                # se a contagem é igual a 1 então 100% das linhas têm o mesmo
+                # comprimento.
+                #
+                # se a contagem não é igual a 1 é necessário
+                # preencher as linhas com espaços à direita até que o comprimento
+                # seja atingido.
+                #
+                # sem isso o tratamento dos dados quebra...
+                #
                 line_length=$(awk '{print length}' ${f} | uniq | wc -l)
                 echo "    Arquivo ${f} contagem de linhas é ${line_length}"
 
@@ -2801,9 +2810,9 @@ fetch_and_convert_microdata_to_parquet_format(){
                         # direita.
                         echo "    Consertando txt original ${f} linha a linha..."
                         while read -r line; do
-                            printf "%-170s\n" "$line" >> /tmp/tmpfile;
+                            printf "%-170s\n" "$line" >> /tmp/tmpfix;
                         done < ${f}
-                        mv -f /tmp/tmpfile ${f}
+                        mv -f /tmp/tmpfix ${f}
                     fi
                 fi
 
@@ -2814,9 +2823,9 @@ fetch_and_convert_microdata_to_parquet_format(){
                         # direita.
                         echo "    Consertando txt original ${f} linha a linha..."
                         while read -r line; do
-                            printf "%-118s\n" "$line" >> /tmp/tmpfile;
+                            printf "%-118s\n" "$line" >> /tmp/tmpfix;
                         done < ${f}
-                        mv -f /tmp/tmpfile ${f}
+                        mv -f /tmp/tmpfix ${f}
                     fi
                 fi
 
@@ -2827,9 +2836,9 @@ fetch_and_convert_microdata_to_parquet_format(){
                         # direita.
                         echo "    Consertando txt original ${f} linha a linha..."
                         while read -r line; do
-                            printf "%-390s\n" "$line" >> /tmp/tmpfile;
+                            printf "%-390s\n" "$line" >> /tmp/tmpfix;
                         done < ${f}
-                        mv -f /tmp/tmpfile ${f}
+                        mv -f /tmp/tmpfix ${f}
                     fi
                 fi
 
