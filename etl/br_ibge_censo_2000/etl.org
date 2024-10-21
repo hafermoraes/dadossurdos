@@ -2758,6 +2758,8 @@ fetch_and_convert_microdata_to_parquet_format(){
 
             for f in $(find ${raw_data}/ -print | grep -i txt | grep -i ${b}); do
 
+                line_count=$(wc -l ${f} | cut -d' ' -f1)
+
                 # os arquivos originais postados pelo ibge em seu servidor ftp
                 # contém caracteres binários (^M, ^Z, \r) introduzidos no
                 # momento da gravação em disco provavelmente no sistema
@@ -2813,7 +2815,6 @@ fetch_and_convert_microdata_to_parquet_format(){
                 #
                 #   awk '{printf "%-170s\n", $1}' ${f} > /tmp/tmpfix
                 #
-                line_count=$(wc -l ${f})
 
                 if [ "$b" = "dom" ]; then
                     if [ $line_length != 1 ]; then
@@ -2822,7 +2823,7 @@ fetch_and_convert_microdata_to_parquet_format(){
                         # linhas com menos de 170 serão completadas com espaços ' ' à
                         # direita.
 
-                        echo "    Consertando linha a linha as $line_count linhas do txt original..."
+                        echo "    Consertando linha a linha as ${line_count} linhas do txt original..."
 
                         awk '{printf "%-170s\n", $1}' ${f} > /tmp/tmpfix
                         mv -f /tmp/tmpfix ${f}                        
