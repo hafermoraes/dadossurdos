@@ -2696,7 +2696,7 @@ for (f in vdict_paths){
 
 vdict %>%
   write_delim(
-    file = paste0(base_dir, 'data/vdict.txt'),
+    file = paste0(base_dir, 'data/variables_dictionary.txt'),
     delim = '|',
     col_names = TRUE
   )
@@ -3006,6 +3006,17 @@ mdata <-
   )
 #+end_src
 
+** limpeza dos passos intermediários
+
+#+begin_src sh
+remove_temporary_steps(){
+
+    echo "Removing the temporary intermediate files"
+    rm -rf ${raw_data}
+    rm -rf ${proc_data}
+    echo "DONE."
+}
+#+end_src
 
 * orquestração do tratamento dos microdados do censo
 
@@ -3019,6 +3030,8 @@ main(){
     parse_variables_dictionary_using_GNU_R
 
     fetch_and_convert_microdata_to_parquet_format
+
+    remove_temporary_steps
 
 }
 

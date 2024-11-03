@@ -235,6 +235,14 @@ fetch_and_convert_microdata_to_parquet_format(){
     rm -rf *.{Rout,out}
 }
 
+remove_temporary_steps(){
+
+    echo "Removing the temporary intermediate files"
+    rm -rf ${raw_data}
+    rm -rf ${proc_data}
+    echo "DONE."
+}
+
 main(){
 
     create_temporary_directories
@@ -244,6 +252,8 @@ main(){
     parse_variables_dictionary_using_GNU_R
 
     fetch_and_convert_microdata_to_parquet_format
+
+    remove_temporary_steps
 
 }
 
