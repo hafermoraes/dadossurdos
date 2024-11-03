@@ -202,9 +202,10 @@ read_delim(
     by = c("q_code" = "var")
   ) %>%
   write_delim(
-    file = paste0(proc_data, 'vdict_domi.txt'),
+    file = paste0(base_dir, 'variables_dictionary.txt'),
     delim = '|',
-    col_names = TRUE
+    col_names = TRUE,
+    append = FALSE
   )
 
 ## Base de Pessoas
@@ -218,9 +219,10 @@ read_delim(
     by = c("q_code" = "var")
   ) %>%
   write_delim(
-    file = paste0(proc_data, 'vdict_pess.txt'),
+    file = paste0(base_dir, 'variables_dictionary.txt'),
     delim = '|',
-    col_names = TRUE
+    col_names = TRUE,
+    append = TRUE
   )
 
 ## Base de Emigração
@@ -234,9 +236,10 @@ read_delim(
     by = c("q_code" = "var")
   ) %>%
   write_delim(
-    file = paste0(proc_data, 'vdict_emig.txt'),
+    file = paste0(base_dir, 'variables_dictionary.txt'),
     delim = '|',
-    col_names = TRUE
+    col_names = TRUE,
+    append = TRUE
   )
 
 ## Base de Mortalidade
@@ -250,7 +253,8 @@ read_delim(
     by = c("q_code" = "var")
   ) %>%
   write_delim(
-    file = paste0(proc_data, 'vdict_mort.txt'),
+    file = paste0(base_dir, 'variables_dictionary.txt'),
     delim = '|',
-    col_names = TRUE
+    col_names = TRUE,
+    append = TRUE
   )
