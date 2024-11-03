@@ -20,6 +20,7 @@ vdict_url=${base_url}/Documentacao/dicionario_PNADC_microdados_trimestre3_202406
 src_dir=/tmp/etl/br_ibge_pnadc_2022t3
 raw_data=${src_dir}/raw
 proc_data=${src_dir}/data
+parq_data=${src_dir}/parquet
 
 create_temporary_directories(){
 
@@ -30,6 +31,7 @@ create_temporary_directories(){
     echo "DONE.\nCreating temporary directory for processed data at $proc_data..."
     rm -rf ${proc_data}
     mkdir -p ${proc_data}
+    mkdir -p ${parq_data}
 
     echo "DONE."
 }
@@ -76,58 +78,12 @@ prepare_microdata_for_data_ingestion(){
 
     # from fixed width format to pipe (|) delimited text file
     cut \
-        --output-delimiter='|' \
+        --output-delimiter=',' \
         --characters=$CHARACTERS_ARG \
         ${raw_data}/PNADC_2022_trimestre3.txt > \
         ${proc_data}/microdata.txt
 
     echo 'DONE.'
-}
-
-prepare_data_ingestion_sql_query(){
-
-    echo "Preparing SQL script for creating the database schema and tables..."
-
-    query=${proc_data}/psql_create_tables.sql
-
-    cat > ${query} <<EOF
--- cria schema ~pnadc2022t3~ para a edição 2022T3 da PNADC
-          create schema pnadc2022t3;
-
--- dicionário de dados (explicação de colunas e respostas)
-   drop table if exists pnadc2022t3.datadict;
-           create table pnadc2022t3.datadict (
-                        part text,
-                        module text,
-                        var text,
-                        q_code text,
-                        q_desc text,
-                        a_code text,
-                        a_desc text
-                        );
-
--- importa dicionário de dados brutos na tabela ~datadict~
-EOF
-
-    echo "copy pnadc2022t3.datadict from '${proc_data}/variables_dictionary.txt' delimiter '|' csv header;\n" >> ${query}
-
-    cat >> ${query} <<EOF
--- microdados separados por variavel
-   drop table if exists pnadc2022t3.microdata;
-           create table pnadc2022t3.microdata (
-EOF
-
-    cat ${proc_data}/create_table_fields >> ${query}
-
-    cat >> ${query} <<EOF
-);
-
--- importa microdados brutos na tabela microdata
-EOF
-
-    echo "copy pnadc2022t3.microdata from '${proc_data}/microdata.txt' delimiter '|' csv header;\n" >> ${query}
-
-    echo "DONE."
 }
 
 convert_microdata_to_parquet_using_arrow_and_GNU_R(){
@@ -154,7 +110,6 @@ main(){
 
     convert_microdata_to_parquet_using_arrow_and_GNU_R
 
-    prepare_data_ingestion_sql_query
 }
 
 main
