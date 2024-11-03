@@ -146,7 +146,7 @@ var_dict <-
 var_dict %>%
   select(part, q_code, q_desc, a_code, a_desc) %>%
   write_delim(
-    file = paste0(proc_data, 'variables_dictionary.txt'),
+    file = paste0(src_dir, 'variables_dictionary.txt'),
     delim = '|',
     quote = 'none',
     col_names = TRUE
@@ -181,8 +181,7 @@ var_dict %>%
 parse_variables_dictionary_using_GNU_R(){
 
     echo 'Parsing the variables dictionary using GNU R'
-    cp ./gnur_parse_variables_dictionary.R ${src_dir}/gnur_parse_variables_dictionary.R
-    R CMD BATCH --quiet --vanilla ${src_dir}/gnur_parse_variables_dictionary.R
+    R CMD BATCH --quiet --vanilla ./gnur_parse_variables_dictionary.R
     rm *.Rout
 
     echo 'DONE.'
@@ -258,11 +257,21 @@ microdata_pipe_delimited <-
 convert_microdata_to_parquet_using_arrow_and_GNU_R(){
 
     echo 'Converting the processed microdata to .parquet format using GNU R and arrow library...'
-    cp ./gnur_transform_microdata_into_parquet.R ${src_dir}/gnur_transform_microdata_into_parquet.R
-    R CMD BATCH --quiet --vanilla ${src_dir}/gnur_transform_microdata_into_parquet.R
+    R CMD BATCH --quiet --vanilla ./gnur_transform_microdata_into_parquet.R
     rm *.Rout
 
     echo 'DONE.'
+}
+#+end_src
+
+
+#+begin_src sh
+remove_temporary_steps(){
+
+    echo "Removing the temporary intermediate files"
+    rm -rf ${raw_data}
+    rm -rf ${proc_data}
+    echo "DONE."
 }
 #+end_src
 
@@ -281,6 +290,8 @@ main(){
     prepare_microdata_for_data_ingestion
 
     convert_microdata_to_parquet_using_arrow_and_GNU_R
+
+    remove_temporary_steps
 
 }
 
