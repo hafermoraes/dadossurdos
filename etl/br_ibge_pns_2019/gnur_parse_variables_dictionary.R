@@ -73,7 +73,7 @@ var_dict <-
 var_dict %>%
   select(part, module, q_code, q_desc, a_code, a_desc) %>%
   write_delim(
-    file = paste0(proc_data, 'variables_dictionary.txt'),
+    file = paste0(src_dir, 'variables_dictionary.txt'),
     delim = '|',
     quote = 'none',
     col_names = TRUE
