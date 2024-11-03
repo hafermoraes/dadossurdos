@@ -7,13 +7,13 @@ etl_docker_image=rocker/tidyverse:4.4.1
 
 # individual targets
 br_ibge_pns_2013=/tmp/etl/br_ibge_pns_2013/parquet/microdata.parquet \
-		 /tmp/etl/br_ibge_pns_2013/data/variables_dictionary.txt
+		 /tmp/etl/br_ibge_pns_2013/variables_dictionary.txt
 
 br_ibge_pns_2019=/tmp/etl/br_ibge_pns_2019/parquet/microdata.parquet \
-		 /tmp/etl/br_ibge_pns_2019/data/variables_dictionary.txt
+		 /tmp/etl/br_ibge_pns_2019/variables_dictionary.txt
 
 br_ibge_pnadc_2022t3=/tmp/etl/br_ibge_pnadc_2022t3/parquet/microdata.parquet \
-		     /tmp/etl/br_ibge_pnadc_2022t3/data/variables_dictionary.txt
+		     /tmp/etl/br_ibge_pnadc_2022t3/variables_dictionary.txt
 
 # complete list of targets
 targets=$(br_ibge_pns_2013) $(br_ibge_pns_2019) $(br_ibge_pnadc_2022t3)
