@@ -96,6 +96,14 @@ convert_microdata_to_parquet_using_arrow_and_GNU_R(){
     echo 'DONE.'
 }
 
+remove_temporary_steps(){
+
+    echo "Removing the temporary intermediate files"
+    rm -rf ${raw_data}
+    rm -rf ${proc_data}
+    echo "DONE."
+}
+
 main(){
 
     create_temporary_directories
@@ -109,6 +117,8 @@ main(){
     prepare_microdata_for_data_ingestion
 
     convert_microdata_to_parquet_using_arrow_and_GNU_R
+
+    remove_temporary_steps
 
 }
 

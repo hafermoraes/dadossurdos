@@ -292,8 +292,17 @@ mdata <-
   )
 
 mdata %>% group_by(v0001) %>% count() %>% collect()
+#+end_src
 
 
+#+begin_src sh
+remove_temporary_steps(){
+
+    echo "Removing the temporary intermediate files"
+    rm -rf ${raw_data}
+    rm -rf ${proc_data}
+    echo "DONE."
+}
 #+end_src
 
 
@@ -312,6 +321,8 @@ main(){
     prepare_microdata_for_data_ingestion
 
     convert_microdata_to_parquet_using_arrow_and_GNU_R
+
+    remove_temporary_steps
 
 }
 
