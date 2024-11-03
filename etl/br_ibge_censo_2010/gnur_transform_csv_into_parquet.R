@@ -48,5 +48,5 @@ microdata_pipe_delimited <-
 ## para agilidade e menor espaço em disco
   write_parquet(
     microdata_pipe_delimited, 
-    sink = glue('{parq_data}/{base}/{uf}'),
+    sink = glue('{parq_data}/{base}/{uf}.parquet'),
   )

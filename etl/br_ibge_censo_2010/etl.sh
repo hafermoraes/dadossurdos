@@ -33,7 +33,10 @@ create_temporary_directories(){
 
     echo "Criando diretórios temporários para dados colunares em $parq_data..."
     rm -rf ${parq_data}
-    mkdir -p ${parq_data}/{domi,pess,emig,mort}
+    mkdir -p ${parq_data}/domi
+    mkdir -p ${parq_data}/pess
+    mkdir -p ${parq_data}/emig
+    mkdir -p ${parq_data}/mort
 
 }
 
