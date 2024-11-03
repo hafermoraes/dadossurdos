@@ -46,8 +46,7 @@ microdata_pipe_delimited <-
 
 ## escrita dos microdados tratados em formato 'parquet'
 ## para agilidade e menor espaço em disco
-  write_dataset(
+  write_parquet(
     microdata_pipe_delimited,
-    path = glue('{parq_data}/{base}/{uf}'),
-    format = 'parquet'
+    path = glue('{parq_data}/{base}/{uf}.parquet')
   )
