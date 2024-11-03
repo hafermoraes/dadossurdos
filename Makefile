@@ -6,14 +6,17 @@ etl=${HOME}/git/dadossurdos/etl
 etl_docker_image=rocker/tidyverse:4.4.1
 
 # individual targets
-br_ibge_pns_2019=/tmp/etl/br_ibge_pns_2019/data/microdata.parquet \
+br_ibge_pns_2013=/tmp/etl/br_ibge_pns_2013/parquet/microdata.parquet \
+		 /tmp/etl/br_ibge_pns_2013/data/variables_dictionary.txt
+
+br_ibge_pns_2019=/tmp/etl/br_ibge_pns_2019/parquet/microdata.parquet \
 		 /tmp/etl/br_ibge_pns_2019/data/variables_dictionary.txt
 
-br_ibge_pnadc_2022t3=/tmp/etl/br_ibge_pnadc_2022t3/data/microdata.parquet \
+br_ibge_pnadc_2022t3=/tmp/etl/br_ibge_pnadc_2022t3/parquet/microdata.parquet \
 		     /tmp/etl/br_ibge_pnadc_2022t3/data/variables_dictionary.txt
 
 # complete list of targets
-targets=$(br_ibge_pns_2019) $(br_ibge_pnadc_2022t3)
+targets=$(br_ibge_pns_2013) $(br_ibge_pns_2019) $(br_ibge_pnadc_2022t3)
 
 all: $(targets)
 
@@ -27,6 +30,15 @@ build: $(targets)
 		dadossurdos
 	@echo "Access RStudio web by visiting http://localhost:8787 ..."
 
+
+# download and process data from 'br_ibge_pns_2013'
+$(br_ibge_pns_2013): $(etl)/br_ibge_pns_2013/etl.org
+	docker run -it --rm \
+		--volume /tmp/:/tmp/ \
+		--volume $(etl)/:/etl/ \
+		--user ${uid}:${gid} \
+		$(etl_docker_image) \
+		sh -c "cd /etl/br_ibge_pns_2013 && sh etl.sh"
 
 # download and process data from 'br_ibge_pns_2019'
 $(br_ibge_pns_2019): $(etl)/br_ibge_pns_2019/etl.org
