@@ -30,9 +30,9 @@ COPY $host_git_repo/analyses/ .
 ENV data_folder=/tmp/etl
 
 # IBGE/PNS2019 processed data
-ENV br_ibge_pns_2019=$data_folder/br_ibge_pns_2019/data
-COPY $br_ibge_pns_2019/microdata.parquet $br_ibge_pns_2019/variables_dictionary.txt $br_ibge_pns_2019/
+ENV br_ibge_pns_2019=$data_folder/br_ibge_pns_2019/
+COPY $br_ibge_pns_2019 $br_ibge_pns_2019
 
 # IBGE/PNADC2022t3 processed data
-ENV br_ibge_pnadc_2022t3=$data_folder/br_ibge_pnadc_2022t3/data
-COPY $br_ibge_pnadc_2022t3/microdata.parquet $br_ibge_pnadc_2022t3/variables_dictionary.txt $br_ibge_pnadc_2022t3/
+ENV br_ibge_pnadc_2022t3=$data_folder/br_ibge_pnadc_2022t3/
+COPY $br_ibge_pnadc_2022t3 $br_ibge_pnadc_2022t3
