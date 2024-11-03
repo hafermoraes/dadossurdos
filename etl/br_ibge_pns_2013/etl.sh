@@ -13,6 +13,7 @@ vdict_url=ftp://ftp.ibge.gov.br/PNS/2013/Microdados/Documentacao/Dicionario_e_in
 src_dir=/tmp/etl/br_ibge_pns_2013
 raw_data=${src_dir}/raw
 proc_data=${src_dir}/data
+parq_data=${src_dir}/parquet
 
 create_temporary_directories(){
 
@@ -23,6 +24,9 @@ create_temporary_directories(){
     echo "DONE.\nCreating temporary directory for processed data at $proc_data..."
     rm -rf ${proc_data}
     mkdir -p ${proc_data}
+
+    rm -rf ${parq_data}
+    mkdir -p ${parq_data}
 
     echo "DONE."
 }
@@ -75,7 +79,7 @@ prepare_microdata_for_data_ingestion(){
 
     # from fixed width format to pipe (|) delimited text file
     cut \
-        --output-delimiter='|' \
+        --output-delimiter=',' \
         --characters=$CHARACTERS_ARG \
         ${raw_data}/PNS_2013.txt > \
         ${proc_data}/microdata.txt

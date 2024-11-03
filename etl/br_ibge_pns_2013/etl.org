@@ -21,8 +21,8 @@ vdict_url=ftp://ftp.ibge.gov.br/PNS/2013/Microdados/Documentacao/Dicionario_e_in
 src_dir=/tmp/etl/br_ibge_pns_2013
 raw_data=${src_dir}/raw
 proc_data=${src_dir}/data
+parq_data=${src_dir}/parquet
 #+end_src
-
 
 
 #+begin_src sh
@@ -35,6 +35,9 @@ create_temporary_directories(){
     echo "DONE.\nCreating temporary directory for processed data at $proc_data..."
     rm -rf ${proc_data}
     mkdir -p ${proc_data}
+
+    rm -rf ${parq_data}
+    mkdir -p ${parq_data}
 
     echo "DONE."
 }
@@ -146,11 +149,11 @@ var_dict <-
     ## delimitação dos campos (início-final) como argumento da função 'cut' chamada via shell
     characters = paste0(pos, "-", as.numeric(pos) + as.numeric(len) -1),
   ) %>%
-  transmute(part, module, var, q_code, q_desc, a_code, a_desc, characters)
+  transmute(part, module, q_code = var, q_desc, a_code, a_desc, characters)
 
 ## dicionário de variáveis
 var_dict %>%
-  select(part, module, var, q_code, q_desc, a_code, a_desc) %>%
+  select(part, module, q_code, q_desc, a_code, a_desc) %>%
   write_delim(
     file = paste0(proc_data, 'variables_dictionary.txt'),
     delim = '|',
@@ -171,7 +174,7 @@ var_dict %>%
 
 ## nomes das colunas dos microdados (necessário para os arquivos .parquet)
 var_dict %>%
-  select(var) %>%
+  select(q_code) %>%
   unique() %>%
   write_delim(
     file = paste0(proc_data, 'col_names.txt'),
@@ -206,7 +209,7 @@ prepare_microdata_for_data_ingestion(){
 
     # from fixed width format to pipe (|) delimited text file
     cut \
-        --output-delimiter='|' \
+        --output-delimiter=',' \
         --characters=$CHARACTERS_ARG \
         ${raw_data}/PNS_2013.txt > \
         ${proc_data}/microdata.txt
@@ -218,21 +221,14 @@ prepare_microdata_for_data_ingestion(){
 
 #+begin_src R :tangle ./gnur_transform_microdata_into_parquet.R
 ## Converte microdados do formato texto para o formato parquet usando library(arrow)
-library(arrow)
-library(readr)
+library(arrow)  # open_dataset, write_dataset
+library(readr)  # read_delim
+library(purrr)  # map
 
 src_dir <- '/tmp/etl/br_ibge_pns_2013/'
 raw_data <- paste0(src_dir, 'raw/')
 proc_data <- paste0(src_dir, 'data/')
-
-
-microdata <-
-  read_delim_arrow(
-    file = paste0(proc_data, 'microdata.txt'),
-    delim = '|',
-    col_names = FALSE,
-    as_data_frame = FALSE
-  )
+parq_data <- paste0(src_dir, 'parquet/')
 
 col_names <-
   read_delim(
@@ -240,13 +236,29 @@ col_names <-
     delim = '|',
     show_col_types = FALSE
   )
-
-names(microdata) <- col_names$var
-
-write_parquet(
-  microdata,
-  paste0(proc_data, 'microdata.parquet')
+## adaptado de https://stackoverflow.com/a/71305598
+csv_schema <- schema(
+  purrr::map( col_names$q_code, ~Field$create(name = .x, type = string()))
 )
+
+
+## leitura dos microdados delimitados por ',' via
+## pacote 'arrow'.
+microdata_pipe_delimited <-
+  open_dataset(
+    paste0(proc_data, 'microdata.txt'),
+    format="csv",
+    schema = csv_schema,
+    col_names = TRUE,
+    skip = 0
+  )
+
+## escrita dos microdados tratados em formato 'parquet'
+## para agilidade e menor espaço em disco
+  write_parquet(
+    microdata_pipe_delimited, 
+    sink = paste0(parq_data, 'microdata.parquet'),
+  )
 #+end_src
 
 
@@ -260,6 +272,30 @@ convert_microdata_to_parquet_using_arrow_and_GNU_R(){
     echo 'DONE.'
 }
 #+end_src
+
+#+begin_src R :eval no :tangle no
+library(arrow)  # open_dataset
+library(dplyr)  # %>%, group_by, count
+
+## pastas nas quais alocados os dados tratados e em formato parquet
+src_dir <- '/tmp/etl/br_ibge_pns_2013/'
+parq_data <- paste0(src_dir, 'parquet')
+
+## método japonês
+mdata <-
+  open_dataset(
+    list.files(
+      parq_data,
+      recursive = TRUE,
+      full.names = TRUE
+    )
+  )
+
+mdata %>% group_by(v0001) %>% count() %>% collect()
+
+
+#+end_src
+
 
 
 #+begin_src sh

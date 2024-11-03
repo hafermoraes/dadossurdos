@@ -67,11 +67,11 @@ var_dict <-
     ## delimitação dos campos (início-final) como argumento da função 'cut' chamada via shell
     characters = paste0(pos, "-", as.numeric(pos) + as.numeric(len) -1),
   ) %>%
-  transmute(part, module, var, q_code, q_desc, a_code, a_desc, characters)
+  transmute(part, module, q_code = var, q_desc, a_code, a_desc, characters)
 
 ## dicionário de variáveis
 var_dict %>%
-  select(part, module, var, q_code, q_desc, a_code, a_desc) %>%
+  select(part, module, q_code, q_desc, a_code, a_desc) %>%
   write_delim(
     file = paste0(proc_data, 'variables_dictionary.txt'),
     delim = '|',
@@ -92,7 +92,7 @@ var_dict %>%
 
 ## nomes das colunas dos microdados (necessário para os arquivos .parquet)
 var_dict %>%
-  select(var) %>%
+  select(q_code) %>%
   unique() %>%
   write_delim(
     file = paste0(proc_data, 'col_names.txt'),
