@@ -15,8 +15,28 @@ br_ibge_pns_2019=/tmp/etl/br_ibge_pns_2019/parquet/microdata.parquet \
 br_ibge_pnadc_2022t3=/tmp/etl/br_ibge_pnadc_2022t3/parquet/microdata.parquet \
 		     /tmp/etl/br_ibge_pnadc_2022t3/variables_dictionary.txt
 
+br_ibge_censo_2000=/tmp/etl/br_ibge_censo_2000/parquet/dom/$(wildcard *.parquet) \
+		   /tmp/etl/br_ibge_censo_2000/parquet/pes/$(wildcard *.parquet) \
+		   /tmp/etl/br_ibge_censo_2000/parquet/fami/$(wildcard *.parquet) \
+                   /tmp/etl/br_ibge_censo_2000/variables_dictionary.txt
+
+br_ibge_censo_2010=/tmp/etl/br_ibge_censo_2010/parquet/domi/$(wildcard *.parquet) \
+		   /tmp/etl/br_ibge_censo_2010/parquet/pess/$(wildcard *.parquet) \
+		   /tmp/etl/br_ibge_censo_2010/parquet/emig/$(wildcard *.parquet) \
+		   /tmp/etl/br_ibge_censo_2010/parquet/mort/$(wildcard *.parquet) \
+                   /tmp/etl/br_ibge_censo_2010/variables_dictionary.txt
+
+
+
 # complete list of targets
-targets=$(br_ibge_pns_2013) $(br_ibge_pns_2019) $(br_ibge_pnadc_2022t3)
+# targets=$(br_ibge_pns_2013) $(br_ibge_pns_2019) $(br_ibge_pnadc_2022t3) \
+#         $(br_ibge_censo_2000) $(br_igbe_censo_2010)
+
+targets=$(br_ibge_censo_2000)
+
+targets=$(br_igbe_censo_2010)
+
+
 
 all: $(targets)
 
@@ -57,5 +77,23 @@ $(br_ibge_pnadc_2022t3): $(etl)/br_ibge_pnadc_2022t3/etl.org
 		--user ${uid}:${gid} \
 		$(etl_docker_image) \
 		sh -c "cd /etl/br_ibge_pnadc_2022t3 && sh etl.sh"
+
+# download and process data from 'br_ibge_censo_2000'
+$(br_ibge_censo_2000): $(etl)/br_ibge_censo_2000/etl.org
+	docker run -it --rm \
+		--volume /tmp/:/tmp/ \
+		--volume $(etl)/:/etl/ \
+		--user ${uid}:${gid} \
+		$(etl_docker_image) \
+		sh -c "cd /etl/br_ibge_censo_2000 && sh etl.sh"
+
+# download and process data from 'br_ibge_censo_2010'
+$(br_ibge_censo_2010): $(etl)/br_ibge_censo_2010/etl.org
+	docker run -it --rm \
+		--volume /tmp/:/tmp/ \
+		--volume $(etl)/:/etl/ \
+		--user ${uid}:${gid} \
+		$(etl_docker_image) \
+		sh -c "cd /etl/br_ibge_censo_2010 && sh etl.sh"
 
 
