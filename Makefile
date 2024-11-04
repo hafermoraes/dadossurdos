@@ -47,7 +47,9 @@ build: $(targets)
 
 
 # download and process data from 'br_ibge_pns_2013'
-$(br_ibge_pns_2013): $(etl)/br_ibge_pns_2013/etl.org
+# '&' is for multiple grouped targets
+# (https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html)
+$(br_ibge_pns_2013) &: $(etl)/br_ibge_pns_2013/etl.org
 	docker run -it --rm \
 		--volume /tmp/:/tmp/ \
 		--volume $(etl)/:/etl/ \
@@ -56,7 +58,9 @@ $(br_ibge_pns_2013): $(etl)/br_ibge_pns_2013/etl.org
 		sh -c "cd /etl/br_ibge_pns_2013 && sh etl.sh"
 
 # download and process data from 'br_ibge_pns_2019'
-$(br_ibge_pns_2019): $(etl)/br_ibge_pns_2019/etl.org
+# '&' is for multiple grouped targets
+# (https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html)
+$(br_ibge_pns_2019) &: $(etl)/br_ibge_pns_2019/etl.org
 	docker run -it --rm \
 		--volume /tmp/:/tmp/ \
 		--volume $(etl)/:/etl/ \
@@ -65,7 +69,9 @@ $(br_ibge_pns_2019): $(etl)/br_ibge_pns_2019/etl.org
 		sh -c "cd /etl/br_ibge_pns_2019 && sh etl.sh"
 
 # download and process data from 'br_ibge_pnadc_2022t3'
-$(br_ibge_pnadc_2022t3): $(etl)/br_ibge_pnadc_2022t3/etl.org
+# '&' is for multiple grouped targets
+# (https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html)
+$(br_ibge_pnadc_2022t3) &: $(etl)/br_ibge_pnadc_2022t3/etl.org
 	docker run -it --rm \
 		--volume /tmp/:/tmp/ \
 		--volume $(etl)/:/etl/ \
@@ -74,7 +80,9 @@ $(br_ibge_pnadc_2022t3): $(etl)/br_ibge_pnadc_2022t3/etl.org
 		sh -c "cd /etl/br_ibge_pnadc_2022t3 && sh etl.sh"
 
 # download and process data from 'br_ibge_censo_2000'
-$(br_ibge_censo_2000): $(etl)/br_ibge_censo_2000/etl.org
+# '&' is for multiple grouped targets
+# (https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html)
+$(br_ibge_censo_2000) &: $(etl)/br_ibge_censo_2000/etl.org
 	docker run -it --rm \
 		--volume /tmp/:/tmp/ \
 		--volume $(etl)/:/etl/ \
@@ -83,7 +91,9 @@ $(br_ibge_censo_2000): $(etl)/br_ibge_censo_2000/etl.org
 		sh -c "cd /etl/br_ibge_censo_2000 && sh etl.sh"
 
 # download and process data from 'br_ibge_censo_2010'
-$(br_ibge_censo_2010): $(etl)/br_ibge_censo_2010/etl.org
+# '&' is for multiple grouped targets
+# (https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html)
+$(br_ibge_censo_2010) &: $(etl)/br_ibge_censo_2010/etl.org
 	docker run -it --rm \
 		--volume /tmp/:/tmp/ \
 		--volume $(etl)/:/etl/ \
