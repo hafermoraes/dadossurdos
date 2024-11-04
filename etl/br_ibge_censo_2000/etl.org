@@ -2772,7 +2772,7 @@ fetch_and_convert_microdata_to_parquet_format(){
                 # removidos, sem o que não é possível seguir com o tratamento
                 # dos microdados em sistemas operacionais livres como GNU/Linux
 
-                echo "    Revomendo caracteres especiais de ${f}..."
+                echo "    Removendo caracteres especiais de ${f}..."
                 sed -e 's/\r//g' ${f} | \
                     tr -d '\032' > \
                        /tmp/mdata
