@@ -15,28 +15,31 @@ br_ibge_pns_2019=/tmp/etl/br_ibge_pns_2019/parquet/microdata.parquet \
 br_ibge_pnadc_2022t3=/tmp/etl/br_ibge_pnadc_2022t3/parquet/microdata.parquet \
 		     /tmp/etl/br_ibge_pnadc_2022t3/variables_dictionary.txt
 
-br_ibge_censo_2000=/tmp/etl/br_ibge_censo_2000/parquet/dom/$(wildcard *.parquet) \
-		   /tmp/etl/br_ibge_censo_2000/parquet/pes/$(wildcard *.parquet) \
-		   /tmp/etl/br_ibge_censo_2000/parquet/fami/$(wildcard *.parquet) \
+br_ibge_censo_2000=$(wildcard /tmp/etl/br_ibge_censo_2000/parquet/dom/*.parquet) \
+		   $(wildcard /tmp/etl/br_ibge_censo_2000/parquet/pes/*.parquet) \
+		   $(wildcard /tmp/etl/br_ibge_censo_2000/parquet/fami/*.parquet) \
                    /tmp/etl/br_ibge_censo_2000/variables_dictionary.txt
 
-br_ibge_censo_2010=/tmp/etl/br_ibge_censo_2010/parquet/domi/$(wildcard *.parquet) \
-		   /tmp/etl/br_ibge_censo_2010/parquet/pess/$(wildcard *.parquet) \
-		   /tmp/etl/br_ibge_censo_2010/parquet/emig/$(wildcard *.parquet) \
-		   /tmp/etl/br_ibge_censo_2010/parquet/mort/$(wildcard *.parquet) \
+br_ibge_censo_2010=$(wildcard /tmp/etl/br_ibge_censo_2010/parquet/domi/*.parquet) \
+		   $(wildcard /tmp/etl/br_ibge_censo_2010/parquet/pess/*.parquet) \
+		   $(wildcard /tmp/etl/br_ibge_censo_2010/parquet/emig/*.parquet) \
+		   $(wildcard /tmp/etl/br_ibge_censo_2010/parquet/mort/*.parquet) \
                    /tmp/etl/br_ibge_censo_2010/variables_dictionary.txt
-
-
 
 # complete list of targets
 # targets=$(br_ibge_pns_2013) $(br_ibge_pns_2019) $(br_ibge_pnadc_2022t3) \
 #         $(br_ibge_censo_2000) $(br_igbe_censo_2010)
 
-targets=$(br_ibge_censo_2000)
+#targets=$(br_ibge_censo_2000)
 
 targets=$(br_igbe_censo_2010)
 
+censo2000_ufs=AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO
+censo2000_bases=dom pes fami
+censo2000=$(foreach base, $(censo2000_bases), $(foreach uf, $(censo2000_ufs), /tmp/etl/br_ibge_censo_2000/parquet/$(base)/$(uf).parquet))
 
+print:
+	@echo $(censo2000)
 
 all: $(targets)
 
