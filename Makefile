@@ -16,15 +16,17 @@ br_ibge_pns_2019=/tmp/etl/br_ibge_pns_2019/parquet/microdata.parquet \
 br_ibge_pnadc_2022t3=/tmp/etl/br_ibge_pnadc_2022t3/parquet/microdata.parquet \
 		     /tmp/etl/br_ibge_pnadc_2022t3/variables_dictionary.txt
 # Censo 2000
+c2000_path=/tmp/etl/br_ibge_censo_2000
 c2000_bases=dom pes fami
 c2000_ufs=AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO
-br_ibge_censo_2000=$(foreach base, $(c2000_bases), $(foreach uf, $(c2000_ufs), /tmp/etl/br_ibge_censo_2000/parquet/$(base)/$(uf).parquet))
-br_ibge_censo_2000+=/tmp/etl/br_ibge_censo_2000/variables_dictionary.txt
+br_ibge_censo_2000=$(foreach base, $(c2000_bases), $(foreach uf, $(c2000_ufs), $(c2000_path)/parquet/$(base)/$(uf).parquet))
+br_ibge_censo_2000+=$(c2000_path)/variables_dictionary.txt
 # Censo 2010
+c2010_path=/tmp/etl/br_ibge_censo_2010
 c2010_bases=domi pess emig mort
 c2010_ufs=AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO
-br_ibge_censo_2010=$(foreach base, $(c2010_bases), $(foreach uf, $(c2010_ufs), /tmp/etl/br_ibge_censo_2010/parquet/$(base)/$(uf).parquet))
-br_ibge_censo_2010+=/tmp/etl/br_ibge_censo_2010/variables_dictionary.txt
+br_ibge_censo_2010=$(foreach base, $(c2010_bases), $(foreach uf, $(c2010_ufs), $(c2010_path)/parquet/$(base)/$(uf).parquet))
+br_ibge_censo_2010+=$(c2010_path)/variables_dictionary.txt
 
 # complete list of targets
 targets=$(br_ibge_pns_2013) $(br_ibge_pns_2019) \
