@@ -27,15 +27,9 @@ br_ibge_censo_2010=$(foreach base, $(c2010_bases), $(foreach uf, $(c2010_ufs), /
 br_ibge_censo_2010+=/tmp/etl/br_ibge_censo_2010/variables_dictionary.txt
 
 # complete list of targets
-targets=$(br_ibge_pns_2013) $(br_ibge_pns_2019) $(br_ibge_pnadc_2022t3) \
-         $(br_ibge_censo_2000) $(br_igbe_censo_2010)
-
-#targets=$(br_ibge_censo_2000)
-
-#targets=$(br_igbe_censo_2010)
-
-print:
-	@echo $(targets)
+targets=$(br_ibge_pns_2013) $(br_ibge_pns_2019) \
+        $(br_ibge_pnadc_2022t3) \
+        $(br_ibge_censo_2000) $(br_ibge_censo_2010)
 
 all: $(targets)
 
