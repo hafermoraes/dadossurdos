@@ -29,10 +29,22 @@ COPY $host_git_repo/analyses/ .
 # Data Ingestion
 ENV data_folder=/tmp/etl
 
+# IBGE/PNS2013 processed data
+ENV br_ibge_pns_2013=$data_folder/br_ibge_pns_2013/
+COPY $br_ibge_pns_2013 $br_ibge_pns_2013
+
 # IBGE/PNS2019 processed data
-ENV br_ibge_pns_2019=$data_folder/br_ibge_pns_2019/data
-COPY $br_ibge_pns_2019/microdata.parquet $br_ibge_pns_2019/variables_dictionary.txt $br_ibge_pns_2019/
+ENV br_ibge_pns_2019=$data_folder/br_ibge_pns_2019/
+COPY $br_ibge_pns_2019 $br_ibge_pns_2019
 
 # IBGE/PNADC2022t3 processed data
-ENV br_ibge_pnadc_2022t3=$data_folder/br_ibge_pnadc_2022t3/data
-COPY $br_ibge_pnadc_2022t3/microdata.parquet $br_ibge_pnadc_2022t3/variables_dictionary.txt $br_ibge_pnadc_2022t3/
+ENV br_ibge_pnadc_2022t3=$data_folder/br_ibge_pnadc_2022t3/
+COPY $br_ibge_pnadc_2022t3 $br_ibge_pnadc_2022t3
+
+# IBGE/Censo2000 processed data
+ENV br_ibge_censo_2000=$data_folder/br_ibge_censo_2000/
+COPY $br_ibge_censo_2000 $br_ibge_censo_2000
+
+# IBGE/Censo2010 processed data
+ENV br_ibge_censo_2010=$data_folder/br_ibge_censo_2010/
+COPY $br_ibge_censo_2010 $br_ibge_censo_2010

@@ -65,24 +65,15 @@ var_dict <-
   mutate(
     var = tolower(var),
     ## delimitação dos campos (início-final) como argumento da função 'cut' chamada via shell
-    characters = paste0(pos, "-", as.numeric(pos) + as.numeric(len) -1),
-    ## corpo da chamada de criação da tabela (create table) contendo campo, tipo de dados e comentários
-    create_table_fields = paste0(
-      ## 4 espaços à esquerda
-      ## completa com espaço à direita para garantir comprimento uniforme de 10 caracteres
-      str_pad(string = tolower(var), width = 15, side = 'left', pad = ' '),
-      ## comentários de linha no script sql (tamanho do campo e enunciado da pergunta na pesquisa)
-      ifelse(var == 'vddata', " text  -- ", " text, -- "),
-      q_desc
-    )
+    characters = paste0(pos, "-", as.numeric(pos) + as.numeric(len) -1)
   ) %>%
-  transmute(part, module, var, q_code, q_desc, a_code, a_desc, characters, create_table_fields)
+  transmute(part, module, q_code = var, q_desc, a_code, a_desc, characters)
 
 ## dicionário de variáveis
 var_dict %>%
-  select(part, module, var, q_code, q_desc, a_code, a_desc) %>%
+  select(part, module, q_code, q_desc, a_code, a_desc) %>%
   write_delim(
-    file = paste0(proc_data, 'variables_dictionary.txt'),
+    file = paste0(src_dir, 'variables_dictionary.txt'),
     delim = '|',
     quote = 'none',
     col_names = TRUE
@@ -101,24 +92,11 @@ var_dict %>%
 
 ## nomes das colunas dos microdados (necessário para os arquivos .parquet)
 var_dict %>%
-  select(var) %>%
+  select(q_code) %>%
   unique() %>%
   write_delim(
     file = paste0(proc_data, 'col_names.txt'),
     delim = '',
     quote = 'none',
     col_names = TRUE
-  )
-
-
-## corpo da 'create table' contendo os nomes de coluna, tipo de dados e comentários com enunciado da pergunta da pns 2019
-var_dict %>%
-  as_tibble() %>%
-  select(create_table_fields) %>%
-  unique() %>%
-  write_delim(
-    file = paste0(proc_data, 'create_table_fields'),
-    delim='',
-    quote = 'none',
-    col_names = FALSE
   )

@@ -80,7 +80,11 @@ fetch_variables_dictionary(){
     rm -rf ${raw_data}/vdict.zip
 
     echo 'Removendo caracteres dos scripts SAS para melhor tratamento no R...'
-    find ${raw_data}/SAS -type f | rename 's/ /_/g'
+    # https://stackoverflow.com/a/1806950
+    for s in ${raw_data}/SAS/*; do
+        mv "$s" `echo $s | sed -e 's/ /_/g'`;
+    done
+
     # é necessário remover tabs (\t), aspas duplas, comentários (/* */) e cifrões ($)
     for f in $(find ${raw_data}/SAS -type f | grep sas); do
         cat ${f} | \
@@ -2696,7 +2700,7 @@ for (f in vdict_paths){
 
 vdict %>%
   write_delim(
-    file = paste0(base_dir, 'data/vdict.txt'),
+    file = paste0(base_dir, 'data/variables_dictionary.txt'),
     delim = '|',
     col_names = TRUE
   )
@@ -2935,10 +2939,9 @@ microdata_pipe_delimited <-
 
 ## escrita dos microdados tratados em formato 'parquet'
 ## para agilidade e menor espaço em disco
-  write_dataset(
+  write_parquet(
     microdata_pipe_delimited,
-    path = glue('{parq_data}/{base}/{uf}'),
-    format = 'parquet'
+    sink = glue('{parq_data}/{base}/{uf}.parquet')
   )
 #+end_src
 
@@ -3007,6 +3010,17 @@ mdata <-
   )
 #+end_src
 
+** limpeza dos passos intermediários
+
+#+begin_src sh
+remove_temporary_steps(){
+
+    echo "Removing the temporary intermediate files"
+    rm -rf ${raw_data}
+    rm -rf ${proc_data}
+    echo "DONE."
+}
+#+end_src
 
 * orquestração do tratamento dos microdados do censo
 
@@ -3020,6 +3034,8 @@ main(){
     parse_variables_dictionary_using_GNU_R
 
     fetch_and_convert_microdata_to_parquet_format
+
+    remove_temporary_steps
 
 }
 

@@ -34,7 +34,7 @@ for (f in vdict_paths){
 
 vdict %>%
   write_delim(
-    file = paste0(base_dir, 'data/vdict.txt'),
+    file = paste0(base_dir, 'data/variables_dictionary.txt'),
     delim = '|',
     col_names = TRUE
   )

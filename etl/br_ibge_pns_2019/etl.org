@@ -21,6 +21,7 @@ vdict_url=ftp://ftp.ibge.gov.br/PNS/2019/Microdados/Documentacao/Dicionario_e_in
 src_dir=/tmp/etl/br_ibge_pns_2019
 raw_data=${src_dir}/raw
 proc_data=${src_dir}/data
+parq_data=${src_dir}/parquet
 #+end_src
 
 
@@ -34,6 +35,7 @@ create_temporary_directories(){
     echo "DONE.\nCreating temporary directory for processed data at $proc_data..."
     rm -rf ${proc_data}
     mkdir -p ${proc_data}
+    mkdir -p ${parq_data}
 
     echo "DONE."
 }
@@ -143,24 +145,15 @@ var_dict <-
   mutate(
     var = tolower(var),
     ## delimitação dos campos (início-final) como argumento da função 'cut' chamada via shell
-    characters = paste0(pos, "-", as.numeric(pos) + as.numeric(len) -1),
-    ## corpo da chamada de criação da tabela (create table) contendo campo, tipo de dados e comentários
-    create_table_fields = paste0(
-      ## 4 espaços à esquerda
-      ## completa com espaço à direita para garantir comprimento uniforme de 10 caracteres
-      str_pad(string = tolower(var), width = 15, side = 'left', pad = ' '),
-      ## comentários de linha no script sql (tamanho do campo e enunciado da pergunta na pesquisa)
-      ifelse(var == 'vddata', " text  -- ", " text, -- "),
-      q_desc
-    )
+    characters = paste0(pos, "-", as.numeric(pos) + as.numeric(len) -1)
   ) %>%
-  transmute(part, module, var, q_code, q_desc, a_code, a_desc, characters, create_table_fields)
+  transmute(part, module, q_code = var, q_desc, a_code, a_desc, characters)
 
 ## dicionário de variáveis
 var_dict %>%
-  select(part, module, var, q_code, q_desc, a_code, a_desc) %>%
+  select(part, module, q_code, q_desc, a_code, a_desc) %>%
   write_delim(
-    file = paste0(proc_data, 'variables_dictionary.txt'),
+    file = paste0(src_dir, 'variables_dictionary.txt'),
     delim = '|',
     quote = 'none',
     col_names = TRUE
@@ -179,7 +172,7 @@ var_dict %>%
 
 ## nomes das colunas dos microdados (necessário para os arquivos .parquet)
 var_dict %>%
-  select(var) %>%
+  select(q_code) %>%
   unique() %>%
   write_delim(
     file = paste0(proc_data, 'col_names.txt'),
@@ -188,18 +181,6 @@ var_dict %>%
     col_names = TRUE
   )
 
-
-## corpo da 'create table' contendo os nomes de coluna, tipo de dados e comentários com enunciado da pergunta da pns 2019
-var_dict %>%
-  as_tibble() %>%
-  select(create_table_fields) %>%
-  unique() %>%
-  write_delim(
-    file = paste0(proc_data, 'create_table_fields'),
-    delim='',
-    quote = 'none',
-    col_names = FALSE
-  )
 #+end_src
 
 
@@ -207,8 +188,7 @@ var_dict %>%
 parse_variables_dictionary_using_GNU_R(){
 
     echo 'Parsing the variables dictionary using GNU R'
-    cp ./gnur_parse_variables_dictionary.R ${src_dir}/gnur_parse_variables_dictionary.R
-    R CMD BATCH --quiet --vanilla ${src_dir}/gnur_parse_variables_dictionary.R
+    R CMD BATCH --quiet --vanilla ./gnur_parse_variables_dictionary.R
     rm *.Rout
 
     echo 'DONE.'
@@ -226,7 +206,7 @@ prepare_microdata_for_data_ingestion(){
 
     # from fixed width format to pipe (|) delimited text file
     cut \
-        --output-delimiter='|' \
+        --output-delimiter=',' \
         --characters=$CHARACTERS_ARG \
         ${raw_data}/PNS_2019.txt > \
         ${proc_data}/microdata.txt
@@ -236,72 +216,18 @@ prepare_microdata_for_data_ingestion(){
 #+end_src
 
 
-#+begin_src sh
-prepare_data_ingestion_sql_query(){
-
-    echo "Preparing SQL script for creating the database schema and tables..."
-
-    query=${proc_data}/psql_create_tables.sql
-
-    cat > ${query} <<EOF
--- cria schema ~pns2019~ para a edição 2019 da PNS
-          create schema pns2019;
-
--- dicionário de dados (explicação de colunas e respostas)
--- drop table if exists ed2019.datadict;
-           create table pns2019.datadict (
-                        part text,
-                        module text,
-                        var text,
-                        q_code text,
-                        q_desc text,
-                        a_code text,
-                        a_desc text
-                        );
-
--- importa dicionário de dados brutos na tabela ~datadict~
-EOF
-
-    echo "copy pns2019.datadict from '${proc_data}/variables_dictionary.txt' delimiter '|' csv header;\n" >> ${query}
-
-    cat >> ${query} <<EOF
--- microdados separados por variavel
---   drop table if exists ed2019.microdata;
-           create table pns2019.microdata (
-EOF
-
-    cat ${proc_data}/create_table_fields >> ${query}
-
-    cat >> ${query} <<EOF
-);
-
--- importa microdados brutos na tabela microdata
-EOF
-
-    echo "copy pns2019.microdata from '${proc_data}/microdata.txt' delimiter '|' csv header;\n" >> ${query}
-
-    echo "DONE."
-}
-#+end_src
-
 
 #+begin_src R :tangle ./gnur_transform_microdata_into_parquet.R
 ## Converte microdados do formato texto para o formato parquet usando library(arrow)
-library(arrow)
-library(readr)
+library(arrow)  # open_dataset, write_dataset
+library(readr)  # read_delim
+library(purrr)  # map
 
 src_dir <- '/tmp/etl/br_ibge_pns_2019/'
 raw_data <- paste0(src_dir, 'raw/')
 proc_data <- paste0(src_dir, 'data/')
+parq_data <- paste0(src_dir, 'parquet/')
 
-
-microdata <-
-  read_delim_arrow(
-    file = paste0(proc_data, 'microdata.txt'),
-    delim = '|',
-    col_names = FALSE,
-    as_data_frame = FALSE
-  )
 
 col_names <-
   read_delim(
@@ -309,13 +235,29 @@ col_names <-
     delim = '|',
     show_col_types = FALSE
   )
-
-names(microdata) <- col_names$var
-
-write_parquet(
-  microdata,
-  paste0(proc_data, 'microdata.parquet')
+## adaptado de https://stackoverflow.com/a/71305598
+csv_schema <- schema(
+  purrr::map( col_names$q_code, ~Field$create(name = .x, type = string()))
 )
+
+
+## leitura dos microdados delimitados por ',' via
+## pacote 'arrow'.
+microdata_pipe_delimited <-
+  open_dataset(
+    paste0(proc_data, 'microdata.txt'),
+    format="csv",
+    schema = csv_schema,
+    col_names = TRUE,
+    skip = 0
+  )
+
+## escrita dos microdados tratados em formato 'parquet'
+## para agilidade e menor espaço em disco
+write_parquet(
+  microdata_pipe_delimited, 
+  sink = paste0(parq_data, 'microdata.parquet'),
+  )
 #+end_src
 
 
@@ -323,12 +265,24 @@ write_parquet(
 convert_microdata_to_parquet_using_arrow_and_GNU_R(){
 
     echo 'Converting the processed microdata to .parquet format using GNU R and arrow library...'
-    cp ./gnur_transform_microdata_into_parquet.R ${src_dir}/gnur_transform_microdata_into_parquet.R
-    R CMD BATCH --quiet --vanilla ${src_dir}/gnur_transform_microdata_into_parquet.R
+    R CMD BATCH --quiet --vanilla ./gnur_transform_microdata_into_parquet.R
     rm *.Rout
     echo 'DONE.'
 }
 #+end_src
+
+
+
+#+begin_src sh
+remove_temporary_steps(){
+
+    echo "Removing the temporary intermediate files"
+    rm -rf ${raw_data}
+    rm -rf ${proc_data}
+    echo "DONE."
+}
+#+end_src
+
 
 
 #+begin_src sh
@@ -346,7 +300,8 @@ main(){
 
     convert_microdata_to_parquet_using_arrow_and_GNU_R
 
-    prepare_data_ingestion_sql_query
+    remove_temporary_steps
+
 }
 
 main

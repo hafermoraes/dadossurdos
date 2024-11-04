@@ -51,7 +51,11 @@ fetch_variables_dictionary(){
     rm -rf ${raw_data}/vdict.zip
 
     echo 'Removendo caracteres dos scripts SAS para melhor tratamento no R...'
-    find ${raw_data}/SAS -type f | rename 's/ /_/g'
+    # https://stackoverflow.com/a/1806950
+    for s in ${raw_data}/SAS/*; do
+        mv "$s" `echo $s | sed -e 's/ /_/g'`;
+    done
+
     # é necessário remover tabs (\t), aspas duplas, comentários (/* */) e cifrões ($)
     for f in $(find ${raw_data}/SAS -type f | grep sas); do
         cat ${f} | \
@@ -235,6 +239,14 @@ fetch_and_convert_microdata_to_parquet_format(){
     rm -rf *.{Rout,out}
 }
 
+remove_temporary_steps(){
+
+    echo "Removing the temporary intermediate files"
+    rm -rf ${raw_data}
+    rm -rf ${proc_data}
+    echo "DONE."
+}
+
 main(){
 
     create_temporary_directories
@@ -244,6 +256,8 @@ main(){
     parse_variables_dictionary_using_GNU_R
 
     fetch_and_convert_microdata_to_parquet_format
+
+    remove_temporary_steps
 
 }
 
