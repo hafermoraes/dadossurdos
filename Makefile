@@ -7,24 +7,29 @@ etl_docker_image=rocker/tidyverse:4.4.1
 
 # individual targets
 # PNS 2013
-br_ibge_pns_2013=/tmp/etl/br_ibge_pns_2013/parquet/microdata.parquet \
-		 /tmp/etl/br_ibge_pns_2013/variables_dictionary.txt
+pns2013_path=/tmp/etl/br_ibge_pns_2013
+br_ibge_pns_2013=$(pns2013_path)/parquet/microdata.parquet \
+		 $(pns2013_path)/variables_dictionary.txt
 # PNS 2019
-br_ibge_pns_2019=/tmp/etl/br_ibge_pns_2019/parquet/microdata.parquet \
-		 /tmp/etl/br_ibge_pns_2019/variables_dictionary.txt
+pns2019_path=/tmp/etl/br_ibge_pns_2019
+br_ibge_pns_2019=$(pns2019_path)/parquet/microdata.parquet \
+		 $(pns2019_path)/variables_dictionary.txt
 # PNADC 2022/T3
-br_ibge_pnadc_2022t3=/tmp/etl/br_ibge_pnadc_2022t3/parquet/microdata.parquet \
-		     /tmp/etl/br_ibge_pnadc_2022t3/variables_dictionary.txt
+pnadc2022t3_path=/tmp/etl/br_ibge_pnadc_2022t3
+br_ibge_pnadc_2022t3=$(pnadc2022t3_path)/parquet/microdata.parquet \
+		     $(pnadc2022t3_path)/variables_dictionary.txt
 # Censo 2000
+c2000_path=/tmp/etl/br_ibge_censo_2000
 c2000_bases=dom pes fami
 c2000_ufs=AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO
-br_ibge_censo_2000=$(foreach base, $(c2000_bases), $(foreach uf, $(c2000_ufs), /tmp/etl/br_ibge_censo_2000/parquet/$(base)/$(uf).parquet))
-br_ibge_censo_2000+=/tmp/etl/br_ibge_censo_2000/variables_dictionary.txt
+br_ibge_censo_2000=$(foreach base, $(c2000_bases), $(foreach uf, $(c2000_ufs), $(c2000_path)/parquet/$(base)/$(uf).parquet))
+br_ibge_censo_2000+=$(c2000_path)/variables_dictionary.txt
 # Censo 2010
+c2010_path=/tmp/etl/br_ibge_censo_2010
 c2010_bases=domi pess emig mort
 c2010_ufs=AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP1 SP2_RM TO
-br_ibge_censo_2010=$(foreach base, $(c2010_bases), $(foreach uf, $(c2010_ufs), /tmp/etl/br_ibge_censo_2010/parquet/$(base)/$(uf).parquet))
-br_ibge_censo_2010+=/tmp/etl/br_ibge_censo_2010/variables_dictionary.txt
+br_ibge_censo_2010=$(foreach base, $(c2010_bases), $(foreach uf, $(c2010_ufs), $(c2010_path)/parquet/$(base)/$(uf).parquet))
+br_ibge_censo_2010+=$(c2010_path)/variables_dictionary.txt
 
 # complete list of targets
 targets=$(br_ibge_pns_2013) $(br_ibge_pns_2019) \
@@ -45,7 +50,9 @@ build: $(targets)
 
 
 # download and process data from 'br_ibge_pns_2013'
-$(br_ibge_pns_2013): $(etl)/br_ibge_pns_2013/etl.org
+# '&' is for multiple grouped targets
+# (https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html)
+$(br_ibge_pns_2013) &: $(etl)/br_ibge_pns_2013/etl.org
 	docker run -it --rm \
 		--volume /tmp/:/tmp/ \
 		--volume $(etl)/:/etl/ \
@@ -54,7 +61,9 @@ $(br_ibge_pns_2013): $(etl)/br_ibge_pns_2013/etl.org
 		sh -c "cd /etl/br_ibge_pns_2013 && sh etl.sh"
 
 # download and process data from 'br_ibge_pns_2019'
-$(br_ibge_pns_2019): $(etl)/br_ibge_pns_2019/etl.org
+# '&' is for multiple grouped targets
+# (https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html)
+$(br_ibge_pns_2019) &: $(etl)/br_ibge_pns_2019/etl.org
 	docker run -it --rm \
 		--volume /tmp/:/tmp/ \
 		--volume $(etl)/:/etl/ \
@@ -63,7 +72,9 @@ $(br_ibge_pns_2019): $(etl)/br_ibge_pns_2019/etl.org
 		sh -c "cd /etl/br_ibge_pns_2019 && sh etl.sh"
 
 # download and process data from 'br_ibge_pnadc_2022t3'
-$(br_ibge_pnadc_2022t3): $(etl)/br_ibge_pnadc_2022t3/etl.org
+# '&' is for multiple grouped targets
+# (https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html)
+$(br_ibge_pnadc_2022t3) &: $(etl)/br_ibge_pnadc_2022t3/etl.org
 	docker run -it --rm \
 		--volume /tmp/:/tmp/ \
 		--volume $(etl)/:/etl/ \
@@ -72,7 +83,9 @@ $(br_ibge_pnadc_2022t3): $(etl)/br_ibge_pnadc_2022t3/etl.org
 		sh -c "cd /etl/br_ibge_pnadc_2022t3 && sh etl.sh"
 
 # download and process data from 'br_ibge_censo_2000'
-$(br_ibge_censo_2000): $(etl)/br_ibge_censo_2000/etl.org
+# '&' is for multiple grouped targets
+# (https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html)
+$(br_ibge_censo_2000) &: $(etl)/br_ibge_censo_2000/etl.org
 	docker run -it --rm \
 		--volume /tmp/:/tmp/ \
 		--volume $(etl)/:/etl/ \
@@ -81,7 +94,9 @@ $(br_ibge_censo_2000): $(etl)/br_ibge_censo_2000/etl.org
 		sh -c "cd /etl/br_ibge_censo_2000 && sh etl.sh"
 
 # download and process data from 'br_ibge_censo_2010'
-$(br_ibge_censo_2010): $(etl)/br_ibge_censo_2010/etl.org
+# '&' is for multiple grouped targets
+# (https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html)
+$(br_ibge_censo_2010) &: $(etl)/br_ibge_censo_2010/etl.org
 	docker run -it --rm \
 		--volume /tmp/:/tmp/ \
 		--volume $(etl)/:/etl/ \
