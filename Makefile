@@ -7,14 +7,17 @@ etl_docker_image=rocker/tidyverse:4.4.1
 
 # individual targets
 # PNS 2013
-br_ibge_pns_2013=/tmp/etl/br_ibge_pns_2013/parquet/microdata.parquet \
-		 /tmp/etl/br_ibge_pns_2013/variables_dictionary.txt
+pns2013_path=/tmp/etl/br_ibge_pns_2013
+br_ibge_pns_2013=$(pns2013_path)/parquet/microdata.parquet \
+		 $(pns2013_path)/variables_dictionary.txt
 # PNS 2019
-br_ibge_pns_2019=/tmp/etl/br_ibge_pns_2019/parquet/microdata.parquet \
-		 /tmp/etl/br_ibge_pns_2019/variables_dictionary.txt
+pns2019_path=/tmp/etl/br_ibge_pns_2019
+br_ibge_pns_2019=$(pns2019_path)/parquet/microdata.parquet \
+		 $(pns2019_path)/variables_dictionary.txt
 # PNADC 2022/T3
-br_ibge_pnadc_2022t3=/tmp/etl/br_ibge_pnadc_2022t3/parquet/microdata.parquet \
-		     /tmp/etl/br_ibge_pnadc_2022t3/variables_dictionary.txt
+pnadc2022t3_path=/tmp/etl/br_ibge_pnadc_2022t3
+br_ibge_pnadc_2022t3=$(pnadc2022t3_path)/parquet/microdata.parquet \
+		     $(pnadc2022t3_path)/variables_dictionary.txt
 # Censo 2000
 c2000_path=/tmp/etl/br_ibge_censo_2000
 c2000_bases=dom pes fami
