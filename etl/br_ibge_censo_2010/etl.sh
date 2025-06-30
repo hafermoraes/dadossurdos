@@ -65,7 +65,7 @@ parse_variables_dictionary_using_GNU_R(){
 
     R CMD BATCH --quiet --vanilla ./gnur_parse_variables_dictionary.R
     
-    rm *.Rout
+    rm -rf *.Rout
 
 }
 
@@ -120,7 +120,7 @@ fetch_and_convert_microdata_to_parquet_format(){
     done
 
     # remove arquivos temporários do GNU R do diretório
-    rm *.{Rout,out}
+    rm -rf *.{Rout,out}
 }
 
 remove_temporary_steps(){

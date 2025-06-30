@@ -82,7 +82,7 @@ parse_variables_dictionary_using_GNU_R(){
     echo 'Consolidando os dicionários de variáveis tratadas em um único arquivo...'
     R CMD BATCH --quiet --vanilla ./gnur_aggregating_variables_dictionary.R
 
-    rm *.Rout
+    rm -rf *.Rout
 
 }
 
