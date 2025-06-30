@@ -32,11 +32,9 @@ br_ibge_censo_2010=$(foreach base, $(c2010_bases), $(foreach uf, $(c2010_ufs), $
 br_ibge_censo_2010+=$(c2010_path)/variables_dictionary.txt
 
 # complete list of targets
-# targets=$(br_ibge_pns_2013) $(br_ibge_pns_2019) \
-#         $(br_ibge_pnadc_2022t3) \
-#         $(br_ibge_censo_2000) $(br_ibge_censo_2010)
-
-targets=$(br_ibge_censo_2010)
+targets=$(br_ibge_pns_2013) $(br_ibge_pns_2019) \
+        $(br_ibge_pnadc_2022t3) \
+        $(br_ibge_censo_2000) $(br_ibge_censo_2010)
 
 all: $(targets)
 
@@ -47,6 +45,7 @@ build: $(targets)
 		--detach \
 		--publish 8787:8787 \
 		--env DISABLE_AUTH=true \
+		--volume ${HOME}/git/dadossurdos/analyses:/home/rstudio/analyses \
 		dadossurdos
 	@echo "Access RStudio web by visiting http://localhost:8787 ..."
 
