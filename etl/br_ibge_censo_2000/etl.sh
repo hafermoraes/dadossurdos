@@ -111,6 +111,13 @@ fetch_and_convert_microdata_to_parquet_format(){
             rm -rf $z
         done
 
+        if [ "$uf" = "RN" ]; then
+            echo "Ignorando duplicidade de PB (cod_uf == 25) no RN.zip..."
+            for dup in $(find ${raw_data}/ -print | grep -i txt | grep 25); do
+                rm -rf $dup
+            done
+        fi
+
         echo "Tratando as bases de ${uf}..."
 
         for b in ${base}; do
