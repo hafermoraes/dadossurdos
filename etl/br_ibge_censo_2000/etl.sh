@@ -104,6 +104,12 @@ fetch_and_convert_microdata_to_parquet_format(){
 
         echo "Removendo da pasta temporária o arquivo compactado ${uf}.zip..."
         rm -rf ${raw_data}/$uf.zip
+        
+        echo "Descompactando os arquivos zip dentro do arquivo ${uf}.zip..."
+        for z in $(find ${raw_data}/ -print | grep -i zip ); do
+            unzip -o $z -d ${raw_data}
+            rm -rf $z
+        done
 
         echo "Tratando as bases de ${uf}..."
 

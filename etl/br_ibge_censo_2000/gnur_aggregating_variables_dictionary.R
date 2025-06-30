@@ -6,11 +6,11 @@ library(readr)  # read_delim, write_delim
 library(dplyr)  # bind_rows
 library(tibble) # tribble
 
-base_dir <- '/tmp/etl/br_ibge_censo_2000/'
+base_dir <- '/tmp/etl/br_ibge_censo_2000'
 
 vdict_paths <-
   list.files(
-    path = base_dir,
+    path = paste0(base_dir,'/data'),
     pattern = 'files',
     ignore.case = TRUE,
     full.names = TRUE
@@ -32,9 +32,9 @@ for (f in vdict_paths){
   )
 }
 
-vdict %>%
+vdict %>% 
   write_delim(
-    file = paste0(base_dir, 'data/variables_dictionary.txt'),
+    file = paste0(base_dir, '/variables_dictionary.txt'),
     delim = '|',
     col_names = TRUE
   )
