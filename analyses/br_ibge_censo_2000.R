@@ -1,6 +1,5 @@
 
 library(censobr)
-
 pes <- read_population(year=2000)
 
 pes %>% head(10) %>% collect() %>% View
@@ -49,7 +48,7 @@ toc()
 
 
 sample <- pes %>%
-  transmute(areap,p001=as.numeric(p001)/1e8,v0401) %>%
+  transmute(areap=as.numeric(areap),p001=as.numeric(p001)/1e8,v0401=as.numeric(v0401)) %>%
   group_by(areap) %>%
   mutate(N=n()) %>%
   ungroup() %>%
@@ -62,3 +61,8 @@ svydesign_censo2000 <- svydesign(
   weights = ~p001,
   data = sample
 )
+
+
+## validação contra SIDRA/IBGE
+## https://sidra.ibge.gov.br/tabela/200#/n3/all/u/y/v/allxp/p/2000/c2/all/c1/0/c58/0/d/v93%200/l/v,p+c2+c1,t+c58/resultado
+svytable(formula=~v0401, design = svydesign_censo2000)
