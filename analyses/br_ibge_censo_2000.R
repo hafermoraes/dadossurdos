@@ -1,11 +1,20 @@
 
+library(censobr)
+
+pes <- read_population(year=2000)
+
 library(arrow)
 library(dplyr)
 library(tictoc)
 
-dom <- open_dataset(
-   "/tmp/etl/br_ibge_censo_2000/parquet/dom" 
+pes <- open_dataset(
+   "/tmp/etl/br_ibge_censo_2000/parquet/pes" 
 )
+
+pess <- open_dataset(
+  "/tmp/etl/br_ibge_censo_2010/parquet/pess" 
+) 
+
 
 tic()
 dom %>%
