@@ -17,7 +17,7 @@
 # Note: This rocker image contains all needed packages for etl and analyses purposes
 FROM rocker/tidyverse:4.4.1
 
-RUN Rscript -e "install.packages(c('survey', 'srvyr'))"
+RUN Rscript -e "install.packages(c('survey', 'srvyr', 'tictoc', 'censobr'))"
 
 WORKDIR /home/rstudio/
 
