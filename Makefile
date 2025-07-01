@@ -38,7 +38,7 @@ targets=$(br_ibge_pns_2013) $(br_ibge_pns_2019) \
 
 all: $(targets)
 
-# build Rstudio container when all sources are processed
+# build Rstudio container for analyses
 build: $(targets)
 	docker buildx build -t dadossurdos -f ${HOME}/git/dadossurdos/docker/Dockerfile /
 	docker run -it --rm \
@@ -49,6 +49,9 @@ build: $(targets)
 		dadossurdos
 	@echo "Access RStudio web by visiting http://localhost:8787 ..."
 
+# build container
+build: $(targets)
+	docker buildx build -t dadossurdos -f ${HOME}/git/dadossurdos/docker/Dockerfile /
 
 # download and process data from 'br_ibge_pns_2013'
 # '&' is for multiple grouped targets
