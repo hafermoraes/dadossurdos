@@ -47,22 +47,27 @@ toc()
 
 
 
+tic()
 sample <- pes %>%
   transmute(areap=as.numeric(areap),p001=as.numeric(p001)/1e8,v0401=as.numeric(v0401)) %>%
-  group_by(areap) %>%
-  mutate(N=n()) %>%
-  ungroup() %>%
+  ## group_by(areap) %>%
+  ## mutate(N=n()) %>%
+  ## ungroup() %>%
   collect()
+toc()
 
+tic()
 svydesign_censo2000 <- svydesign(
   ids = ~1,
-  strata = ~areap,
-  fpc= ~N,
+  ## strata = ~areap,
+  ## fpc= ~N,
   weights = ~p001,
   data = sample
 )
-
+toc()
 
 ## validação contra SIDRA/IBGE
 ## https://sidra.ibge.gov.br/tabela/200#/n3/all/u/y/v/allxp/p/2000/c2/all/c1/0/c58/0/d/v93%200/l/v,p+c2+c1,t+c58/resultado
+tic()
 svytable(formula=~v0401, design = svydesign_censo2000)
+toc()
