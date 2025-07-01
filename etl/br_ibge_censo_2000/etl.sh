@@ -182,7 +182,7 @@ fetch_and_convert_microdata_to_parquet_format(){
                 # variante com awk é muito mais rápida...
                 #   https://www.linuxquestions.org/questions/programming-9/shell-question-pad-end-of-each-line-with-spaces-to-%3D-80-chars-875082/
                 #
-                #   awk '{printf "%-170s\n", $1}' ${f} > /tmp/tmpfix
+                #   awk -F '|' '{printf "%-170s\n", $1}' ${f} > /tmp/tmpfix
                 #
 
                 if [ "$b" = "dom" ]; then
@@ -194,7 +194,7 @@ fetch_and_convert_microdata_to_parquet_format(){
 
                         echo "    Consertando linha a linha as ${line_count} linhas do txt original..."
 
-                        awk '{printf "%-170s\n", $1}' ${f} > /tmp/tmpfix
+                        awk -F '|' '{printf "%-170s\n", $1}' ${f} > /tmp/tmpfix
                         mv -f /tmp/tmpfix ${f}                        
                     fi
                 fi
@@ -208,7 +208,7 @@ fetch_and_convert_microdata_to_parquet_format(){
                         
                         echo "    Consertando linha a linha as ${line_count} linhas do txt original..."
 
-                        awk '{printf "%-118s\n", $1}' ${f} > /tmp/tmpfix
+                        awk -F '|' '{printf "%-118s\n", $1}' ${f} > /tmp/tmpfix
                         mv -f /tmp/tmpfix ${f}
                     fi
                 fi
@@ -221,7 +221,7 @@ fetch_and_convert_microdata_to_parquet_format(){
 
                         echo "    Consertando linha a linha as ${line_count} linhas do txt original..."
 
-                        awk '{printf "%-390s\n", $1}' ${f} > /tmp/tmpfix
+                        awk -F '|' '{printf "%-390s\n", $1}' ${f} > /tmp/tmpfix
                         mv -f /tmp/tmpfix ${f}
                         
                     fi
