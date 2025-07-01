@@ -7,7 +7,7 @@ library(tictoc)  # tempo de execução dos comandos
 ##========================================================
 
 library(censobr)
-pes <- read_population(year=2000)
+pes <- read_population(year=2000) %>% collect()
 
 tic()
 svycenso2000 <-
