@@ -24,7 +24,7 @@ WORKDIR /home/rstudio/
 ENV host_git_repo=/home/rmoraes/git/dadossurdos
 
 # build container with ./analyses folder into it
-COPY $host_git_repo/analyses/ .
+# COPY $host_git_repo/analyses/ .
 
 # Data Ingestion
 ENV data_folder=/tmp/etl
