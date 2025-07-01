@@ -32,7 +32,37 @@ for (f in vdict_paths){
   )
 }
 
-vdict %>% 
+
+
+vdict_pes <-
+  read_delim(
+    "/tmp/etl/br_ibge_censo_2000/data/vdict_qdesc_pes.txt",
+    delim="|",
+    show_col_types=FALSE
+  ) %>%
+  left_join( vdict, by=c("base","q_code"))
+
+vdict_dom <-
+  read_delim(
+    "/tmp/etl/br_ibge_censo_2000/data/vdict_qdesc_dom.txt",
+    delim="|",
+    show_col_types=FALSE
+  ) %>%
+  left_join( vdict, by=c("base","q_code"))
+
+vdict_fami <-
+  read_delim(
+    "/tmp/etl/br_ibge_censo_2000/data/vdict_qdesc_fami.txt",
+    delim="|",
+    show_col_types=FALSE
+  ) %>%
+  left_join( vdict, by=c("base","q_code"))
+
+bind_rows(
+  vdict_pes,
+  vdict_dom,
+  vdict_fami
+) %>%
   write_delim(
     file = paste0(base_dir, '/variables_dictionary.txt'),
     delim = '|',

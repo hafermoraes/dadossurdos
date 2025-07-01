@@ -43,7 +43,7 @@ input <-
     mun = 2                 # segunda coluna traz o nome do município
   ) %>%
   transmute(
-    base = 'pess',
+    base = 'pes',
     q_code = 'v4276',
     a_code = cod_7,
     a_desc = mun

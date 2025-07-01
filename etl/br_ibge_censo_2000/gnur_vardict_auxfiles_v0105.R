@@ -34,8 +34,8 @@ input <-
       'Arquivos Auxiliares/',
       'Divisao Territorial Brasileira.xls'
     ),                      # caminho até o arquivo
-    sheet = 'Subdistrito',     # aba no qual os dados estão disponíveis
-    range = 'A2:B9849',     # intervalo de células dos dados
+    sheet = 'Subdistrito',  # aba no qual os dados estão disponíveis
+    range = 'A2:B409',      # intervalo de células dos dados
     col_types = 'text',     # ignora tipos de dados
     col_names = FALSE       # ignora nomes de colunas
   ) %>%
@@ -50,7 +50,7 @@ input <-
   )
 
 expand_grid(
-  base = c('domi', 'pess', 'fami'),
+  base = c('dom', 'pes', 'fami'),
   input
 ) %>%
   write_delim(

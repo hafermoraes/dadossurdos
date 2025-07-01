@@ -47,7 +47,7 @@ input <-
     str_length(cod_3) == 3
   ) %>%
   transmute(
-    base = 'pess',
+    base = 'pes',
     q_code = 'v4451',
     a_code = cod_3,
     a_desc = nome
@@ -57,8 +57,8 @@ bind_rows(
   input,
   tribble(
     ~base,  ~q_code, ~a_code, ~a_desc,
-    'pess', 'v4451',   '927', 'OUTRAS OCUPACOES OU OCUPACOES MAL DEFINIDAS',
-    'pess', 'v4451',   '000', 'OUTRAS OCUPACOES OU OCUPACOES MAL DEFINIDAS'
+    'pes', 'v4451',   '927', 'OUTRAS OCUPACOES OU OCUPACOES MAL DEFINIDAS',
+    'pes', 'v4451',   '000', 'OUTRAS OCUPACOES OU OCUPACOES MAL DEFINIDAS'
   )
 ) %>%
   write_delim(

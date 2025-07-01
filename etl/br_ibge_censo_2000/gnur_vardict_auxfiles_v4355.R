@@ -45,7 +45,7 @@ input <-
     grepl(pattern = '[0-9]+', cod_2)
   ) %>%
   transmute(
-    base = 'pess',
+    base = 'pes',
     q_code = 'v4355',
     a_code = cod_2,
     a_desc = mun

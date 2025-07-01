@@ -50,7 +50,7 @@ input <-
   )
 
 expand_grid(
-  base = c('domi', 'pess', 'fami'),
+  base = c('dom', 'pes', 'fami'),
   input
 ) %>%
   write_delim(

@@ -51,7 +51,7 @@ input <-
   )
 
 expand_grid(
-  base = c('domi', 'fami'),
+  base = c('dom', 'fami'),
   q_code = c('v0103'),
   input
 ) %>%
@@ -65,7 +65,7 @@ expand_grid(
   )
 
 expand_grid(
-  base = c('pess'),
+  base = c('pes'),
   q_code = c('v1103'),
   input
 ) %>%

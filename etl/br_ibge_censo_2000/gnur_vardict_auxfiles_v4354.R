@@ -42,7 +42,7 @@ input <-
   rename(areadet = 1) %>%
   filter(!is.na(areadet)) %>%
   transmute(
-    base = 'pess',
+    base = 'pes',
     q_code = 'v4354',
     a_code = substr(areadet, start = 1, stop = 3),
     a_desc = substr(areadet, start = 4, stop = 1024),

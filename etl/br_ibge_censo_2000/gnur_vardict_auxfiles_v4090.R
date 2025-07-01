@@ -177,7 +177,7 @@ input <- tribble(
   )
 
 expand_grid(
-  base = 'pess',
+  base = 'pes',
   input
 ) %>%
   write_delim(

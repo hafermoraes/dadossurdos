@@ -127,7 +127,7 @@ output_domi <-
 output_domi %>%
   filter(qa=='q') %>%
   transmute(
-    base = 'domi',
+    base = 'dom',
     q_code,
     q_desc
   ) %>%
@@ -159,7 +159,7 @@ output_domi %>%
     !grepl(pattern = 'branc', a_code, ignore.case = TRUE)
   ) %>%
   transmute(
-    base = 'domi',
+    base = 'dom',
     q_code,
     a_code,
     a_desc
@@ -173,7 +173,7 @@ output_domi %>%
 
 tribble(
     ~base,   ~q_code, ~a_code, ~a_desc,
-    'domi',  'v0220',     '2',   'não',
+    'dom',  'v0220',     '2',   'não',
   ) %>%
   write_delim(
     file = paste0( proc_data, 'vdict_sasfiles.txt'),
@@ -285,7 +285,7 @@ output_pess <-
 output_pess %>%
   filter(qa=='q') %>%
   transmute(
-    base = 'pess',
+    base = 'pes',
     q_code,
     q_desc
   ) %>%
@@ -309,7 +309,7 @@ output_pess %>%
 ## vdict_sasfiles.txt
 tribble(
     ~base,   ~q_code, ~a_code, ~a_desc,
-    'pess',  'v0455',     '1',   'sim',
+    'pes',  'v0455',     '1',   'sim',
   ) %>%
   write_delim(
     file = paste0( proc_data, 'vdict_sasfiles.txt'),
@@ -326,7 +326,7 @@ output_pess %>%
     !grepl(pattern = 'branc|00', a_code, ignore.case = TRUE)
   ) %>%
   transmute(
-    base = 'pess',
+    base = 'pes',
     q_code,
     a_code,
     a_desc
