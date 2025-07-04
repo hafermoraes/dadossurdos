@@ -1,7 +1,8 @@
 library(dplyr)   # manipulação de dados
 library(survey)  # amostragem complexa
 library(tictoc)  # tempo de execução dos comandos
-library(arrow)
+library(tidyr)   # pivot_wider
+library(arrow)   # read_parquet, open_dataset
 
 br_ibge_pns_2019 <-
   read_parquet(
@@ -38,17 +39,29 @@ pns2019_posterior <- survey::postStratify(
 svytable(formula=~p027, design=subset(pns2019_posterior, c008 >= 18))/1e3
 
 
-library(tidyr)
+
 svytable(formula=~n001+c006, design=subset(pns2019_posterior, c008 >=18)) %>%
   as.data.frame() %>%
   mutate(
     tab7666 = case_when(
-      n001 %in% c(1,2) ~ 1,
+      n001 %in% c(1,2) ~ 3,
       n001 == 3 ~ 2,
-      n001 %in% c(4,5) ~ 3,
+      n001 %in% c(4,5) ~ 1,
     )
-    ,tab7666 = factor( tab7666, levels = 1:3, labels = c('Muito ruim e ruim','Regular','Muito bom e bom'))
-    ,c006 = factor( c006, levels = 1:2, labels = c('Masculino', 'Feminino'))
+    ,tab7666 = factor( 
+      tab7666, 
+      levels = 3:1, 
+      labels = c(
+        'Muito bom e bom',
+        'Regular',
+        'Ruim e Muito ruim'
+        )
+      )
+    ,c006 = factor(
+      c006, 
+      levels = 1:2, 
+      labels = c('Masculino', 'Feminino')
+      )
   ) %>%
   na.omit() %>%
   group_by(tab7666, c006) %>%
