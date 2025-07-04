@@ -39,7 +39,7 @@ svytable(formula=~p027, design=subset(pns2019_posterior, c008 >= 18))/1e3
 
 
 library(tidyr)
-round( svytable(formula=~n001+c006, design=subset(pns2019_posterior, c008 >=18))/1e3, 0) %>%
+svytable(formula=~n001+c006, design=subset(pns2019_posterior, c008 >=18)) %>%
   as.data.frame() %>%
   mutate(
     tab7666 = case_when(
@@ -52,5 +52,5 @@ round( svytable(formula=~n001+c006, design=subset(pns2019_posterior, c008 >=18))
   ) %>%
   na.omit() %>%
   group_by(tab7666, c006) %>%
-  summarise( n = sum(Freq) ) %>%
+  summarise( n = round(sum(Freq)/1e3,0) ) %>%
   pivot_wider(id_cols = tab7666, names_from = c006, values_from = n)
