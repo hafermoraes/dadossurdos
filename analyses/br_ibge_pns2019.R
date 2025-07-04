@@ -38,7 +38,8 @@ pns2019_posterior <- survey::postStratify(
 # https://sidra.ibge.gov.br/tabela/4394
 svytable(formula=~p027, design=subset(pns2019_posterior, c008 >= 18))/1e3
 
-
+# https://sidra.ibge.gov.br/tabela/7666#resultado
+# https://sidra.ibge.gov.br/tabela/7666
 
 svytable(formula=~n001+c006, design=subset(pns2019_posterior, c008 >=18)) %>%
   as.data.frame() %>%
