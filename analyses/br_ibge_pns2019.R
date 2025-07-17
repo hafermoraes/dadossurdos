@@ -68,3 +68,26 @@ svytable(formula=~n001+c006, design=subset(pns2019_posterior, c008 >=18)) %>%
   group_by(tab7666, c006) %>%
   summarise( n = round(sum(Freq)/1e3,0) ) %>%
   pivot_wider(id_cols = tab7666, names_from = c006, values_from = n)
+
+
+## matriz de modelo preditivo libras
+abt <- 
+  svytable(
+  formula=~v0001+c006+c008+c009+d001+c011+d00901+g058+g05801, 
+  design=pns2019_posterior
+  ) %>%
+  as.data.frame() %>% 
+  filter(Freq>0) %>%
+  group_by(across(-Freq)) %>%
+  summarise(n=sum(Freq)) %>%
+  arrange(desc(n)) 
+
+abt %>%
+  group_by(g05801) %>%
+  summarise(count=sum(n))
+
+library(readr)
+abt %>%
+  write_csv('analyses/libras_abt.csv')
+
+
