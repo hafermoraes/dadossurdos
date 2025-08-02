@@ -49,3 +49,13 @@ svytable(
 )
 toc()
 
+library(httr)
+resp <-
+  httr::GET(
+    "https://apisidra.ibge.gov.br/values/t/608/n1/all/v/allxp/p/all/c1/0/c2/all"
+    )
+
+resp$content %>%
+  rawToChar() %>%
+  jsonlite::fromJSON() %>%
+  select(D5N, V)
