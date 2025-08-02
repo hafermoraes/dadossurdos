@@ -1,6 +1,8 @@
-library(dplyr)   # manipulação de dados
-library(survey)  # amostragem complexa
-library(tictoc)  # tempo de execução dos comandos
+library(dplyr)    # manipulação de dados
+library(survey)   # amostragem complexa
+library(tictoc)   # tempo de execução dos comandos
+library(httr)     # GET
+library(jsonlite) # fromJSON
 
 ##========================================================
 ## Expansão/validação do Censo2000 usando dados brutos
@@ -21,9 +23,6 @@ sample <-
     v0010=as.numeric(v0010)/1e13, # peso do indivíduo
     v0601=as.numeric(v0601)       # sexo do indivíduo
   ) %>%
-  ## group_by(areap) %>%
-  ## mutate(N=n()) %>%
-  ## ungroup() %>%
   collect()
 toc()
 
@@ -49,9 +48,6 @@ svytable(
 )
 toc()
 
-
-library(httr)
-library(jsonlite)
 
 httr::GET(
   "https://apisidra.ibge.gov.br/values/t/608/n1/all/v/allxp/p/all/c1/0/c2/all"
