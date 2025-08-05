@@ -4,6 +4,8 @@ library(survey)   # svydesign, svytable
 library(arrow)    # open_dataset
 library(httr)     # GET
 library(jsonlite) # fromJSON
+library(xtable)
+library(scales)
 
 microdados <-
   open_dataset(
@@ -87,7 +89,6 @@ validacao <-
     sidra = number( sidra, big.mark = '.', accuracy = 1, decimal.mark = ',')
   ) 
 
-library(xtable)
 print(
   xtable(validacao, type = 'latex'),
   only.contents = TRUE,
@@ -95,5 +96,5 @@ print(
   include.colnames = FALSE,
   include.rownames = FALSE,
   comment = FALSE,
-  ## file = '/tmp/body.tex'
+  file = '/tmp/body.tex'
 )
