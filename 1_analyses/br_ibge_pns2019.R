@@ -73,8 +73,8 @@ svytable(formula=~n001+c006, design=subset(pns2019_posterior, c008 >=18)) %>%
   pivot_wider(names_from = tab7666) %>%
   mutate(Total=`Muito bom e bom` + `Ruim e Muito ruim` + Regular) %>%
   rename(sexo=name) %>%
-  pivot_longer(cols=-1) %>%
-  pivot_wider(id_cols=name, names_from = sexo, values_from = value)
+  pivot_longer(cols=-1, names_to = "aval_estado_saude") %>%
+  pivot_wider(id_cols=aval_estado_saude, names_from = sexo, values_from = value)
 
 
 ## matriz de modelo preditivo libras
