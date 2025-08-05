@@ -5,7 +5,7 @@ library(httr)     # GET
 library(jsonlite) # fromJSON
 
 ##========================================================
-## Expansão/validação do Censo2000 usando dados brutos
+## Expansão/validação do Censo2010 usando dados brutos
 ##========================================================
 
 library(arrow)

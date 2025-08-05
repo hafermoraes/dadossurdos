@@ -7,7 +7,10 @@ library(tictoc)  # tempo de execução dos comandos
 ##========================================================
 
 library(censobr)
-pes <- read_population(year=2000) %>% collect()
+pes <-
+  read_population(year=2000) %>%
+  rename_with(tolower) %>%
+  collect()
 
 tic()
 svycenso2000 <-
@@ -40,7 +43,8 @@ library(arrow)
 pes <-
   open_dataset(
     "/tmp/etl/br_ibge_censo_2000/parquet/pes" 
-  )
+  ) %>%
+  rename_with(tolower)
 
 ## pes %>% 
 ##   filter( v0412 %in% c('1', '2')) %>%
