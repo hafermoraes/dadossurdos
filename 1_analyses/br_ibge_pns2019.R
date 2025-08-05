@@ -67,7 +67,14 @@ svytable(formula=~n001+c006, design=subset(pns2019_posterior, c008 >=18)) %>%
   na.omit() %>%
   group_by(tab7666, c006) %>%
   summarise( n = round(sum(Freq)/1e3,0) ) %>%
-  pivot_wider(id_cols = tab7666, names_from = c006, values_from = n)
+  pivot_wider(id_cols = tab7666, names_from = c006, values_from = n) %>%
+  mutate(Total = Masculino + Feminino) %>%
+  pivot_longer(cols=-1) %>%
+  pivot_wider(names_from = tab7666) %>%
+  mutate(Total=`Muito bom e bom` + `Ruim e Muito ruim` + Regular) %>%
+  rename(sexo=name) %>%
+  pivot_longer(cols=-1) %>%
+  pivot_wider(id_cols=name, names_from = sexo, values_from = value)
 
 
 ## matriz de modelo preditivo libras
