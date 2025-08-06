@@ -1,22 +1,26 @@
-library(dplyr)    # %>%,  mutate, rename_with
+library(arrow)    # open_dataset, collect
+library(dplyr)    # |>,  mutate, transmute, rename_with
 library(tidyr)    # pivot_wider, pivot_longer
 library(survey)   # svydesign, svytable
-library(arrow)    # open_dataset
 library(httr)     # GET
 library(jsonlite) # fromJSON
-library(xtable)
-library(scales)
-
+library(xtable)   # xtable
+library(scales)   # number
+ 
 microdados <-
   open_dataset(
     "/tmp/etl/br_ibge_censo_2010/parquet/pess"
-  ) %>%
-  rename_with(tolower) %>%        # converte nomes de colunas para minúsculas
-  transmute(
-    v0011=as.numeric(v0011),      # area de ponderação
-    v0010=as.numeric(v0010)/1e13, # peso do indivíduo
-    v0601=as.numeric(v0601)       # sexo do indivíduo
-  ) %>%
+  ) |>
+  rename_with(tolower) |>  # converte nomes de colunas para minúsculas
+  mutate(
+    across(everything(), as.numeric),
+    v0010=v0010/1e13
+  ) |> 
+  select(
+    v0011,  # area de ponderação
+    v0010,  # peso amostral do indivíduo
+    v0601   # sexo do indivíduo
+  ) |>
   collect()
 
 svydesign_censo2010 <-
@@ -96,5 +100,5 @@ print(
   include.colnames = FALSE,
   include.rownames = FALSE,
   comment = FALSE,
-  file = '/tmp/body.tex'
+  file = './svydesign_validation.tex'
 )
