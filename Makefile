@@ -45,7 +45,8 @@ analyze: $(targets)
 		--detach \
 		--publish 8787:8787 \
 		--env DISABLE_AUTH=true \
-		--volume ${HOME}/git/dadossurdos/analyses/:/home/rstudio/analyses/ \
+		--volume ${HOME}/git/dadossurdos/1_analyses/:/home/rstudio/1_analyses/ \
+		--volume ${HOME}/git/dadossurdos/0_svydesigns/:/home/rstudio/0_svydesigns/ \
 		dadossurdos
 	@echo "Access RStudio web by visiting http://localhost:8787 ..."
 
