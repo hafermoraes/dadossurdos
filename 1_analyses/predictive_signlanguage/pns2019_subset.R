@@ -59,9 +59,9 @@ abt <-
   summarise(n=sum(n)) |>
   arrange(desc(n))
 
-abt |>
-  group_by(g05801) |>
-  summarise(count=sum(n))
+## abt |>
+##   group_by(g05801) |>
+##   summarise(count=sum(n))
 
 
 pns2019_subset <-
@@ -152,7 +152,6 @@ pns2019_subset <-
   arrange(desc(n)) |>
   ungroup() |>
   rename(case_weights = n)
-
 
 
 

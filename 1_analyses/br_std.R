@@ -274,4 +274,4 @@ bind_rows(
   ) |>
   arrange(nome_harmonizado) |>
   View
-  write_csv('./equiv.csv')
+  write_csv('/tmp/equiv.csv')
