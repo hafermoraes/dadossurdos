@@ -216,8 +216,6 @@ wflow_set_fit <-
     resamples = libras_folds
   )
 
-# passo 9: diagnóstico gráfico
-autoplot(wflow_set_fit)
 
 # passo 9: selecção do melhor modelo
 wflow_set_fit |>
@@ -231,8 +229,22 @@ wflow_set_fit |>
   ggpairs() +
   theme(axis.text.x = element_text(angle = 45, vjust = .8, hjust = .9))
 
+# passo 10: diagnóstico gráfico (autoplot)
+autoplot(wflow_set_fit)
+
+# passo 11: diagnóstico gráfico (autoplot modificado)
+metric <- 'accuracy'
+autoplot(
+  wflow_set_fit,
+  rank_metric = metric,  
+  metric = metric,       
+  select_best = TRUE    
+) +
+  geom_text(aes(y = mean -1/10, label = wflow_id), angle = 90, hjust = 1) +
+  theme(legend.position = "none")
+
 # passo 10: 
 wflow_set_fit |>
-  collect_metrics()
+  collect_metrics() 
 
 # passo 11:
