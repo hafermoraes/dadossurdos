@@ -2,12 +2,13 @@ library(dplyr)   # manipulação de dados
 library(survey)  # amostragem complexa
 library(tictoc)  # tempo de execução dos comandos
 library(tidyr)   # pivot_wider
+library(readr)   # write_csv
 library(arrow)   # read_parquet, open_dataset, to_duckdb, collect
 library(duckdb)
 
 microdados <-
   open_dataset(
-    "/tmp/etl/br_ibge_pns_2019/parquet" 
+    "/tmp/etl/br_ibge_pns_2019/parquet"
   ) |>
   rename_with(tolower) |>
   filter(v0015 == '01', !is.na(v0015), m001 == '1', !is.na(m001)) |>
@@ -24,49 +25,49 @@ options(survey.lonely.psu="adjust")
 options(survey.adjust.domain.lonely=TRUE)
 
 pns2019_prior <- survey::svydesign(
-  ids = ~upa_pns, 
-  strata = ~v0024, 
-  data = microdados, 
-  weights = ~v0029, 
+  ids = ~upa_pns,
+  strata = ~v0024,
+  data = microdados,
+  weights = ~v0029,
   nest = TRUE
 )
 
 # Post-stratification
 popc.types <-
-  data.frame( 
-    v00293=as.character(unique(microdados$v00293)), 
+  data.frame(
+    v00293=as.character(unique(microdados$v00293)),
     Freq=as.numeric(unique(microdados$v00292))
   )
 popc.types <- popc.types[order(popc.types$v00293),]
 pns2019_posterior <-
   survey::postStratify(
-    design=pns2019_prior, 
-    strata=~v00293, 
+    design=pns2019_prior,
+    strata=~v00293,
     population=popc.types
   )
 
 
 
 ## matriz de modelo preditivo libras
-abt <- 
+abt <-
   svytable(
-  formula=~v0001+c006+c008+c009+d001+c011+d00901+g058+g05801, 
+  formula=~v0001+c006+c008+c009+d001+c011+d00901+g058+g05801,
   design=pns2019_posterior
   ) |>
   as_tibble() |>
   filter(n>0) |>
   group_by(across(-n)) |>
   summarise(n=sum(n)) |>
-  arrange(desc(n))
+  arrange(desc(n)) |>
+  ungroup()
 
 ## abt |>
 ##   group_by(g05801) |>
 ##   summarise(count=sum(n))
 
 
-pns2019_subset <-
+pns2019_modelmatrix <-
   abt |>
-  ungroup() |>
   transmute(
     # unidade da federação
     cod_uf = v0001,
@@ -76,13 +77,13 @@ pns2019_subset <-
     sexo = case_when(
       c006 == '1' ~ 'masculino',
       c006 == '2' ~ 'feminino',
-      TRUE ~ 'outros'
+      TRUE ~ NA
     ),
     # Sabe ler e escrever
     alfabetizado = case_when(
       d001 == '1' ~ 'sim',
       d001 == '2' ~ 'nao',
-      TRUE ~ 'outros'
+      TRUE ~ NA
     ),
     # Qual é o estado civil de ___?
     estado_civil = case_when(
@@ -90,26 +91,26 @@ pns2019_subset <-
       c011 == '2' ~ 'separado',  # Divorciado(a) ou desquitado(a) ou separado(a) judicialmente
       c011 == '3' ~ 'viuvo',     # Viúvo(a)
       c011 == '4' ~ 'solteiro',  # Solteiro(a)
-      TRUE ~ 'outros'
+      TRUE ~ NA
     ),
     # Qual foi o curso mais elevado que ___frequentou
     instrucao = case_when(
-      d00901 == '5' ~ 'fundamental', # Antigo primário (elementar)
-      d00901 == '6' ~ 'fundamental', # Antigo ginasial (médio 1º ciclo)
-      d00901 == '7' ~ 'fundamental', # Regular do ensino fundamental ou do 1º grau
-      d00901 == '8' ~ 'fundamental', # Educação de jovens e adultos (EJA) ou supletivo do ensino fundamental
-      d00901 == '9' ~ 'medio',       # Antigo científico, clássico etc. (médio 2º ciclo)
+      d00901 == '05' ~ 'fundamental', # Antigo primário (elementar)
+      d00901 == '06' ~ 'fundamental', # Antigo ginasial (médio 1º ciclo)
+      d00901 == '07' ~ 'fundamental', # Regular do ensino fundamental ou do 1º grau
+      d00901 == '08' ~ 'fundamental', # Educação de jovens e adultos (EJA) ou supletivo do ensino fundamental
+      d00901 == '09' ~ 'medio',       # Antigo científico, clássico etc. (médio 2º ciclo)
       d00901 == '10' ~ 'medio',      # Regular do ensino médio ou do 2º grau
       d00901 == '11' ~ 'medio',      # Educação de jovens e adultos (EJA) ou supletivo do ensino médio
       d00901 == '12' ~ 'superior',   # Superior – graduação
       d00901 == '13' ~ 'superior',   # Especialização de nível superior (duração mínima de 360 horas)
       d00901 == '14' ~ 'superior',   # Mestrado
       d00901 == '15' ~ 'superior',   # Doutorado
-      d00901 == '1' ~ 'outros',      # Creche
-      d00901 == '2' ~ 'outros',      # Pré-escola
-      d00901 == '3' ~ 'outros',      # Classe de alfabetização – CA
-      d00901 == '4' ~ 'outros',      # Alfabetização de jovens e adultos
-      TRUE ~ 'outros' 
+      d00901 == '01' ~ 'outros',      # Creche
+      d00901 == '02' ~ 'outros',      # Pré-escola
+      d00901 == '03' ~ 'outros',      # Classe de alfabetização – CA
+      d00901 == '04' ~ 'outros',      # Alfabetização de jovens e adultos
+      TRUE ~ NA
     ),
     # cor ou raça
     cor_raca = case_when(
@@ -119,7 +120,7 @@ pns2019_subset <-
       c009 == '4' ~ 'parda',
       c009 == '5' ~ 'indigena',
       c009 == '9' ~ 'outros',
-      TRUE ~ 'outros'
+      TRUE ~ NA
       ),
     # ___ tem dificuldade permanente de ouvir? (Para moradores com 5 anos ou mais de idade.)OU___ tem dificuldade permanente de ouvir sons como vozes ou música? (Para moradores com 2 a 4 anos de idade.)
     dif_ouvir = case_when(
@@ -137,7 +138,7 @@ pns2019_subset <-
     #   g047 == '2' ~ 'alguma',    # Sim, alguma dificuldade
     #   g047 == '1' ~ 'nenhuma',   # Não, nenhuma dificuldade
     #   g047 == '9' ~ 'ignorado',  # ignorado
-    #   TRUE ~ 'outros'
+    #   TRUE ~ NA
     # ),
     # Sabe usar a Língua Brasileira de Sinais – Libras? (Para moradores com 5 anos ou mais de idade.)
     libras = case_when(
@@ -154,8 +155,76 @@ pns2019_subset <-
   rename(case_weights = n)
 
 
+pns2019_modelmatrix |> glimpse()
 
-library(readr)
-pns2019_subset |>
-  write_csv('1_analyses/pns2019_subset.csv')
+## cor_raca com categorias muito pequenas --> colapsar amarela+indigena+outros em 'outros'
+pns2019_modelmatrix |>
+  group_by(cor_raca) |>
+  summarise(count=sum(case_weights)) |>
+  mutate(pct=count/sum(count))
 
+## sexo
+pns2019_modelmatrix |>
+  group_by(sexo) |>
+  summarise(count=sum(case_weights)) |>
+  mutate(pct=count/sum(count))
+
+## alfabetizado
+pns2019_modelmatrix |>
+  group_by(alfabetizado) |>
+  summarise(count=sum(case_weights)) |>
+  mutate(pct=count/sum(count))
+
+## instrucao
+pns2019_modelmatrix |>
+  group_by(instrucao) |>
+  summarise(count=sum(case_weights)) |>
+  mutate(pct=count/sum(count))
+
+## estado_civil (juntar separado+viuvo)
+pns2019_modelmatrix |>
+  group_by(estado_civil) |>
+  summarise(count=sum(case_weights)) |>
+  mutate(pct=count/sum(count))
+
+## dif_ouvir
+pns2019_modelmatrix |>
+  group_by(dif_ouvir) |>
+  summarise(count=sum(case_weights)) |>
+  mutate(pct=count/sum(count))
+
+## libras
+pns2019_modelmatrix |>
+  group_by(libras) |>
+  summarise(count=sum(case_weights)) |>
+  mutate(pct=count/sum(count))
+
+
+# importação das unidades da federação
+uf <-
+  read_delim(
+    '/tmp/etl/br_ibge_pns_2019/variables_dictionary.txt',
+    delim='|'
+  ) |>
+  filter( q_code == 'v0001') |>
+  transmute( cod_uf = a_code, uf = a_desc)
+
+
+pns2019_modelmatrix |>
+  mutate(
+    cor_raca = case_when(
+      cor_raca == 'amarela' ~ 'outros',
+      cor_raca == 'indigena' ~ 'outros',
+      TRUE ~ as.character(cor_raca)
+    ),
+    estado_civil = case_when(
+      estado_civil == 'separado' ~ 'outros',
+      estado_civil == 'viuvo' ~ 'outros',
+      TRUE ~ as.character(estado_civil)
+    )
+  ) |>
+  left_join(uf, by=c('cod_uf'), keep = FALSE) |>
+  select(-cod_uf) |>
+  write_csv(
+    '1_analyses/predictive_signlanguage/pns2019_modelmatrix.csv'
+  )

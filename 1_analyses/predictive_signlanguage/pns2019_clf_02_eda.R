@@ -4,24 +4,11 @@ library(readr)   # read_csv
 library(tidyr)   # pivot_longer
 library(ggplot2) # ggplot
 
-# importação das unidades da federação
-uf <-
-  read_delim(
-    '/tmp/etl/br_ibge_pns_2019/variables_dictionary.txt',
-    delim='|'
-  ) |>
-  filter( q_code == 'v0001') |>
-  transmute( cod_uf = as.numeric(a_code), uf = a_desc)
-
-uf |> glimpse()
-
-# importação dos dados da pns2019
+# importação da matriz de modelo
 rawdata <-
   read_csv(
-    '1_analyses/predictive_signlanguage/pns2019_subset.csv'
+    '1_analyses/predictive_signlanguage/pns2019_modelmatrix.csv'
   ) |> 
-  left_join(uf, by=c('cod_uf'), keep = FALSE) |>
-  select(-cod_uf) |>
   mutate(across(where(is.character), as.factor))
 
 # checagem dos dados importados
@@ -87,12 +74,4 @@ ggplot(data = rawdata) +
   geom_density( aes(x=idade, fill = libras), alpha = 0.2) + 
   facet_wrap( ~ dif_ouvir)
 
-
-# df_long <-
-#   rawdata |>
-#   pivot_longer(
-#     !libras, 
-#     names_to = 'features', 
-#     values_to = 'values'
-#     )
 
