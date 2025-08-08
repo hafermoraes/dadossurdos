@@ -35,8 +35,7 @@ libras_folds <- vfold_cv(libras_train, strata = libras)
 # passo 4: transformação das variáveis independentes
 recipe_basic <-
   recipe(libras ~ ., data = libras) %>%
-  step_unknown(all_nominal_predictors()) %>%
-  step_YeoJohnson(all_numeric_predictors()) %>%
+  step_impute_knn(all_predictors(), neighbors = 3) %>%
   step_normalize(all_numeric_predictors()) %>%
   step_dummy(all_nominal_predictors())
 
@@ -48,7 +47,7 @@ spec_bt <-
   boost_tree("classification", mtry = tune(), learn_rate = tune(), trees = 500)
 
 spec_nn <-
-  bag_mlp("classification", hidden_units = tune(), penalty = tune())
+  bag_mlp("classification")
 
 # passo 6: criação dos fluxos de trabalho
 wflow_set <- 
@@ -89,3 +88,9 @@ wflow_set_fit %>%
   select(-c(wflow_id, .config)) %>%
   ggpairs() +
   theme(axis.text.x = element_text(angle = 45, vjust = .8, hjust = .9))
+
+# passo 10: 
+wflow_set_fit %>%
+  collect_metrics()
+
+# passo 11:
