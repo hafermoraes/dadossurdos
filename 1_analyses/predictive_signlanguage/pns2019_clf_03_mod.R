@@ -141,77 +141,44 @@ model_bc5 <-
   set_engine("C5.0") |>
   set_mode("classification") 
 
-# RuleFit models via xrf
-model_rulefit <-
-  rule_fit(
-    mtry = numeric(1),
-    trees = integer(1),
-    min_n = integer(1),
-    tree_depth = integer(1),
-    learn_rate = numeric(1),
-    loss_reduction = numeric(1),
-    sample_size = numeric(1),
-    penalty = numeric(1)
-  ) |>
-  set_engine("xrf") |>
-  set_mode("classification") |>
-  translate()
-
-# # nearest neighbor
-# install.packages('kknn')
-# library('kknn')
-# model_knn <-
-#   nearest_neighbor(
-#     neighbors = integer(1),
-#     weight_func = character(1),
-#     dist_power = double(1)
-#   ) |>
-#   set_engine("kknn") |>
-#   set_mode("classification") |>
-#   translate()
-
-# support vector machines
+# support vector machines via kernlab
 model_svm <-
   svm_linear(
-    cost = double(1)
+    cost = 1
   ) |>
-  set_engine("LiblineaR") |>
-  set_mode("classification") |>
-  translate()
+  set_engine("kernlab") |>
+  set_mode("classification") 
   
 # random forest via ranger
 model_rf <-
   rand_forest(
-    mtry = integer(1),
-    trees = integer(1),
-    min_n = integer(1)
+    # mtry = integer(1),
+    # trees = integer(1),
+    # min_n = integer(1)
   ) |>
   set_engine("ranger") |>
-  set_mode("classification") |>
-  translate()
+  set_mode("classification") 
 
 # naive bayes
 model_nb <-
-  naive_Bayes(smoothness = numeric(0), Laplace = numeric(0)) |>
-  set_engine("naivebayes") |>
-  translate()
+  naive_Bayes(
+    # smoothness = numeric(0), Laplace = numeric(0)
+  ) |>
+  set_engine("naivebayes")
 
 models <-
   list(
-      # model_null = model_null,
-      # model_logres = model_lr,
-      # model_mars = model_mars,
-      # model_mlp = model_mlp,
-      # model_cb = model_cb,
-      # model_lgb = model_lgb,
-      # model_xgb = model_xgb,
+      model_null = model_null,
+      model_logres = model_lr,
+      model_mars = model_mars,
+      model_mlp = model_mlp,
+      model_lgb = model_lgb,
+      model_xgb = model_xgb,
       model_dt = model_dt,
-      model_bc5 = model_bc5
-      # model_rulefit = model_rulefit,
-      # model_knn = model_knn,
-      # model_svm = model_svm,
-      # model_rf = model_rf,
-      # model_nb = model_nb
+      model_bc5 = model_bc5,
+      model_svm = model_svm,
+      model_rf = model_rf,
+      model_nb = model_nb
     )
 
 # passo 6: criação dos fluxos de trabalho
