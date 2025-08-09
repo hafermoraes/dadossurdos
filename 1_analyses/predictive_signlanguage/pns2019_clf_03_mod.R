@@ -26,6 +26,7 @@ library(tidymodels) # initial_splits, train, test
 library(themis)     # step_downsample
 library(stringr)    # str_remove_all
 library(bonsai)
+library(discrim)
 library(finetune)
 library(doParallel)
 
@@ -164,17 +165,16 @@ model_nb <-
 
 models <-
   list(
-      # model_null = model_null,
-      # model_logres = model_lr,
-      # model_mars = model_mars,
-      # model_mlp = model_mlp,
+      model_null = model_null,
+      model_logres = model_lr,
+      model_mlp = model_mlp,
       model_lgb = model_lgb,
-      model_xgb = model_xgb,
-      model_dt = model_dt,
+      model_xgb = model_xgb
+      # model_dt = model_dt,
       # model_bc5 = model_bc5,
       # model_svm = model_svm,
-      model_rf = model_rf,
-      model_nb = model_nb
+      # model_rf = model_rf,
+      # model_nb = model_nb
     )
 
 # passo 6: criação dos fluxos de trabalho
@@ -209,8 +209,8 @@ m_set <-
 
 # passo -8: finetune + racing
 ## https://finetune.tidymodels.org/reference/tune_race_anova.html
-cores <- parallel::detectCores(logical = FALSE)
-cl <- makePSOCKcluster(cores)
+# cores <- parallel::detectCores(logical = FALSE)
+# cl <- makePSOCKcluster(cores)
 
 ## https://www.tmwr.org/workflow-sets#racing-example
 race_ctrl <-
@@ -227,17 +227,17 @@ race_results <-
     seed = 1503,
     resamples = libras_folds,
     grid = 25,
-    control = race_ctrl
+    control = race_ctrl,
+    verbose = TRUE
   )
 
 autoplot(
   race_results,
   rank_metric = "roc_auc",  
   metric = "roc_auc",       
-  select_best = TRUE    
+  select_best = FALSE
 ) +
-  geom_text(aes(y = mean - 1/2, label = wflow_id), angle = 90, hjust = 1) +
-  lims(y = c(3.0, 9.5)) +
+  geom_text(aes(y = mean - 1/7, label = wflow_id), angle = 90, hjust = 1) +
   theme(legend.position = "none")
 
 # passo 8: ajuste dos modelos
