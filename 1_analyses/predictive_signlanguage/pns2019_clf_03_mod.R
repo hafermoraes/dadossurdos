@@ -7,7 +7,7 @@
 library(readr)      # read_csv
 library(dplyr)      # |>, mutate, glimpse
 library(tidymodels) # initial_splits, train, test
-library(themis)     # step_smote
+library(themis)     # step_upsample
 library(stringr)
 
 # packs <- c(
@@ -171,15 +171,15 @@ model_nb <-
 
 models <-
   list(
-      model_null = model_null,
-      model_logres = model_lr,
-      model_mars = model_mars,
-      model_mlp = model_mlp,
+      # model_null = model_null,
+      # model_logres = model_lr,
+      # model_mars = model_mars,
+      # model_mlp = model_mlp,
       model_lgb = model_lgb,
       model_xgb = model_xgb,
       model_dt = model_dt,
-      model_bc5 = model_bc5,
-      model_svm = model_svm,
+      # model_bc5 = model_bc5,
+      # model_svm = model_svm,
       model_rf = model_rf,
       model_nb = model_nb
     )
@@ -239,18 +239,17 @@ wflow_set_fit |>
   geom_text(aes(y = mean -1/7, label = wflow_id), angle = 90, hjust = 1) + 
   theme(legend.position = "none")
 
-wflow_set_fit |> tibble()
-
 # passo 11: diagnóstico gráfico (autoplot modificado)
-metric <- 'roc_auc'
-autoplot(
-  wflow_set_fit,
-  rank_metric = metric,  
-  metric = metric,       
-  select_best = TRUE    
-) +
-  geom_text(aes(y = mean -1/10, label = wflow_id), angle = 90, hjust = 1) +
-  theme(legend.position = "none")
+metric <- 'spec'
+wflow_set_fit |>
+  mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
+  autoplot(
+    rank_metric = metric,  
+    metric = metric,       
+    select_best = TRUE    
+  ) +
+    geom_text(aes(y = mean -1/10, label = wflow_id), angle = 90, hjust = 1) +
+    theme(legend.position = "none")
 
 # passo 12: coleta métricas
 wflow_set_fit |>
@@ -263,3 +262,9 @@ wflow_set_fit |>
   #filter(.metric == 'roc_auc') |>
   arrange(.metric, desc(mean)) |>
   View()
+
+# to-dos
+# seleção do melhor modelo
+# ajuste dos hiperparâmetros para encontrar o melhor modelo
+# calibração das probabilidades
+# otimização do threshold com base na métrica ideal
