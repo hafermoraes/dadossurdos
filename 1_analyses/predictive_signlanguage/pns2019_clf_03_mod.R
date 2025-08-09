@@ -14,7 +14,7 @@ packs <- c(
   'naivebayes',
   'finetune',
   'doParallel',
-  'lm4e'
+  'lme4'
   #'kernlab' # svm
   #'baguette' # bag_mars
 )
@@ -29,6 +29,7 @@ library(bonsai)
 library(discrim)
 library(finetune)
 library(doParallel)
+library(lme4)
 
 # passo 1: importação da matriz de modelo
 libras <-
@@ -212,10 +213,10 @@ m_set <-
 
 
 # passo -8: finetune + racing
-## https://finetune.tidymodels.org/reference/tune_race_anova.html
-cores <- parallel::detectCores(logical = FALSE)
-cl <- makePSOCKcluster(cores)
-registerDoParallel(cl)
+# ## https://finetune.tidymodels.org/reference/tune_race_anova.html
+# cores <- parallel::detectCores(logical = FALSE)
+# cl <- makePSOCKcluster(cores)
+# registerDoParallel(cl)
 
 ## https://www.tmwr.org/workflow-sets#racing-example
 race_ctrl <-
