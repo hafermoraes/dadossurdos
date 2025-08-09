@@ -7,8 +7,11 @@
 library(readr)      # read_csv
 library(dplyr)      # |>, mutate, glimpse
 library(tidymodels) # initial_splits, train, test
+library(themis)     # step_smote
+library(stringr)
 
 # packs <- c(
+#   'themis',
 #   'bonsai',
 #   'lightgbm',
 #   'xgboost',
@@ -16,10 +19,9 @@ library(tidymodels) # initial_splits, train, test
 #   'earth',
 #   'C50',
 #   'xrf',
-#   'LiblineaR',
+#   'kernlab',
 #   'ranger',
 #   'naivebayes',
-#   'rules',
 #   'baguette',
 #   'desirability2',
 #   'GGally'
@@ -30,7 +32,6 @@ library(rules)
 library(bonsai)
 
 library(discrim)
-#library(treesnip)
 library(baguette)
 library(desirability2)
 library(GGally)
@@ -47,7 +48,7 @@ libras <-
   )
   
 # passo 1.1: redução do dataset para prototipagem de tidymodels
-libras <- 
+libras <-
   bind_rows(
     libras |> filter(libras == 'nao') |> head(100),
     libras |> filter(libras == 'sim') |> head(100)
@@ -60,14 +61,16 @@ libras_train  <- training(libras_splits)
 libras_test   <- testing(libras_splits)
 
 # passo 3: preparação da validação cruzada em 10 partes (folds)
-libras_folds <- vfold_cv(libras_train, strata = libras)
+libras_folds <- vfold_cv(libras_train, strata = libras, v = 5)
 
 # passo 4: transformação das variáveis independentes
 recipe_basic <-
   recipe(libras ~ ., data = libras) |>
   step_impute_knn(all_predictors(), neighbors = 3) |>
   step_normalize(all_numeric_predictors()) |>
-  step_dummy(all_nominal_predictors())
+  step_dummy(all_nominal_predictors()) |>
+  step_upsample(libras, over_ratio = 1)  # pesos aceitos só pelo step_upsample()
+  
 
 #recipe2 <- prep(recipe_basic, training = libras_train)
 #imputed <- bake(recipe2, libras_train)
@@ -230,10 +233,13 @@ wflow_set_fit |>
   theme(axis.text.x = element_text(angle = 45, vjust = .8, hjust = .9))
 
 # passo 10: diagnóstico gráfico (autoplot)
-autoplot(wflow_set_fit)
+wflow_set_fit |>
+  mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
+  autoplot() + 
+  geom_text(aes(y = mean -1/7, label = wflow_id), angle = 90, hjust = 1)
 
 # passo 11: diagnóstico gráfico (autoplot modificado)
-metric <- 'accuracy'
+metric <- 'roc_auc'
 autoplot(
   wflow_set_fit,
   rank_metric = metric,  
