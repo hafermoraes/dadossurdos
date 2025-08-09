@@ -310,7 +310,7 @@ wflow_set_fit |>
   mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
   #filter(.metric == 'roc_auc') |>
   arrange(.metric, desc(mean)) |>
-  View()
+  write_csv("./wflow_set_fit_metrics.csv")
 
 # to-dos
 # seleção do melhor modelo
