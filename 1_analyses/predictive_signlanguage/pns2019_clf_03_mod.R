@@ -43,11 +43,13 @@ libras <-
   )
   
 # passo 1.1: redução do dataset para prototipagem de tidymodels
-libras <-
-  bind_rows(
-    libras |> filter(libras == 'nao') |> head(100),
-    libras |> filter(libras == 'sim') |> head(100)
-  )
+if(FALSE){
+  libras <-
+    bind_rows(
+      libras |> filter(libras == 'nao') |> head(100),
+      libras |> filter(libras == 'sim') |> head(100)
+    )
+}
 
 # passo 2: separação em treino/teste
 set.seed(1)
@@ -86,20 +88,24 @@ model_null <-
 
 # logistic regression
 model_lr <- 
-  logistic_reg(penalty = tune(), mixture = tune()) |>
+  logistic_reg(
+    # penalty = tune(), mixture = tune()
+  ) |>
   set_engine("glmnet")
 
 # multivariate adaptive regression splines (MARS)
 model_mars <-
-  mars(num_terms = tune(), prod_degree = tune(), prune_method = "backward") |>
+  mars(
+    # num_terms = tune(), prod_degree = tune(), prune_method = "backward"
+    ) |>
   set_engine("earth") |>
   set_mode("classification")
 
 # multi layer perceptron via nnet
 model_mlp <-
   mlp(
-    penalty = tune(),
-    epochs = tune()
+    # penalty = tune(),
+    # epochs = tune()
   ) |>
   set_engine("nnet") |>
   set_mode("classification") 
@@ -107,8 +113,8 @@ model_mlp <-
 # lightgbm
 model_lgb <-
   boost_tree(
-    mtry = tune(), trees = tune(), tree_depth = tune(),
-    learn_rate = tune(), min_n = tune(), loss_reduction = tune()
+    # mtry = tune(), trees = tune(), tree_depth = tune(),
+    # learn_rate = tune(), min_n = tune(), loss_reduction = tune()
   ) |>
   set_engine("lightgbm") |>
   set_mode("classification")
@@ -116,9 +122,9 @@ model_lgb <-
 # xgboost
 model_xgb <-
   boost_tree(
-    mtry = tune(), trees = tune(), min_n = tune(), tree_depth = tune(),
-    learn_rate = tune(), loss_reduction = tune(), sample_size = tune(),
-    stop_iter = tune()
+    # mtry = tune(), trees = tune(), min_n = tune(), tree_depth = tune(),
+    # learn_rate = tune(), loss_reduction = tune(), sample_size = tune(),
+    # stop_iter = tune()
   ) |>
   set_engine("xgboost") |>
   set_mode("classification") 
@@ -126,7 +132,7 @@ model_xgb <-
 # decision_tree
 model_dt <-
   decision_tree(
-    tree_depth = tune(), min_n = tune(), cost_complexity = tune()
+    # tree_depth = tune(), min_n = tune(), cost_complexity = tune()
   ) |>
   set_engine("rpart") |>
   set_mode("classification") 
@@ -134,7 +140,7 @@ model_dt <-
 # boosted trees via  C5.0
 model_bc5 <-
   boost_tree(
-    trees = tune(), min_n = tune(), sample_size = tune()
+    # trees = tune(), min_n = tune(), sample_size = tune()
   ) |>
   set_engine("C5.0") |>
   set_mode("classification") 
@@ -142,7 +148,7 @@ model_bc5 <-
 # support vector machines via kernlab
 model_svm <-
   svm_linear(
-    cost = tune()
+    # cost = tune()
   ) |>
   set_engine("kernlab") |>
   set_mode("classification") 
@@ -150,9 +156,9 @@ model_svm <-
 # random forest via ranger
 model_rf <-
   rand_forest(
-    mtry = tune(),
-    trees = tune(),
-    min_n = tune()
+    # mtry = tune(),
+    # trees = tune(),
+    # min_n = tune()
   ) |>
   set_engine("ranger") |>
   set_mode("classification") 
@@ -160,22 +166,23 @@ model_rf <-
 # naive bayes
 model_nb <-
   naive_Bayes(
-    smoothness = tune(), Laplace = tune()
+    # smoothness = tune(), Laplace = tune()
   ) |>
   set_engine("naivebayes")
 
 models <-
   list(
       model_null = model_null,
-      model_logres = model_lr,
+      # model_logres = model_lr,
+      model_mars = model_mars,
       model_mlp = model_mlp,
       model_lgb = model_lgb,
-      model_xgb = model_xgb
-      # model_dt = model_dt,
-      # model_bc5 = model_bc5,
-      # model_svm = model_svm,
-      # model_rf = model_rf,
-      # model_nb = model_nb
+      model_xgb = model_xgb,
+      model_dt = model_dt,
+      model_bc5 = model_bc5,
+      model_svm = model_svm,
+      model_rf = model_rf,
+      model_nb = model_nb
     )
 
 # passo 6: criação dos fluxos de trabalho
@@ -213,47 +220,51 @@ m_set <-
 
 
 # passo -8: finetune + racing
-# ## https://finetune.tidymodels.org/reference/tune_race_anova.html
-# cores <- parallel::detectCores(logical = FALSE)
-# cl <- makePSOCKcluster(cores)
-# registerDoParallel(cl)
-
-## https://www.tmwr.org/workflow-sets#racing-example
-race_ctrl <-
-  control_race(
-    save_pred = TRUE,
-    parallel_over = "everything",
-    save_workflow = TRUE,
-    verbose_elim = TRUE
-  )
-
-race_results <-
-  wflow_set %>%
-  workflow_map(
-    "tune_race_anova",
-    seed = 1503,
-    resamples = libras_folds,
-    grid = 25,
-    control = race_ctrl,
-    verbose = TRUE
-  )
-
-race_results |>
-  mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
-  autoplot(select_best = TRUE) + 
-  geom_text(aes(y = mean - 1/20, label = wflow_id), angle = 90, hjust = 1) + 
-  theme(legend.position = "none")
-
-METRIC <- 'brier_class'
-race_results |>
-  mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
-  autoplot(
-  rank_metric = METRIC,  
-  metric = METRIC,       
-  select_best = FALSE
-) +
-  geom_text(aes(y = mean - 1/7, label = wflow_id), angle = 90, hjust = 1) +
-  theme(legend.position = "none")
+if(FALSE){
+  
+  
+  # ## https://finetune.tidymodels.org/reference/tune_race_anova.html
+  # cores <- parallel::detectCores(logical = FALSE)
+  # cl <- makePSOCKcluster(cores)
+  # registerDoParallel(cl)
+  
+  ## https://www.tmwr.org/workflow-sets#racing-example
+  race_ctrl <-
+    control_race(
+      save_pred = TRUE,
+      parallel_over = "everything",
+      save_workflow = TRUE,
+      verbose_elim = TRUE
+    )
+  
+  race_results <-
+    wflow_set %>%
+    workflow_map(
+      "tune_race_anova",
+      seed = 1503,
+      resamples = libras_folds,
+      grid = 25,
+      control = race_ctrl,
+      verbose = TRUE
+    )
+  
+  race_results |>
+    mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
+    autoplot(select_best = TRUE) + 
+    geom_text(aes(y = mean - 1/20, label = wflow_id), angle = 90, hjust = 1) + 
+    theme(legend.position = "none")
+  
+  METRIC <- 'brier_class'
+  race_results |>
+    mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
+    autoplot(
+    rank_metric = METRIC,  
+    metric = METRIC,       
+    select_best = FALSE
+  ) +
+    geom_text(aes(y = mean - 1/7, label = wflow_id), angle = 90, hjust = 1) +
+    theme(legend.position = "none")
+}
 
 # passo 8: ajuste dos modelos
 set.seed(1)
