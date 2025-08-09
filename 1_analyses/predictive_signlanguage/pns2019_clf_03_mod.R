@@ -71,7 +71,7 @@ recipe_basic <-
   step_impute_knn(all_predictors(), neighbors = 3) |>
   step_normalize(all_numeric_predictors()) |>
   step_dummy(all_nominal_predictors()) |>
-  step_downsample(libras, under_ratio = 1)  # pesos aceitos só pelo step_upsample()
+  step_downsample(libras, under_ratio = 1)  # class_weights implementado só com step_upsample() ou step_downsample()
   
 
 #recipe2 <- prep(recipe_basic, training = libras_train)
