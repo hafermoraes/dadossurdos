@@ -4,37 +4,30 @@
 # https://www.tidymodels.org/learn/models/calibration/
 # https://rpubs.com/eR_ic/classification
 
+packs <- c(
+  'themis',
+  'bonsai',
+  'lightgbm',
+  'xgboost',
+  'glmnet',
+  'ranger',
+  'naivebayes',
+  'finetune',
+  'doParallel',
+  'lm4e'
+  #'kernlab' # svm
+  #'baguette' # bag_mars
+)
+install.packages(packs)
+
 library(readr)      # read_csv
 library(dplyr)      # |>, mutate, glimpse
 library(tidymodels) # initial_splits, train, test
-library(themis)     # step_upsample
-library(stringr)
-
-# packs <- c(
-#   'themis',
-#   'bonsai',
-#   'lightgbm',
-#   'xgboost',
-#   'glmnet',
-#   'earth',
-#   'C50',
-#   'xrf',
-#   'kernlab',
-#   'ranger',
-#   'naivebayes',
-#   'baguette',
-#   'desirability2',
-#   'GGally'
-# )
-# install.packages(packs)
-
-library(rules)
+library(themis)     # step_downsample
+library(stringr)    # str_remove_all
 library(bonsai)
-
-library(discrim)
-library(baguette)
-library(desirability2)
-library(GGally)
+library(finetune)
+library(doParallel)
 
 # passo 1: importação da matriz de modelo
 libras <-
@@ -69,7 +62,7 @@ recipe_basic <-
   step_impute_knn(all_predictors(), neighbors = 3) |>
   step_normalize(all_numeric_predictors()) |>
   step_dummy(all_nominal_predictors()) |>
-  step_upsample(libras, over_ratio = 1)  # pesos aceitos só pelo step_upsample()
+  step_downsample(libras, under_ratio = 1)  # pesos aceitos só pelo step_upsample()
   
 
 #recipe2 <- prep(recipe_basic, training = libras_train)
@@ -91,20 +84,20 @@ model_null <-
 
 # logistic regression
 model_lr <- 
-  logistic_reg(penalty = double(1), mixture = double(1)) |>
+  logistic_reg(penalty = tune(), mixture = tune()) |>
   set_engine("glmnet")
 
 # multivariate adaptive regression splines (MARS)
 model_mars <-
-  mars(num_terms = NULL, prod_degree = 1, prune_method = "backward") |>
+  mars(num_terms = tune(), prod_degree = tune(), prune_method = "backward") |>
   set_engine("earth") |>
   set_mode("classification")
 
 # multi layer perceptron via nnet
 model_mlp <-
   mlp(
-    # penalty = 0,
-    # epochs = 100
+    penalty = tune(),
+    epochs = tune()
   ) |>
   set_engine("nnet") |>
   set_mode("classification") 
@@ -112,8 +105,8 @@ model_mlp <-
 # lightgbm
 model_lgb <-
   boost_tree(
-    # mtry = integer(), trees = integer(), tree_depth = integer(),
-    # learn_rate = numeric(), min_n = integer(), loss_reduction = numeric()
+    mtry = tune(), trees = tune(), tree_depth = tune(),
+    learn_rate = tune(), min_n = tune(), loss_reduction = tune()
   ) |>
   set_engine("lightgbm") |>
   set_mode("classification")
@@ -121,9 +114,9 @@ model_lgb <-
 # xgboost
 model_xgb <-
   boost_tree(
-    # mtry = integer(), trees = integer(), min_n = integer(), tree_depth = integer(),
-    # learn_rate = numeric(), loss_reduction = numeric(), sample_size = numeric(),
-    # stop_iter = integer()
+    mtry = tune(), trees = tune(), min_n = tune(), tree_depth = tune(),
+    learn_rate = tune(), loss_reduction = tune(), sample_size = tune(),
+    stop_iter = tune()
   ) |>
   set_engine("xgboost") |>
   set_mode("classification") 
@@ -131,7 +124,7 @@ model_xgb <-
 # decision_tree
 model_dt <-
   decision_tree(
-    # tree_depth = integer(1), min_n = integer(1), cost_complexity = double(1)
+    tree_depth = tune(), min_n = tune(), cost_complexity = tune()
   ) |>
   set_engine("rpart") |>
   set_mode("classification") 
@@ -139,7 +132,7 @@ model_dt <-
 # boosted trees via  C5.0
 model_bc5 <-
   boost_tree(
-    # trees = integer(), min_n = integer(), sample_size = numeric()
+    trees = tune(), min_n = tune(), sample_size = tune()
   ) |>
   set_engine("C5.0") |>
   set_mode("classification") 
@@ -147,7 +140,7 @@ model_bc5 <-
 # support vector machines via kernlab
 model_svm <-
   svm_linear(
-    cost = 1
+    cost = tune()
   ) |>
   set_engine("kernlab") |>
   set_mode("classification") 
@@ -155,9 +148,9 @@ model_svm <-
 # random forest via ranger
 model_rf <-
   rand_forest(
-    # mtry = integer(1),
-    # trees = integer(1),
-    # min_n = integer(1)
+    mtry = tune(),
+    trees = tune(),
+    min_n = tune()
   ) |>
   set_engine("ranger") |>
   set_mode("classification") 
@@ -165,7 +158,7 @@ model_rf <-
 # naive bayes
 model_nb <-
   naive_Bayes(
-    # smoothness = numeric(0), Laplace = numeric(0)
+    smoothness = tune(), Laplace = tune()
   ) |>
   set_engine("naivebayes")
 
@@ -198,15 +191,54 @@ wflow_set <-
 # passo 7: definição das métricas de avaliação dos classificadores
 m_set <-
   metric_set(
-    accuracy,
-    bal_accuracy,
-    precision,
-    recall,
+    ## 'class' type
+    # accuracy,
+    # bal_accuracy,
+    # precision,
+    # recall,
+    # sens,
+    # spec,
+    ## 'class prob' type
     roc_auc,
-    sens,
-    spec,
-    average_precision
+    average_precision,
+    brier_class,
+    mn_log_loss,
+    pr_auc
   )
+
+
+# passo -8: finetune + racing
+## https://finetune.tidymodels.org/reference/tune_race_anova.html
+cores <- parallel::detectCores(logical = FALSE)
+cl <- makePSOCKcluster(cores)
+
+## https://www.tmwr.org/workflow-sets#racing-example
+race_ctrl <-
+  control_race(
+    save_pred = TRUE,
+    parallel_over = "everything",
+    save_workflow = TRUE
+  )
+
+race_results <-
+  wflow_set %>%
+  workflow_map(
+    "tune_race_anova",
+    seed = 1503,
+    resamples = libras_folds,
+    grid = 25,
+    control = race_ctrl
+  )
+
+autoplot(
+  race_results,
+  rank_metric = "roc_auc",  
+  metric = "roc_auc",       
+  select_best = TRUE    
+) +
+  geom_text(aes(y = mean - 1/2, label = wflow_id), angle = 90, hjust = 1) +
+  lims(y = c(3.0, 9.5)) +
+  theme(legend.position = "none")
 
 # passo 8: ajuste dos modelos
 set.seed(1)
@@ -220,27 +252,15 @@ wflow_set_fit <-
   )
 
 
-# passo 9: selecção do melhor modelo
-wflow_set_fit |>
-  collect_metrics() |>
-  pivot_wider(
-    id_cols = c(wflow_id, .config), 
-    names_from = .metric, 
-    values_from = mean
-  ) |>
-  select(-c(wflow_id, .config)) |>
-  ggpairs() +
-  theme(axis.text.x = element_text(angle = 45, vjust = .8, hjust = .9))
-
-# passo 10: diagnóstico gráfico (autoplot)
+# passo 9: diagnóstico gráfico (autoplot)
 wflow_set_fit |>
   mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
   autoplot() + 
   geom_text(aes(y = mean -1/7, label = wflow_id), angle = 90, hjust = 1) + 
   theme(legend.position = "none")
 
-# passo 11: diagnóstico gráfico (autoplot modificado)
-metric <- 'spec'
+# passo 10: diagnóstico gráfico (autoplot modificado)
+metric <- 'brier_class'
 wflow_set_fit |>
   mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
   autoplot(
@@ -251,11 +271,11 @@ wflow_set_fit |>
     geom_text(aes(y = mean -1/10, label = wflow_id), angle = 90, hjust = 1) +
     theme(legend.position = "none")
 
-# passo 12: coleta métricas
+# passo 11: coleta métricas
 wflow_set_fit |>
   collect_metrics() 
 
-# passo 11: lista melhores modelos por métrica
+# passo 12: lista melhores modelos por métrica
 wflow_set_fit |>
   collect_metrics() |>
   mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
