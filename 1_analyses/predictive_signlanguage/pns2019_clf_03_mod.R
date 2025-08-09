@@ -198,6 +198,10 @@ m_set <-
     # recall,
     # sens,
     # spec,
+    kap,
+    j_index,
+    mcc,
+    specificity,
     ## 'class prob' type
     roc_auc,
     average_precision,
@@ -209,15 +213,17 @@ m_set <-
 
 # passo -8: finetune + racing
 ## https://finetune.tidymodels.org/reference/tune_race_anova.html
-# cores <- parallel::detectCores(logical = FALSE)
-# cl <- makePSOCKcluster(cores)
+cores <- parallel::detectCores(logical = FALSE)
+cl <- makePSOCKcluster(cores)
+registerDoParallel(cl)
 
 ## https://www.tmwr.org/workflow-sets#racing-example
 race_ctrl <-
   control_race(
     save_pred = TRUE,
     parallel_over = "everything",
-    save_workflow = TRUE
+    save_workflow = TRUE,
+    verbose_elim = TRUE
   )
 
 race_results <-
@@ -231,10 +237,18 @@ race_results <-
     verbose = TRUE
   )
 
-autoplot(
-  race_results,
-  rank_metric = "roc_auc",  
-  metric = "roc_auc",       
+race_results |>
+  mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
+  autoplot(select_best = TRUE) + 
+  geom_text(aes(y = mean - 1/20, label = wflow_id), angle = 90, hjust = 1) + 
+  theme(legend.position = "none")
+
+METRIC <- 'brier_class'
+race_results |>
+  mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
+  autoplot(
+  rank_metric = METRIC,  
+  metric = METRIC,       
   select_best = FALSE
 ) +
   geom_text(aes(y = mean - 1/7, label = wflow_id), angle = 90, hjust = 1) +
