@@ -14,8 +14,10 @@ packs <- c(
   'naivebayes',
   'finetune',
   'doParallel',
-  'lme4'
-  #'kernlab' # svm
+  'earth',
+  'lme4',
+  'kernlab', # svm
+  'c50'
   #'baguette' # bag_mars
 )
 install.packages(packs)
@@ -27,9 +29,12 @@ library(themis)     # step_downsample
 library(stringr)    # str_remove_all
 library(bonsai)
 library(discrim)
-library(finetune)
-library(doParallel)
+#library(finetune)
+#library(doParallel)
 library(lme4)
+library(earth)
+library(C50)
+library(kernlab)
 
 # passo 1: importação da matriz de modelo
 libras <-
@@ -221,8 +226,6 @@ m_set <-
 
 # passo -8: finetune + racing
 if(FALSE){
-  
-  
   # ## https://finetune.tidymodels.org/reference/tune_race_anova.html
   # cores <- parallel::detectCores(logical = FALSE)
   # cl <- makePSOCKcluster(cores)
