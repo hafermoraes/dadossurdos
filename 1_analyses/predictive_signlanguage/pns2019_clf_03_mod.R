@@ -236,7 +236,10 @@ wflow_set_fit |>
 wflow_set_fit |>
   mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
   autoplot() + 
-  geom_text(aes(y = mean -1/7, label = wflow_id), angle = 90, hjust = 1)
+  geom_text(aes(y = mean -1/7, label = wflow_id), angle = 90, hjust = 1) + 
+  theme(legend.position = "none")
+
+wflow_set_fit |> tibble()
 
 # passo 11: diagnóstico gráfico (autoplot modificado)
 metric <- 'roc_auc'
@@ -249,8 +252,14 @@ autoplot(
   geom_text(aes(y = mean -1/10, label = wflow_id), angle = 90, hjust = 1) +
   theme(legend.position = "none")
 
-# passo 10: 
+# passo 12: coleta métricas
 wflow_set_fit |>
   collect_metrics() 
 
-# passo 11:
+# passo 11: lista melhores modelos por métrica
+wflow_set_fit |>
+  collect_metrics() |>
+  mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
+  #filter(.metric == 'roc_auc') |>
+  arrange(.metric, desc(mean)) |>
+  View()
