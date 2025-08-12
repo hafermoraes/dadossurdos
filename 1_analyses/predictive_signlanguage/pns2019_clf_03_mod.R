@@ -17,8 +17,10 @@ packs <- c(
   'earth',
   'lme4',
   'kernlab', # svm
-  'c50'
-  #'baguette' # bag_mars
+  'c50',
+  'baguette', # bag_mars
+  'betacal',
+  'tailor'
 )
 install.packages(packs)
 
@@ -27,6 +29,9 @@ library(dplyr)      # |>, mutate, glimpse
 library(tidymodels) # initial_splits, train, test
 library(themis)     # step_downsample
 library(stringr)    # str_remove_all
+library(probably)   # cal_plot_breaks
+library(betacal)
+library(tailor)
 library(bonsai)
 library(discrim)
 #library(finetune)
@@ -48,7 +53,7 @@ libras <-
   )
   
 # passo 1.1: redução do dataset para prototipagem de tidymodels
-if(FALSE){
+if (TRUE){
   libras <-
     bind_rows(
       libras |> filter(libras == 'nao') |> head(100),
@@ -308,9 +313,59 @@ wflow_set_fit |>
 wflow_set_fit |>
   collect_metrics() |>
   mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
-  #filter(.metric == 'roc_auc') |>
   arrange(.metric, desc(mean)) |>
   write_csv("./wflow_set_fit_metrics.csv")
+
+# passo 13: extrai melhor modelo
+wflow_results <-
+  wflow_set_fit |>
+  extract_workflow("basic_model_lgb") |>
+  last_fit(split = libras_splits)
+
+collect_metrics(wflow_results)
+
+
+# matriz de confusão
+collect_predictions(wflow_results) |>
+  conf_mat(libras, .pred_class) |>
+  autoplot(type = "heatmap")
+
+# calibração das probabilidades
+collect_predictions(wflow_results) %>%
+  ggplot(aes(.pred_sim)) +
+  geom_histogram(col = "white", bins = 40) +
+  facet_wrap(~ libras, ncol = 1) +
+  geom_rug(col = "blue", alpha = 1 / 2) + 
+  labs(x = "Probability Estimate of Libras")
+
+cal_plot_breaks(wflow_results)
+cal_plot_windowed(wflow_results, step_size = 0.025)
+cal_plot_logistic(wflow_results)
+
+# otimização de threshold 
+thresholds <- seq(0.01, 0.95, by = 0.01)
+collect_predictions(wflow_results) |> 
+  threshold_perf(
+    truth = libras, 
+    estimate = .pred_sim, 
+    thresholds = thresholds,
+    metric =   metric_set(
+      accuracy,
+      sens,
+      spec
+    )
+  ) |> 
+  filter(.metric != 'distance') |>
+  ggplot( aes( x = .threshold, y = .estimate, color = .metric)) + 
+  geom_line()
+
+
+# variable importance (vip)
+library(vip)
+wflow_results |>
+  extract_fit_parsnip() |>
+  vip()
+
 
 # to-dos
 # ajuste dos hiperparâmetros para encontrar o melhor modelo
