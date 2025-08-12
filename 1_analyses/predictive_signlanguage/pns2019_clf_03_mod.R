@@ -313,7 +313,9 @@ wflow_set_fit |>
   write_csv("./wflow_set_fit_metrics.csv")
 
 # to-dos
-# seleção do melhor modelo
 # ajuste dos hiperparâmetros para encontrar o melhor modelo
-# calibração das probabilidades
-# otimização do threshold com base na métrica ideal
+# seleção do melhor modelo
+# calibração das probabilidades (https://www.tidymodels.org/learn/models/calibration/)
+# verifica thresholds diversos (https://probably.tidymodels.org/reference/threshold_perf.html)
+# otimização do threshold com base na métrica ideal (https://probably.tidymodels.org/articles/where-to-use.html)
+# matriz de confusão
