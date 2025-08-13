@@ -34,7 +34,7 @@ library(betacal)
 library(tailor)
 library(bonsai)
 library(discrim)
-#library(finetune)
+library(finetune)
 #library(doParallel)
 library(lme4)
 library(earth)
@@ -68,7 +68,8 @@ libras_train  <- training(libras_splits)
 libras_test   <- testing(libras_splits)
 
 # passo 3: preparação da validação cruzada em 10 partes (folds)
-libras_folds <- vfold_cv(libras_train, strata = libras, v = 5)
+NR_FOLDS <- 5
+libras_folds <- vfold_cv(libras_train, strata = libras, v = NR_FOLDS)
 
 # passo 4: transformação das variáveis independentes
 recipe_basic <-
@@ -99,7 +100,8 @@ model_null <-
 # logistic regression
 model_lr <- 
   logistic_reg(
-    # penalty = tune(), mixture = tune()
+    penalty = tune(), 
+    mixture = tune()
   ) |>
   set_engine("glmnet")
 
@@ -114,8 +116,8 @@ model_mars <-
 # multi layer perceptron via nnet
 model_mlp <-
   mlp(
-    # penalty = tune(),
-    # epochs = tune()
+    penalty = tune(),
+    epochs = tune()
   ) |>
   set_engine("nnet") |>
   set_mode("classification") 
@@ -123,6 +125,7 @@ model_mlp <-
 # lightgbm
 model_lgb <-
   boost_tree(
+    learn_rate = tune(), tree_depth = tune()
     # mtry = tune(), trees = tune(), tree_depth = tune(),
     # learn_rate = tune(), min_n = tune(), loss_reduction = tune()
   ) |>
@@ -132,6 +135,7 @@ model_lgb <-
 # xgboost
 model_xgb <-
   boost_tree(
+    learn_rate = tune(), tree_depth = tune()
     # mtry = tune(), trees = tune(), min_n = tune(), tree_depth = tune(),
     # learn_rate = tune(), loss_reduction = tune(), sample_size = tune(),
     # stop_iter = tune()
@@ -142,7 +146,7 @@ model_xgb <-
 # decision_tree
 model_dt <-
   decision_tree(
-    # tree_depth = tune(), min_n = tune(), cost_complexity = tune()
+    tree_depth = tune(), min_n = tune(), cost_complexity = tune()
   ) |>
   set_engine("rpart") |>
   set_mode("classification") 
@@ -150,7 +154,7 @@ model_dt <-
 # boosted trees via  C5.0
 model_bc5 <-
   boost_tree(
-    # trees = tune(), min_n = tune(), sample_size = tune()
+    trees = tune(), min_n = tune(), sample_size = tune()
   ) |>
   set_engine("C5.0") |>
   set_mode("classification") 
@@ -158,7 +162,7 @@ model_bc5 <-
 # support vector machines via kernlab
 model_svm <-
   svm_linear(
-    # cost = tune()
+    cost = tune()
   ) |>
   set_engine("kernlab") |>
   set_mode("classification") 
@@ -166,9 +170,9 @@ model_svm <-
 # random forest via ranger
 model_rf <-
   rand_forest(
-    # mtry = tune(),
-    # trees = tune(),
-    # min_n = tune()
+    mtry = tune(),
+    trees = tune(),
+    min_n = tune()
   ) |>
   set_engine("ranger") |>
   set_mode("classification") 
@@ -176,22 +180,22 @@ model_rf <-
 # naive bayes
 model_nb <-
   naive_Bayes(
-    # smoothness = tune(), Laplace = tune()
+    smoothness = tune(), Laplace = tune()
   ) |>
   set_engine("naivebayes")
 
 models <-
   list(
-      model_null = model_null,
-      # model_logres = model_lr,
-      model_mars = model_mars,
+      # model_null = model_null,
+      model_logres = model_lr,
+      # model_mars = model_mars,
       model_mlp = model_mlp,
       model_lgb = model_lgb,
       model_xgb = model_xgb,
       model_dt = model_dt,
-      model_bc5 = model_bc5,
-      model_svm = model_svm,
-      model_rf = model_rf,
+      # model_bc5 = model_bc5,
+      # model_svm = model_svm,
+      # model_rf = model_rf,
       model_nb = model_nb
     )
 
@@ -219,18 +223,16 @@ m_set <-
     kap,
     j_index,
     mcc,
-    specificity,
     ## 'class prob' type
     roc_auc,
     average_precision,
     brier_class,
-    mn_log_loss,
     pr_auc
   )
 
 
 # passo -8: finetune + racing
-if(FALSE){
+if(TRUE){
   # ## https://finetune.tidymodels.org/reference/tune_race_anova.html
   # cores <- parallel::detectCores(logical = FALSE)
   # cl <- makePSOCKcluster(cores)
@@ -258,7 +260,7 @@ if(FALSE){
   
   race_results |>
     mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
-    autoplot(select_best = TRUE) + 
+    autoplot(select_best = FALSE) + 
     geom_text(aes(y = mean - 1/20, label = wflow_id), angle = 90, hjust = 1) + 
     theme(legend.position = "none")
   
@@ -323,6 +325,25 @@ wflow_results <-
   last_fit(split = libras_splits)
 
 collect_metrics(wflow_results)
+
+# race results
+BEST_CLF <- "basic_model_mlp"
+best_results <- 
+  race_results |>
+  extract_workflow_set_result(BEST_CLF) |>
+  select_best(metric = "roc_auc")
+
+best_test_results <- 
+  race_results |>
+  extract_workflow(BEST_CLF) |>
+  finalize_workflow(best_results) |>
+  last_fit(split = libras_splits)
+
+collect_metrics(best_test_results)
+
+collect_predictions(best_test_results) |>
+  conf_mat(libras, .pred_class) |>
+  autoplot(type = "heatmap")
 
 
 # matriz de confusão
