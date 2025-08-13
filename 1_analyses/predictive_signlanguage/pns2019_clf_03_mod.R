@@ -363,15 +363,56 @@ cal_plot_breaks(wflow_results)
 cal_plot_windowed(wflow_results, step_size = 0.025)
 cal_plot_logistic(wflow_results)
 
-logit_val <- cal_validate_logistic(wflow_results, metrics = m_set, save_pred = FALSE)
-collect_metrics(logit_val)
-collect_predictions(logit_val) %>%
-  filter(.type == "calibrated") %>%
-  cal_plot_windowed(truth = class, estimate = .pred_PS, step_size = 0.025) +
-  ggtitle("Logistic calibration via GAM")
+wflow_results |>
+  cal_apply(
+    cal_estimate_beta(wflow_results, libras)
+  ) |>
+  cal_plot_windowed(
+    truth = libras, 
+    estimate = .pred_sim, 
+    step_size = 0.025
+  )
+
+wflow_results |>
+  cal_apply(
+    cal_estimate_logistic(wflow_results, libras)
+  ) |>
+  cal_plot_windowed(
+    truth = libras, 
+    estimate = .pred_sim, 
+    step_size = 0.025
+  )
+
+wflow_results |>
+  cal_apply(
+    cal_estimate_isotonic(wflow_results, libras)
+  ) |>
+  cal_plot_windowed(
+    truth = libras, 
+    estimate = .pred_sim, 
+    step_size = 0.025
+  )
 
 
-
+thresholds <- seq(0.01, 0.95, by = 0.01)
+wflow_results |>
+  cal_apply(
+    cal_estimate_isotonic(wflow_results, libras)
+  ) |>
+  threshold_perf(
+    truth = libras, 
+    estimate = .pred_sim, 
+    thresholds = thresholds,
+    metric =   metric_set(
+      accuracy,
+      sens,
+      spec
+    )
+  ) |> 
+  filter(.metric != 'distance') |>
+  ggplot( aes( x = .threshold, y = .estimate, color = .metric)) + 
+  geom_line()
+  
 
 # otimização de threshold 
 thresholds <- seq(0.01, 0.95, by = 0.01)
