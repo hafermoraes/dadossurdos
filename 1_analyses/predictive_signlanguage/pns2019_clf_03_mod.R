@@ -53,7 +53,7 @@ libras <-
   )
   
 # passo 1.1: redução do dataset para prototipagem de tidymodels
-if (TRUE){
+if(FALSE){
   libras <-
     bind_rows(
       libras |> filter(libras == 'nao') |> head(100),
@@ -446,3 +446,4 @@ wflow_results |>
 # verifica thresholds diversos (https://probably.tidymodels.org/reference/threshold_perf.html)
 # otimização do threshold com base na métrica ideal (https://probably.tidymodels.org/articles/where-to-use.html)
 # matriz de confusão
+# salvar binário para predição nos censos 2000 e 2010
