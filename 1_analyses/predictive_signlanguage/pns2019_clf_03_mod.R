@@ -248,7 +248,7 @@ if(TRUE){
     )
   
   race_results <-
-    wflow_set %>%
+    wflow_set |>
     workflow_map(
       "tune_race_anova",
       seed = 1503,
@@ -333,15 +333,15 @@ best_results <-
   extract_workflow_set_result(BEST_CLF) |>
   select_best(metric = "roc_auc")
 
-best_test_results <- 
+wflow_results <- 
   race_results |>
   extract_workflow(BEST_CLF) |>
   finalize_workflow(best_results) |>
   last_fit(split = libras_splits)
 
-collect_metrics(best_test_results)
+collect_metrics(wflow_results)
 
-collect_predictions(best_test_results) |>
+collect_predictions(wflow_results) |>
   conf_mat(libras, .pred_class) |>
   autoplot(type = "heatmap")
 
@@ -362,6 +362,16 @@ collect_predictions(wflow_results) %>%
 cal_plot_breaks(wflow_results)
 cal_plot_windowed(wflow_results, step_size = 0.025)
 cal_plot_logistic(wflow_results)
+
+logit_val <- cal_validate_logistic(wflow_results, metrics = m_set, save_pred = FALSE)
+collect_metrics(logit_val)
+collect_predictions(logit_val) %>%
+  filter(.type == "calibrated") %>%
+  cal_plot_windowed(truth = class, estimate = .pred_PS, step_size = 0.025) +
+  ggtitle("Logistic calibration via GAM")
+
+
+
 
 # otimização de threshold 
 thresholds <- seq(0.01, 0.95, by = 0.01)
