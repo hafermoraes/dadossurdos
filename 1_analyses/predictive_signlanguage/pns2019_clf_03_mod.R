@@ -29,7 +29,7 @@ library(dplyr)      # |>, mutate, glimpse
 library(tidymodels) # initial_splits, train, test
 library(themis)     # step_downsample
 library(stringr)    # str_remove_all
-library(probably)   # cal_plot_breaks
+library(probably)   # cal_plot_breaks, cal_apply, cal_estimate_*
 library(betacal)
 library(tailor)
 library(bonsai)
@@ -359,9 +359,9 @@ collect_predictions(wflow_results) %>%
   geom_rug(col = "blue", alpha = 1 / 2) + 
   labs(x = "Probability Estimate of Libras")
 
-cal_plot_breaks(wflow_results)
-cal_plot_windowed(wflow_results, step_size = 0.025)
-cal_plot_logistic(wflow_results)
+cal_plot_breaks(wflow_results, event_level = "second")
+cal_plot_windowed(wflow_results, step_size = 0.025, event_level = "second")
+cal_plot_logistic(wflow_results, event_level = "second")
 
 wflow_results |>
   cal_apply(
@@ -370,7 +370,8 @@ wflow_results |>
   cal_plot_windowed(
     truth = libras, 
     estimate = .pred_sim, 
-    step_size = 0.025
+    step_size = 0.025,
+    event_level = "second"
   )
 
 wflow_results |>
@@ -380,7 +381,8 @@ wflow_results |>
   cal_plot_windowed(
     truth = libras, 
     estimate = .pred_sim, 
-    step_size = 0.025
+    step_size = 0.025,
+    event_level = "second"
   )
 
 wflow_results |>
@@ -390,7 +392,8 @@ wflow_results |>
   cal_plot_windowed(
     truth = libras, 
     estimate = .pred_sim, 
-    step_size = 0.025
+    step_size = 0.025,
+    event_level = "second"
   )
 
 
@@ -446,4 +449,13 @@ wflow_results |>
 # verifica thresholds diversos (https://probably.tidymodels.org/reference/threshold_perf.html)
 # otimização do threshold com base na métrica ideal (https://probably.tidymodels.org/articles/where-to-use.html)
 # matriz de confusão
+
 # salvar binário para predição nos censos 2000 e 2010
+# https://github.com/juliasilge/modelops-playground/blob/main/train-model/train.md#save-model
+# https://readr.tidyverse.org/reference/read_rds.html
+# https://tidypredict.tidymodels.org/articles/save.html
+#https://forum.posit.co/t/saving-a-model-after-tuning/158930/4
+# https://forum.posit.co/t/saving-a-model-after-tuning/158930/8
+# https://rstudio.github.io/bundle/?_gl=1*2b025f*_ga*MzI1MzA4NzQ2LjE3NTIwOTE3Mzc.*_ga_2C0WZ1JHG0*czE3NTUwOTI1OTAkbzE1JGcxJHQxNzU1MDkzMDI3JGozNCRsMCRoMA..
+# https://rstudio.github.io/bundle/reference/bundle_workflows.html
+
