@@ -20,7 +20,7 @@ packs <- c(
   'c50',
   'baguette', # bag_mars
   'betacal',
-  'tailor'
+  'NeuralNetTools'
 )
 install.packages(packs)
 
@@ -53,7 +53,7 @@ libras <-
   )
   
 # passo 1.1: redução do dataset para prototipagem de tidymodels
-if(FALSE){
+if(TRUE){
   libras <-
     bind_rows(
       libras |> filter(libras == 'nao') |> head(100),
@@ -189,14 +189,14 @@ models <-
       # model_null = model_null,
       model_logres = model_lr,
       # model_mars = model_mars,
-      model_mlp = model_mlp,
-      model_lgb = model_lgb,
-      model_xgb = model_xgb,
-      model_dt = model_dt,
+      model_mlp = model_mlp
+      # model_lgb = model_lgb,
+      # model_xgb = model_xgb,
+      # model_dt = model_dt,
       # model_bc5 = model_bc5,
       # model_svm = model_svm,
       # model_rf = model_rf,
-      model_nb = model_nb
+      #model_nb = model_nb
     )
 
 # passo 6: criação dos fluxos de trabalho
@@ -220,9 +220,9 @@ m_set <-
     # recall,
     # sens,
     # spec,
-    kap,
+    # kap,
     j_index,
-    mcc,
+    # mcc,
     ## 'class prob' type
     roc_auc,
     average_precision,
@@ -254,26 +254,27 @@ if(TRUE){
       seed = 1503,
       resamples = libras_folds,
       grid = 25,
+      metrics = m_set,
       control = race_ctrl,
       verbose = TRUE
     )
   
-  race_results |>
+  race_results |> 
     mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
-    autoplot(select_best = FALSE) + 
+    autoplot(select_best = FALSE) +
     geom_text(aes(y = mean - 1/20, label = wflow_id), angle = 90, hjust = 1) + 
     theme(legend.position = "none")
   
-  METRIC <- 'brier_class'
-  race_results |>
-    mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
-    autoplot(
-    rank_metric = METRIC,  
-    metric = METRIC,       
-    select_best = FALSE
-  ) +
-    geom_text(aes(y = mean - 1/7, label = wflow_id), angle = 90, hjust = 1) +
-    theme(legend.position = "none")
+  # METRIC <- 'brier_class'
+  # race_results |>
+  #   mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
+  #   autoplot(
+  #   rank_metric = METRIC,  
+  #   metric = METRIC,       
+  #   select_best = FALSE
+  # ) +
+  #   geom_text(aes(y = mean - 1/7, label = wflow_id), angle = 90, hjust = 1) +
+  #   theme(legend.position = "none")
 }
 
 # passo 8: ajuste dos modelos
@@ -324,27 +325,43 @@ wflow_results <-
   extract_workflow("basic_model_lgb") |>
   last_fit(split = libras_splits)
 
+# salva arquivo em disco
+wflow_results |>
+  extract_workflow() |>
+  write_rds('/tmp/mod.rds')
+
+
+mod <-
+  read_rds('/tmp/mod.rds')
+  
+mod |>
+  predict(libras_test, type = "prob")
+
+
+
+
+
 collect_metrics(wflow_results)
 
 # race results
+# FOR-LOOP
 BEST_CLF <- "basic_model_mlp"
 best_results <- 
   race_results |>
   extract_workflow_set_result(BEST_CLF) |>
-  select_best(metric = "roc_auc")
+  select_best(metric = "j_index")
 
 wflow_results <- 
   race_results |>
   extract_workflow(BEST_CLF) |>
-  finalize_workflow(best_results) |>
-  last_fit(split = libras_splits)
+  finalize_workflow(best_results) |> 
+  last_fit(split = libras_splits, metrics = m_set)
 
 collect_metrics(wflow_results)
 
 collect_predictions(wflow_results) |>
-  conf_mat(libras, .pred_class) |>
-  autoplot(type = "heatmap")
-
+  conf_mat(libras, .pred_class) |> 
+  autoplot(type = "mosaic")
 
 # matriz de confusão
 collect_predictions(wflow_results) |>
@@ -407,14 +424,19 @@ wflow_results |>
     estimate = .pred_sim, 
     thresholds = thresholds,
     metric =   metric_set(
-      accuracy,
-      sens,
-      spec
+      accuracy, bal_accuracy,
+      sens, spec,
+      precision, recall,
+      npv, ppv,
+      kap, mcc,
+      f_meas
     )
   ) |> 
   filter(.metric != 'distance') |>
   ggplot( aes( x = .threshold, y = .estimate, color = .metric)) + 
-  geom_line()
+  geom_line() + 
+  theme(legend.position = "none") +
+  facet_wrap(~.metric)
   
 
 # otimização de threshold 
@@ -427,7 +449,9 @@ collect_predictions(wflow_results) |>
     metric =   metric_set(
       accuracy,
       sens,
-      spec
+      spec,
+      precision,
+      recall
     )
   ) |> 
   filter(.metric != 'distance') |>
@@ -439,7 +463,7 @@ collect_predictions(wflow_results) |>
 library(vip)
 wflow_results |>
   extract_fit_parsnip() |>
-  vip()
+  vip(geom="point")
 
 
 # to-dos
