@@ -5,6 +5,9 @@
 # https://rpubs.com/eR_ic/classification
 
 packs <- c(
+  'pak',
+  'textrecipes',
+  'janitor',
   'themis',
   'bonsai',
   'lightgbm',
@@ -24,9 +27,13 @@ packs <- c(
 )
 install.packages(packs)
 
+pak::pak('tidymodels/tailor')
+
 library(readr)      # read_csv
 library(dplyr)      # |>, mutate, glimpse
 library(tidymodels) # initial_splits, train, test
+library(textrecipes) # step_clean_names
+library(janitor)
 library(themis)     # step_downsample
 library(stringr)    # str_remove_all
 library(probably)   # cal_plot_breaks, cal_apply, cal_estimate_*
@@ -77,11 +84,12 @@ recipe_basic <-
   step_impute_knn(all_predictors(), neighbors = 3) |>
   step_normalize(all_numeric_predictors()) |>
   step_dummy(all_nominal_predictors()) |>
+  step_clean_names(all_nominal_predictors()) |>
   step_downsample(libras, under_ratio = 1)  # class_weights implementado só com step_upsample() ou step_downsample()
   
 
-#recipe2 <- prep(recipe_basic, training = libras_train)
-#imputed <- bake(recipe2, libras_train)
+# recipe2 <- prep(recipe_basic, training = libras_train)
+# imputed <- bake(recipe2, libras_train)
 
 preproc <-
   list(basic = recipe_basic)
@@ -170,7 +178,7 @@ model_svm <-
 # random forest via ranger
 model_rf <-
   rand_forest(
-    mtry = tune(),
+    # mtry = tune(),
     trees = tune(),
     min_n = tune()
   ) |>
@@ -186,17 +194,17 @@ model_nb <-
 
 models <-
   list(
-      # model_null = model_null,
+      model_null = model_null,
       model_logres = model_lr,
-      # model_mars = model_mars,
-      model_mlp = model_mlp
-      # model_lgb = model_lgb,
-      # model_xgb = model_xgb,
-      # model_dt = model_dt,
-      # model_bc5 = model_bc5,
-      # model_svm = model_svm,
-      # model_rf = model_rf,
-      #model_nb = model_nb
+      model_mars = model_mars,
+      model_mlp = model_mlp,
+      model_lgb = model_lgb,
+      model_xgb = model_xgb,
+      model_dt = model_dt,
+      model_bc5 = model_bc5,
+      model_svm = model_svm,
+      model_rf = model_rf,
+      model_nb = model_nb
     )
 
 # passo 6: criação dos fluxos de trabalho
@@ -221,8 +229,8 @@ m_set <-
     # sens,
     # spec,
     # kap,
-    j_index,
     # mcc,
+    j_index,
     ## 'class prob' type
     roc_auc,
     average_precision,
@@ -232,7 +240,7 @@ m_set <-
 
 
 # passo -8: finetune + racing
-if(TRUE){
+if(FALSE){
   # ## https://finetune.tidymodels.org/reference/tune_race_anova.html
   # cores <- parallel::detectCores(logical = FALSE)
   # cl <- makePSOCKcluster(cores)
@@ -264,17 +272,7 @@ if(TRUE){
     autoplot(select_best = FALSE) +
     geom_text(aes(y = mean - 1/20, label = wflow_id), angle = 90, hjust = 1) + 
     theme(legend.position = "none")
-  
-  # METRIC <- 'brier_class'
-  # race_results |>
-  #   mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
-  #   autoplot(
-  #   rank_metric = METRIC,  
-  #   metric = METRIC,       
-  #   select_best = FALSE
-  # ) +
-  #   geom_text(aes(y = mean - 1/7, label = wflow_id), angle = 90, hjust = 1) +
-  #   theme(legend.position = "none")
+ 
 }
 
 # passo 8: ajuste dos modelos
@@ -282,6 +280,7 @@ set.seed(1)
 wflow_set_fit <- 
   workflow_map(
     wflow_set, 
+    fn = "tune_grid",
     verbose = TRUE, 
     seed = 1, 
     metrics = m_set,
@@ -320,10 +319,21 @@ wflow_set_fit |>
   write_csv("./wflow_set_fit_metrics.csv")
 
 # passo 13: extrai melhor modelo
-wflow_results <-
+CLF <- "basic_model_mlp"
+best_results <-
   wflow_set_fit |>
-  extract_workflow("basic_model_lgb") |>
-  last_fit(split = libras_splits)
+  extract_workflow_set_result(CLF) |>
+  select_best(metric="j_index") 
+
+wflow_results <- 
+  wflow_set_fit |>
+  extract_workflow(CLF) |>
+  finalize_workflow(best_results) |> 
+  last_fit(split = libras_splits, metrics = m_set)
+
+wflow_results |>
+  collect_metrics()
+
 
 # salva arquivo em disco
 wflow_results |>
@@ -338,10 +348,6 @@ mod |>
   predict(libras_test, type = "prob")
 
 
-
-
-
-collect_metrics(wflow_results)
 
 # race results
 # FOR-LOOP
@@ -402,9 +408,10 @@ wflow_results |>
     event_level = "second"
   )
 
+set.seed(1)
 wflow_results |>
   cal_apply(
-    cal_estimate_isotonic(wflow_results, libras)
+    cal_estimate_isotonic_boot(wflow_results, libras)
   ) |>
   cal_plot_windowed(
     truth = libras, 
@@ -413,7 +420,7 @@ wflow_results |>
     event_level = "second"
   )
 
-
+# otimização de threshold (facet_wrap)
 thresholds <- seq(0.01, 0.95, by = 0.01)
 wflow_results |>
   cal_apply(
@@ -439,7 +446,7 @@ wflow_results |>
   facet_wrap(~.metric)
   
 
-# otimização de threshold 
+# otimização de threshold (geom_line)
 thresholds <- seq(0.01, 0.95, by = 0.01)
 collect_predictions(wflow_results) |> 
   threshold_perf(
