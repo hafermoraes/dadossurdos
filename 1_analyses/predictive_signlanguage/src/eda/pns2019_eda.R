@@ -7,7 +7,7 @@ library(ggplot2) # ggplot
 # importação da matriz de modelo
 rawdata <-
   read_csv(
-    '1_analyses/predictive_signlanguage/pns2019_modelmatrix.csv'
+    '1_analyses/predictive_signlanguage/data/pns2019_modelmatrix.csv'
   ) |> 
   mutate(across(where(is.character), as.factor))
 
@@ -75,3 +75,56 @@ ggplot(data = rawdata) +
   facet_wrap( ~ dif_ouvir)
 
 
+# facets com geom_errorbar
+# adaptado de https://towardsdatascience.com/bank-customer-churn-with-tidymodels-part-1-model-development-cdec4eeb131c/
+
+rawdata %>% 
+  select(libras,!where(is.numeric)) %>%
+  mutate(
+    across(everything(), as.character),
+    libras = if_else( libras == 'sim', 1, 0)
+  ) %>%
+  #drop_na() %>% 
+  pivot_longer(2:8, names_to = "Variables", values_to = "Values") %>%
+  group_by(Variables, Values) %>% 
+  summarise(mean = mean(libras),
+            conf_int = 1.96*sd(libras)/sqrt(n())) %>% 
+  ggplot(aes(x=Values, y=mean, color=Values)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean - conf_int, ymax = mean + conf_int), width = 0.1) +
+  #theme_minimal() +
+  theme(legend.position = "none")+ 
+  scale_color_viridis_d(aesthetics = c("color", "fill"), end = 0.5) +
+  facet_wrap(~Variables, scales = 'free') +
+  labs(title = 'Categorical Variable Analysis', subtitle = 'With 95% Confidence Intervals') + 
+  coord_flip()
+
+# correlações
+install.packages('corrr')
+library(corrr)
+library(recipes)
+
+recipe_basic <-
+  recipe(libras ~ ., data = rawdata) |>
+  step_dummy(all_nominal_predictors())
+
+recipe <- prep(recipe_basic, training = rawdata)
+imputed <- bake(recipe, rawdata)
+
+# adaptado de https://towardsdatascience.com/bank-customer-churn-with-tidymodels-part-1-model-development-cdec4eeb131c/
+x <- 
+  imputed %>% 
+  mutate(
+    libras = if_else( libras == 'sim', 1, 0)
+  ) %>% 
+  select(-case_weights) %>% 
+  corrr::correlate() 
+
+x <- corrr::rearrange(x, absolute = FALSE) 
+
+x<- corrr::shave(x) 
+
+corrr::rplot(x, print_cor = T) +
+  scale_color_gradient2(low = 'orange', high = 'light blue') + 
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title = "Correlation Plot")
