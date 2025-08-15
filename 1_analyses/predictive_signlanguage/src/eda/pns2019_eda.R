@@ -78,24 +78,25 @@ ggplot(data = rawdata) +
 # facets com geom_errorbar
 # adaptado de https://towardsdatascience.com/bank-customer-churn-with-tidymodels-part-1-model-development-cdec4eeb131c/
 
-rawdata %>% 
-  select(libras,!where(is.numeric)) %>%
+rawdata |>
+  select(libras,!where(is.numeric)) |>
   mutate(
     across(everything(), as.character),
     libras = if_else( libras == 'sim', 1, 0)
-  ) %>%
-  #drop_na() %>% 
-  pivot_longer(2:8, names_to = "Variables", values_to = "Values") %>%
-  group_by(Variables, Values) %>% 
-  summarise(mean = mean(libras),
-            conf_int = 1.96*sd(libras)/sqrt(n())) %>% 
-  ggplot(aes(x=Values, y=mean, color=Values)) +
+  ) |>
+  drop_na() |>
+  pivot_longer(-libras, names_to = "key", values_to = "value") |>
+  group_by(key, value) |>
+  summarise(
+    mean = mean(libras),
+    conf_int = 1.96*sd(libras)/sqrt(n())
+  ) |>
+  ggplot(aes(x=value, y=mean, color=value)) +
   geom_point() +
   geom_errorbar(aes(ymin = mean - conf_int, ymax = mean + conf_int), width = 0.1) +
-  #theme_minimal() +
-  theme(legend.position = "none")+ 
+  theme(legend.position = "none") + 
   scale_color_viridis_d(aesthetics = c("color", "fill"), end = 0.5) +
-  facet_wrap(~Variables, scales = 'free') +
+  facet_wrap(~key, scales = 'free') +
   labs(title = 'Categorical Variable Analysis', subtitle = 'With 95% Confidence Intervals') + 
   coord_flip()
 
@@ -104,30 +105,20 @@ install.packages('corrr')
 library(corrr)
 library(recipes)
 
-recipe_basic <-
-  recipe(libras ~ ., data = rawdata) |>
-  step_dummy(all_nominal_predictors()) |>
-  step_rm(case_weights) |>
-  step_naomit() |>
-  step_normalize(all_predictors())
-
-recipe <- prep(recipe_basic, training = rawdata)
-imputed <- bake(recipe, rawdata)
-
 # adaptado de https://towardsdatascience.com/bank-customer-churn-with-tidymodels-part-1-model-development-cdec4eeb131c/
-x <- 
-  imputed %>% 
+
+recipe(libras ~ ., data = rawdata) |>
+  step_naomit(all_factor_predictors()) |>
+  step_dummy(all_nominal_predictors()) |>
+  step_rm(case_weights, starts_with("uf")) |>
+  prep(rawdata) |> 
+  bake(new_data = NULL) |> 
   mutate(
     libras = if_else( libras == 'sim', 1, 0)
-  ) %>% 
-  corrr::correlate() 
-
-# x <- corrr::rearrange(x, absolute = FALSE) 
-
-# x <- corrr::shave(x)
-
-corrr::rplot(x, print_cor = T) +
-  scale_color_gradient2(low = 'orange', high = 'light blue') + 
+  ) |> 
+  correlate() |>
+  shave() |>
+  rplot( print_cor = T) +
+  # scale_color_gradient2(low = 'orange', high = 'light blue') + 
   theme(axis.text.x = element_text(angle = 90)) +
   labs(title = "Correlation Plot")
-

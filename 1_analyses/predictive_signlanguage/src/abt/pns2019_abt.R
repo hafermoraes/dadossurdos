@@ -200,6 +200,28 @@ pns2019_modelmatrix |>
   mutate(pct=count/sum(count))
 
 
+pns2019_modelmatrix %>% 
+  select(libras,!where(is.numeric)) %>%
+  mutate(
+    across(everything(), as.character),
+    libras = if_else( libras == 'sim', 1, 0)
+  ) %>%
+  drop_na() %>%
+  pivot_longer(-libras, names_to = "Variables", values_to = "Values") %>%
+  group_by(Variables, Values) %>% 
+  summarise(mean = mean(libras),
+            conf_int = 1.96*sd(libras)/sqrt(n())) %>% 
+  ggplot(aes(x=Values, y=mean, color=Values)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean - conf_int, ymax = mean + conf_int), width = 0.1) +
+  theme(legend.position = "none") + 
+  scale_color_viridis_d(aesthetics = c("color", "fill"), end = 0.5) +
+  facet_wrap(~Variables, scales = 'free') +
+  labs(title = 'Categorical Variable Analysis', subtitle = 'With 95% Confidence Intervals') + 
+  coord_flip()
+
+
+
 # importação das unidades da federação
 uf <-
   read_delim(
