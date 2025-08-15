@@ -106,7 +106,10 @@ library(recipes)
 
 recipe_basic <-
   recipe(libras ~ ., data = rawdata) |>
-  step_dummy(all_nominal_predictors())
+  step_dummy(all_nominal_predictors()) |>
+  step_rm(case_weights) |>
+  step_naomit() |>
+  step_normalize(all_predictors())
 
 recipe <- prep(recipe_basic, training = rawdata)
 imputed <- bake(recipe, rawdata)
@@ -117,14 +120,14 @@ x <-
   mutate(
     libras = if_else( libras == 'sim', 1, 0)
   ) %>% 
-  select(-case_weights) %>% 
   corrr::correlate() 
 
-x <- corrr::rearrange(x, absolute = FALSE) 
+# x <- corrr::rearrange(x, absolute = FALSE) 
 
-x<- corrr::shave(x) 
+# x <- corrr::shave(x)
 
 corrr::rplot(x, print_cor = T) +
   scale_color_gradient2(low = 'orange', high = 'light blue') + 
   theme(axis.text.x = element_text(angle = 90)) +
   labs(title = "Correlation Plot")
+
