@@ -1,0 +1,26 @@
+
+# passo 6: criação dos fluxos de trabalho
+# https://workflowsets.tidymodels.org/reference/workflow_set.html#see-also
+
+wflow_set <- 
+  workflow_set(
+    preproc = list(
+      basic = recipe_basic
+    ),
+    models = list(
+      model_null = model_null,
+      model_logres = model_lr,
+      model_mars = model_mars,
+      model_mlp = model_mlp,
+      model_lgb = model_lgb,
+      model_xgb = model_xgb,
+      # model_cb = model_cb,
+      model_dt = model_dt,
+      model_bc5 = model_bc5,
+      model_svm = model_svm,
+      model_rf = model_rf,
+      model_nb = model_nb
+    ),
+    cross = TRUE,
+    case_weights = case_weights
+  )

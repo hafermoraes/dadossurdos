@@ -6,10 +6,10 @@
 
 packs <- c(
   'pak',
+  #'remotes',
   'textrecipes',
   'janitor',
   'themis',
-  'bonsai',
   'lightgbm',
   'xgboost',
   'glmnet',
@@ -28,6 +28,10 @@ packs <- c(
 install.packages(packs)
 
 pak::pak('tidymodels/tailor')
+pak::pak("tidymodels/bonsai")
+
+# install catboost
+#remotes::install_url('https://github.com/catboost/catboost/releases/download/v1.2.8/catboost-R-linux-aarch64-1.2.8.tgz', INSTALL_opts = c("--no-multiarch", "--no-test-load"))
 
 library(readr)      # read_csv
 library(dplyr)      # |>, mutate, glimpse
@@ -40,6 +44,7 @@ library(probably)   # cal_plot_breaks, cal_apply, cal_estimate_*
 library(betacal)
 library(tailor)
 library(bonsai)
+#library(catboost)
 library(discrim)
 library(finetune)
 #library(doParallel)
@@ -51,12 +56,13 @@ library(kernlab)
 # passo 1: importação da matriz de modelo
 libras <-
   read_csv(
-    '1_analyses/predictive_signlanguage/pns2019_modelmatrix.csv'
+    '1_analyses/predictive_signlanguage/data/pns2019_modelmatrix.csv'
   ) |> 
   mutate(
     across(where(is.character), as.factor),
     # https://workflowsets.tidymodels.org/reference/workflow_set.html
-    case_weights = importance_weights(case_weights) 
+    case_weights = importance_weights(case_weights),
+    libras = relevel(libras, 'sim')
   )
   
 # passo 1.1: redução do dataset para prototipagem de tidymodels
@@ -151,6 +157,19 @@ model_xgb <-
   set_engine("xgboost") |>
   set_mode("classification") 
 
+# catboost
+# model_cb <-
+#   boost_tree(
+#     learn_rate = tune(), tree_depth = tune()
+#     # mtry = tune(), trees = tune(), min_n = tune(), tree_depth = tune(),
+#     # learn_rate = tune(), loss_reduction = tune(), sample_size = tune(),
+#     # stop_iter = tune()
+#   ) |>
+#   set_engine("catboost", train_dir = tempdir()) |>
+#   set_mode("classification") 
+
+
+
 # decision_tree
 model_dt <-
   decision_tree(
@@ -200,6 +219,7 @@ models <-
       model_mlp = model_mlp,
       model_lgb = model_lgb,
       model_xgb = model_xgb,
+      # model_cb = model_cb,
       model_dt = model_dt,
       model_bc5 = model_bc5,
       model_svm = model_svm,
@@ -219,7 +239,7 @@ wflow_set <-
   )
 
 # passo 7: definição das métricas de avaliação dos classificadores
-m_set <-
+metrics_set <-
   metric_set(
     ## 'class' type
     # accuracy,
@@ -262,7 +282,7 @@ if(FALSE){
       seed = 1503,
       resamples = libras_folds,
       grid = 25,
-      metrics = m_set,
+      metrics = metrics_set,
       control = race_ctrl,
       verbose = TRUE
     )
@@ -283,53 +303,73 @@ wflow_set_fit <-
     fn = "tune_grid",
     verbose = TRUE, 
     seed = 1, 
-    metrics = m_set,
+    metrics = metrics_set,
     resamples = libras_folds
   )
 
 
 # passo 9: diagnóstico gráfico (autoplot)
-wflow_set_fit |>
-  mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
-  autoplot() + 
-  geom_text(aes(y = mean -1/7, label = wflow_id), angle = 90, hjust = 1) + 
-  theme(legend.position = "none")
+(
+  wflow_set_fit |>
+    mutate( 
+      wflow_id = str_remove_all(
+        wflow_id, 
+        "basic_model_"
+        )
+    ) |>
+    autoplot(select_best = TRUE) + 
+    geom_text(aes(y = mean, label = wflow_id), angle = 90, vjust = -0.7) + 
+    ylim(c(0,1)) +
+    theme(legend.position = "none") 
+) |>
+  ggsave(
+    filename = "1_analyses/predictive_signlanguage/results/workflowset_results.pdf",
+    width=12,
+    height=8
+    )
 
 # passo 10: diagnóstico gráfico (autoplot modificado)
-metric <- 'brier_class'
+metric <- 'j_index'
 wflow_set_fit |>
   mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
   autoplot(
     rank_metric = metric,  
     metric = metric,       
-    select_best = TRUE    
+    select_best = FALSE    
   ) +
-    geom_text(aes(y = mean -1/10, label = wflow_id), angle = 90, hjust = 1) +
+    geom_text(aes(y = mean, label = wflow_id), angle = 90, vjust = -0.6) +
     theme(legend.position = "none")
 
 # passo 11: coleta métricas
 wflow_set_fit |>
-  collect_metrics() 
+  collect_metrics()
 
 # passo 12: lista melhores modelos por métrica
 wflow_set_fit |>
   collect_metrics() |>
-  mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
+  #mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
   arrange(.metric, desc(mean)) |>
   write_csv("./wflow_set_fit_metrics.csv")
 
+# for(model in wflow_set_fit$wflow_id) {
+#   save_path <- str_remove_all(model, "basic_model_")
+#   
+# }
+
+
 # passo 13: extrai melhor modelo
 CLF <- "basic_model_mlp"
+METRIC <- "j_index"
 best_results <-
   wflow_set_fit |>
   extract_workflow_set_result(CLF) |>
-  select_best(metric="j_index") 
+  select_best(metric=METRIC) 
 
 wflow_results <- 
   wflow_set_fit |>
   extract_workflow(CLF) |>
   finalize_workflow(best_results) |> 
-  last_fit(split = libras_splits, metrics = m_set)
+  last_fit(split = libras_splits, metrics = metrics_set)
 
 wflow_results |>
   collect_metrics()
@@ -361,7 +401,7 @@ wflow_results <-
   race_results |>
   extract_workflow(BEST_CLF) |>
   finalize_workflow(best_results) |> 
-  last_fit(split = libras_splits, metrics = m_set)
+  last_fit(split = libras_splits, metrics = metrics_set)
 
 collect_metrics(wflow_results)
 
@@ -411,7 +451,7 @@ wflow_results |>
 set.seed(1)
 wflow_results |>
   cal_apply(
-    cal_estimate_isotonic_boot(wflow_results, libras)
+    cal_estimate_isotonic(wflow_results, libras)
   ) |>
   cal_plot_windowed(
     truth = libras, 
