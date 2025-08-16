@@ -14,7 +14,7 @@ if(FALSE){
       verbose_elim = TRUE
     )
   
-  race_results <-
+  fitted_models <-
     wflow_set |>
     workflow_map(
       "tune_race_anova",
@@ -26,10 +26,45 @@ if(FALSE){
       verbose = TRUE
     )
   
-  race_results |> 
-    mutate( wflow_id = str_remove_all(wflow_id, "basic_model_")) |>
-    autoplot(select_best = FALSE) +
-    geom_text(aes(y = mean - 1/20, label = wflow_id), angle = 90, hjust = 1) + 
-    theme(legend.position = "none")
+  # passo 12: lista melhores modelos por métrica
+  fitted_models |>
+    collect_metrics() |>
+    mutate(
+      wflow_id = str_remove_all(
+        wflow_id,
+        "basic_model_"
+      )
+    ) |>
+    arrange(.metric, desc(mean)) |>
+    write_csv(
+      paste0(
+        "/home/rstudio/",
+        "1_analyses/",
+        "predictive_signlanguage/",
+        "results/",
+        "controlrace_metrics.csv"
+      )
+    )
+
+  # diagnóstico gráfico dos melhores modelos por classificador
+  (
+    fitted_models |>
+      mutate( 
+        wflow_id = str_remove_all(
+          wflow_id, 
+          "basic_model_"
+        )
+      ) |>
+      autoplot(select_best = TRUE) + 
+      geom_text(aes(y = mean, label = wflow_id), angle = 90, vjust = -0.7) + 
+      ylim(c(0,1)) +
+      theme(legend.position = "none") 
+  ) |>
+    ggsave(
+      filename = "/home/rstudio/1_analyses/predictive_signlanguage/results/controlrace_results.pdf",
+      width=12,
+      height=8
+    )
+
  
 }

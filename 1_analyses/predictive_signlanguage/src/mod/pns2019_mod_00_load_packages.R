@@ -1,29 +1,3 @@
-packs <- c(
-  'pak',
-  #'remotes',
-  'textrecipes',
-  'janitor',
-  'themis',
-  'lightgbm',
-  'xgboost',
-  'glmnet',
-  'ranger',
-  'naivebayes',
-  'finetune',
-  'doParallel',
-  'earth',
-  'lme4',
-  'kernlab', # svm
-  'c50',
-  'baguette', # bag_mars
-  'betacal',
-  'NeuralNetTools'
-)
-install.packages(packs)
-
-pak::pak('tidymodels/tailor')
-pak::pak('tidymodels/bonsai')
-
 library(readr)         # read_csv, write_rds,read_rds
 library(dplyr)         # |>, mutate, glimpse
 library(tidymodels)    # initial_splits, train, test
@@ -43,3 +17,4 @@ library(lme4)
 library(earth)
 library(C50)
 library(kernlab)
+library(vip)

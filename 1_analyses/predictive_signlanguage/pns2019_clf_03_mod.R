@@ -20,7 +20,7 @@ packs <- c(
   'earth',
   'lme4',
   'kernlab', # svm
-  'c50',
+  'C50',
   'baguette', # bag_mars
   'betacal',
   'NeuralNetTools'
@@ -52,6 +52,7 @@ library(lme4)
 library(earth)
 library(C50)
 library(kernlab)
+library(vip)
 
 # passo 1: importação da matriz de modelo
 libras <-
@@ -351,11 +352,6 @@ wflow_set_fit |>
   arrange(.metric, desc(mean)) |>
   write_csv("./wflow_set_fit_metrics.csv")
 
-# for(model in wflow_set_fit$wflow_id) {
-#   save_path <- str_remove_all(model, "basic_model_")
-#   
-# }
-
 
 # passo 13: extrai melhor modelo
 CLF <- "basic_model_mlp"
@@ -365,6 +361,15 @@ best_results <-
   extract_workflow_set_result(CLF) |>
   select_best(metric=METRIC) 
 
+# save best results to csv
+best_results |>
+  select(-.config) |>
+  pivot_longer(
+    1:2,
+    names_to = "hyperparameter",
+    values_to = "value",
+    )
+
 wflow_results <- 
   wflow_set_fit |>
   extract_workflow(CLF) |>
@@ -373,7 +378,6 @@ wflow_results <-
 
 wflow_results |>
   collect_metrics()
-
 
 # salva arquivo em disco
 wflow_results |>
@@ -422,30 +426,30 @@ collect_predictions(wflow_results) %>%
   geom_rug(col = "blue", alpha = 1 / 2) + 
   labs(x = "Probability Estimate of Libras")
 
-cal_plot_breaks(wflow_results, event_level = "second")
-cal_plot_windowed(wflow_results, step_size = 0.025, event_level = "second")
-cal_plot_logistic(wflow_results, event_level = "second")
+cal_plot_breaks(wflow_results)
+cal_plot_windowed(wflow_results, step_size = 0.025)
+cal_plot_logistic(wflow_results)
 
 wflow_results |>
   cal_apply(
     cal_estimate_beta(wflow_results, libras)
   ) |>
+  # cal_plot_breaks(truth=libras)
   cal_plot_windowed(
     truth = libras, 
     estimate = .pred_sim, 
-    step_size = 0.025,
-    event_level = "second"
+    step_size = 0.025
   )
 
 wflow_results |>
   cal_apply(
     cal_estimate_logistic(wflow_results, libras)
   ) |>
+  # cal_plot_breaks(truth=libras)
   cal_plot_windowed(
     truth = libras, 
     estimate = .pred_sim, 
-    step_size = 0.025,
-    event_level = "second"
+    step_size = 0.025
   )
 
 set.seed(1)
@@ -453,11 +457,11 @@ wflow_results |>
   cal_apply(
     cal_estimate_isotonic(wflow_results, libras)
   ) |>
+  # cal_plot_breaks(truth=libras)
   cal_plot_windowed(
     truth = libras, 
     estimate = .pred_sim, 
-    step_size = 0.025,
-    event_level = "second"
+    step_size = 0.025
   )
 
 # otimização de threshold (facet_wrap)
@@ -466,6 +470,7 @@ wflow_results |>
   cal_apply(
     cal_estimate_isotonic(wflow_results, libras)
   ) |>
+  # collect_predictions() |>
   threshold_perf(
     truth = libras, 
     estimate = .pred_sim, 
@@ -507,7 +512,6 @@ collect_predictions(wflow_results) |>
 
 
 # variable importance (vip)
-library(vip)
 wflow_results |>
   extract_fit_parsnip() |>
   vip(geom="point")

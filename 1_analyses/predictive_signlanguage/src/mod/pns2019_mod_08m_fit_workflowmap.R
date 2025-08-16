@@ -1,7 +1,7 @@
 # passo 8: ajuste dos modelos
 set.seed(1)
 
-wflow_set_fit <- 
+fitted_models <- 
   workflow_map(
     wflow_set, 
     fn = "tune_grid",
@@ -13,7 +13,7 @@ wflow_set_fit <-
 
 
 # passo 12: lista melhores modelos por métrica
-wflow_set_fit |>
+fitted_models |>
   collect_metrics() |>
   mutate(
     wflow_id = str_remove_all(
@@ -24,7 +24,7 @@ wflow_set_fit |>
   arrange(.metric, desc(mean)) |>
   write_csv(
     paste0(
-      "./",
+      "/home/rstudio/",
       "1_analyses/",
       "predictive_signlanguage/",
       "results/",
@@ -34,7 +34,7 @@ wflow_set_fit |>
 
 # diagnóstico gráfico dos melhores modelos por classificador
 (
-  wflow_set_fit |>
+  fitted_models |>
     mutate( 
       wflow_id = str_remove_all(
         wflow_id, 
@@ -47,7 +47,7 @@ wflow_set_fit |>
     theme(legend.position = "none") 
 ) |>
   ggsave(
-    filename = "1_analyses/predictive_signlanguage/results/workflowset_results.pdf",
+    filename = "/home/rstudio/1_analyses/predictive_signlanguage/results/workflowset_results.pdf",
     width=12,
     height=8
     )
