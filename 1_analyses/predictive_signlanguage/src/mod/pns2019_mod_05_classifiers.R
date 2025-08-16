@@ -10,7 +10,7 @@ model_null <-
   set_mode("classification")
 
 # logistic regression
-model_lr <- 
+model_logres <- 
   logistic_reg(
     penalty = tune(), 
     mixture = tune()
@@ -20,7 +20,7 @@ model_lr <-
 # multivariate adaptive regression splines (MARS)
 model_mars <-
   mars(
-    # num_terms = tune(), prod_degree = tune(), prune_method = "backward"
+    num_terms = tune(), prod_degree = tune(), prune_method = "backward"
     ) |>
   set_engine("earth") |>
   set_mode("classification")
@@ -86,7 +86,7 @@ model_rf <-
     trees = tune(),
     min_n = tune()
   ) |>
-  set_engine("ranger") |>
+  set_engine("ranger", importance = "impurity") |>
   set_mode("classification") 
 
 # naive bayes

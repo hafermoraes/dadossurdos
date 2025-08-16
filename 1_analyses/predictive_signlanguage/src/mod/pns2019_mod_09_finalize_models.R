@@ -1,6 +1,13 @@
 
 METRIC <- "j_index"
-for(CLF in fitted_models$wflow_id) {
+
+classifiers <-
+  fitted_models |>
+  select(wflow_id) |>
+  filter(wflow_id != 'basic_model_null') |>
+  as.data.frame()
+
+for(CLF in classifiers) {
 
   save_path <- 
     paste0(
@@ -19,12 +26,12 @@ for(CLF in fitted_models$wflow_id) {
     select_best(metric=METRIC) 
   
   best_params |>
-    select(-.config) |>
     pivot_longer(
-      1:2,
+      -.config,
       names_to = "hyperparameter",
       values_to = "value",
     ) |>
+    select(-.config) |>
     write_csv(paste0(save_path, 'best_params.csv'))
   
   # modelo final ajustado com os hiperparametros otimizados
@@ -42,6 +49,7 @@ for(CLF in fitted_models$wflow_id) {
   # salva metricas do modelo final em disco
   best_clf |>
     collect_metrics() |>
+    select(.metric, .estimate) |>
     write_csv(paste0(save_path, 'metrics.csv'))
   
   # histograma das probabilidades
@@ -54,211 +62,32 @@ for(CLF in fitted_models$wflow_id) {
     labs(x = "Probability Estimate of Libras")
   ) |>
     ggsave(
-      filename = paste0(save_path, "workflowset_results.pdf"),
+      filename = paste0(save_path, "uncalibrated_prob_histogram.pdf"),
       width=12,
       height=8
     )
-  
-  # diagnóstico da calibração das probabilidades
-  (
-    cal_plot_breaks(best_clf)
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "cal_plot_breaks.pdf"),
-      width=5,
-      height=5
-    )
-  
-  (
-    cal_plot_windowed(best_clf, step_size = 0.025)
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "cal_plot_windowed.pdf"),
-      width=5,
-      height=5
-    )
-  
-  (
-    cal_plot_logistic(best_clf)
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "cal_plot_logistic.pdf"),
-      width=5,
-      height=5
-    )
-  
-  # resultado da calibração por três métodos distintos
-  (
-    best_clf |>
-    cal_apply(
-      cal_estimate_beta(best_clf, libras)
-    ) |>
-    cal_plot_windowed(
-      truth = libras, 
-      estimate = .pred_sim, 
-      step_size = 0.025
-    )
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "cal_estimate_beta.pdf"),
-      width=5,
-      height=5
-    )
-  
-  (
-    best_clf |>
-    cal_apply(
-      cal_estimate_logistic(best_clf, libras)
-    ) |>
-    cal_plot_windowed(
-      truth = libras, 
-      estimate = .pred_sim, 
-      step_size = 0.025
-    )
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "cal_estimate_logistic.pdf"),
-      width=5,
-      height=5
-    )
-  
-  set.seed(1)
-  (
-    best_clf |>
-    cal_apply(
-      cal_estimate_isotonic(best_clf, libras)
-    ) |>
-    cal_plot_windowed(
-      truth = libras, 
-      estimate = .pred_sim, 
-      step_size = 0.025
-    )
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "cal_estimate_isotonic.pdf"),
-      width=5,
-      height=5
-    )
-  
-  # threshold optimization
-  thresholds <- seq(0.01, 0.95, by = 0.01)
-  
-  # cal estimate_isotonic_threshold
-  cal_estimate_isotonic_threshold <- 
-    best_clf |>
-      cal_apply(
-        cal_estimate_isotonic(best_clf, libras)
-      ) |>
-      threshold_perf(
-        truth = libras, 
-        estimate = .pred_sim, 
-        thresholds = thresholds,
-        metric =   metric_set(
-          accuracy, bal_accuracy,
-          sens, spec,
-          precision, recall,
-          npv, ppv,
-          kap, mcc,
-          f_meas
-        )
-      ) |> 
-      filter(.metric != 'distance') 
-  
-  cal_estimate_isotonic_threshold |>
-    write_csv(paste0(save_path, 'cal_estimate_isotonic_threshold.csv'))
-  
-  (
-    cal_estimate_isotonic_threshold |>
-      ggplot( aes( x = .threshold, y = .estimate, color = .metric)) + 
-      geom_line()
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "cal_estimate_isotonic_threshold.pdf"),
-      width=5,
-      height=5
-    )
-
-  # cal estimate_beta_threshold
-  cal_estimate_beta_threshold <- 
-    best_clf |>
-    cal_apply(
-      cal_estimate_beta(best_clf, libras)
-    ) |>
-    threshold_perf(
-      truth = libras, 
-      estimate = .pred_sim, 
-      thresholds = thresholds,
-      metric =   metric_set(
-        accuracy, bal_accuracy,
-        sens, spec,
-        precision, recall,
-        npv, ppv,
-        kap, mcc,
-        f_meas
-      )
-    ) |> 
-    filter(.metric != 'distance') 
-  
-  cal_estimate_beta_threshold |>
-    write_csv(paste0(save_path, 'cal_estimate_beta_threshold.csv'))
-  
-  (
-    cal_estimate_beta_threshold |>
-      ggplot( aes( x = .threshold, y = .estimate, color = .metric)) + 
-      geom_line()
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "cal_estimate_beta_threshold.pdf"),
-      width=5,
-      height=5
-    )
-  
-  # otimização de threshold (sem calibração)
-  uncalibrated_threshold <- 
-    collect_predictions(best_clf) |> 
-      threshold_perf(
-        truth = libras, 
-        estimate = .pred_sim, 
-        thresholds = thresholds,
-        metric =   metric_set(
-          accuracy,
-          sens,
-          spec,
-          precision,
-          recall
-        )
-      ) |> 
-      filter(.metric != 'distance')
-  
-  uncalibrated_threshold |>
-    write_csv(paste0(save_path, 'uncalibrated_threshold.csv'))
-  
-  (
-    uncalibrated_threshold |>
-    ggplot( aes( x = .threshold, y = .estimate, color = .metric)) + 
-    geom_line()
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "uncalibrated_threshold.pdf"),
-      width=5,
-      height=5
-    )
-  
+    
   # variable importance (vip)
-  (
-    best_clf |>
-    extract_fit_parsnip() |>
-    vip(geom="point")
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "feature_importance.pdf"),
-      width=5,
-      height=5
-    )
+  if (! str_remove_all(CLF, "basic_model_") %in% c('svm', 'nb')){
+    (
+      best_clf |>
+      extract_fit_parsnip() |>
+      vip(geom="point")
+    ) |>
+      ggsave(
+        filename = paste0(save_path, "feature_importance.pdf"),
+        width=5,
+        height=5
+      )
+  }
+
+  # matriz de confusão (gráfico de mosaico)
+  clf_confmat <-
+    collect_predictions(best_clf) |>
+    conf_mat(libras, .pred_class)
   
   (
-    collect_predictions(best_clf) |>
-      conf_mat(libras, .pred_class) |> 
+     clf_confmat |> 
       autoplot(type = "mosaic")
   ) |>
     ggsave(
@@ -267,10 +96,9 @@ for(CLF in fitted_models$wflow_id) {
       height=5
     )
   
-  # matriz de confusão
+  # matriz de confusão (heatmap)
   (
-    collect_predictions(best_clf) |>
-      conf_mat(libras, .pred_class) |>
+    clf_confmat |>
       autoplot(type = "heatmap")
   ) |>
     ggsave(

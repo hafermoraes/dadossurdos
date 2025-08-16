@@ -2,7 +2,7 @@
 # passo 1: importação da matriz de modelo
 libras <-
   read_csv(
-    '/home/rstudio/1_analyses/predictive_signlanguage/pns2019_modelmatrix.csv'
+    '/home/rstudio/1_analyses/predictive_signlanguage/data/pns2019_modelmatrix.csv'
   ) |> 
   mutate(
     across(where(is.character), as.factor),

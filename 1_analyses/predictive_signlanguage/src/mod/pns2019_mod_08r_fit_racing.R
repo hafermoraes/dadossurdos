@@ -21,7 +21,7 @@ if(FALSE){
       seed = 1503,
       resamples = libras_folds,
       grid = 25,
-      metrics = m_set,
+      metrics = metrics_set,
       control = race_ctrl,
       verbose = TRUE
     )
