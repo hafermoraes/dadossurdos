@@ -4,10 +4,9 @@ METRIC <- "j_index"
 classifiers <-
   fitted_models |>
   select(wflow_id) |>
-  filter(wflow_id != 'basic_model_null') |>
-  as.data.frame()
+  filter(wflow_id != 'basic_model_null') 
 
-for(CLF in classifiers) {
+for(CLF in classifiers$wflow_id) {
 
   save_path <- 
     paste0(
@@ -68,7 +67,7 @@ for(CLF in classifiers) {
     )
     
   # variable importance (vip)
-  if (! str_remove_all(CLF, "basic_model_") %in% c('svm', 'nb')){
+  if (! str_remove_all(CLF, "basic_model_") %in% c('svm', 'nb', 'bc5')){
     (
       best_clf |>
       extract_fit_parsnip() |>

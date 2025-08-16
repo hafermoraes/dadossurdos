@@ -12,7 +12,7 @@ libras <-
   )
   
 # passo 1.1: redução do dataset para prototipagem de tidymodels
-if(TRUE){
+if(FALSE){
   libras <-
     bind_rows(
       libras |> filter(libras == 'nao') |> head(100),

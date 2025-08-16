@@ -10,7 +10,7 @@ classifiers <-
   filter(wflow_id != 'basic_model_null') |>
   as.data.frame()
 
-for(CLF in classifiers) {
+for(CLF in classifiers$wflow_id) {
 
   save_path <- 
     paste0(
