@@ -250,7 +250,7 @@ pns2019 <-
       q_code == 'd001' ~ 'ler_escrever',
       q_code == 'c011' ~ 'estado_civil',
       q_code == 'd00901' ~ 'escolaridade',
-      q_code == 'g047' ~ 'dif_enxergar',
+      q_code == 'g046' ~ 'dif_enxergar',
       q_code == 'g058' ~ 'dif_ouvir',
       q_code == 'v0001' ~ 'uf',
       TRUE ~ NA
@@ -260,8 +260,8 @@ pns2019 <-
 
 ## Harmonização das variáveis
 bind_rows(  
-  censo2000 |> na.omit(),
-  censo2010 |> na.omit(),
+  censo2000 |> na.omit() |> unique(),
+  censo2010 |> na.omit() |> unique(),
   pns2019 |> na.omit()
 ) |>
   mutate(
@@ -273,5 +273,5 @@ bind_rows(
     values_from = 'a_desc'
   ) |>
   arrange(nome_harmonizado) |>
-  View
+  ## View()
   write_csv('/tmp/equiv.csv')
