@@ -15,7 +15,7 @@ censo2000 <-
   transmute(
     fonte='censo2000',
     q_code,
-    a_code,
+    a_code = stringr::str_trim(a_code),
     a_desc,
     nome_harmonizado = case_when(
       q_code == 'v0401' ~ 'sexo',
@@ -262,7 +262,7 @@ pns2019 <-
 bind_rows(  
   censo2000 |> na.omit() |> unique(),
   censo2010 |> na.omit() |> unique(),
-  pns2019 |> na.omit()
+  pns2019 |> na.omit() |> unique()
 ) |>
   mutate(
     a_code = as.numeric(a_code)
