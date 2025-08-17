@@ -1,6 +1,6 @@
 # passo 8: ajuste dos modelos
 
-if(TRUE){
+if(FALSE){
   cores <- parallel::detectCores(logical = FALSE) - 2
   cl <- makePSOCKcluster(cores)
   registerDoParallel(cl)

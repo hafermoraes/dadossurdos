@@ -6,7 +6,6 @@ base_dir <-
     'predictive_signlanguage/',
     'src/',
     'mod/'
-    
   )
 
 source(paste0(base_dir, 'pns2019_empty_results_directory.R'))
