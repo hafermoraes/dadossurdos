@@ -19,8 +19,14 @@ wflow_set <-
       model_bc5 = model_bc5,
       # model_svm = model_svm,
       model_rf = model_rf,
+      # model_gam = model_gam,
+      # model_bart = model_bart,
+      # model_mlp2 = model_mlp2,
+      # model_bagc50 = model_bagc50,
+      # model_bagrpart = model_bagrpart,
       model_nb = model_nb
     ),
     cross = TRUE,
     case_weights = case_weights
   )
+

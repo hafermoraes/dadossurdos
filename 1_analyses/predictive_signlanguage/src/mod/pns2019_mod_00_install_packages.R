@@ -1,6 +1,5 @@
 packs <- c(
   'pak',
-  #'remotes',
   'textrecipes',
   'janitor',
   'themis',
@@ -15,11 +14,13 @@ packs <- c(
   'lme4',
   'kernlab', # svm
   'C50',
-  'baguette', # bag_mars
   'betacal',
-  'NeuralNetTools'
+  'NeuralNetTools',
+  'dbarts'
 )
 install.packages(packs)
 
 pak::pak('tidymodels/tailor')
 pak::pak('tidymodels/bonsai')
+pak::pak('tidymodels/baguette')
+pak::pak('tidymodels/brulee')

@@ -95,3 +95,47 @@ model_nb <-
     smoothness = tune(), Laplace = tune()
   ) |>
   set_engine("naivebayes")
+
+
+# -----------
+model_gam <-
+  gen_additive_mod(
+    select_features = FALSE, 
+    adjust_deg_free = tune()
+    ) |> 
+    set_mode("classification") |> 
+    set_engine("mgcv")
+
+# model_bart <-
+#   bart(
+#     trees = tune()
+#   ) |> 
+#   set_mode("classification") |> 
+#   set_engine("dbarts")
+
+# model_mlp2 <-
+#   mlp(
+#     penalty = tune(),
+#     epochs = tune()
+#   ) |>
+#   set_mode("classification") |>
+#   set_engine("brulee_two_layer", hidden_units_2 = 2)
+
+# Bagging Models
+NR_TIMES <- 25
+model_bagc50 <-
+  bag_tree(
+    min_n = tune()
+    ) |>
+    set_engine("C5.0", times = NR_TIMES) |>
+    set_mode("classification")
+
+model_bagrpart <- 
+  bag_tree(
+    class_cost = tune(),
+    tree_depth = tune()
+    # min_n = tune(), 
+    # cost_complexity = double(1)
+  ) |>
+    set_engine("rpart", times = NR_TIMES) |>
+    set_mode("classification")
