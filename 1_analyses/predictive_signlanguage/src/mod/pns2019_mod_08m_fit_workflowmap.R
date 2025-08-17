@@ -1,4 +1,11 @@
 # passo 8: ajuste dos modelos
+
+if(TRUE){
+  cores <- parallel::detectCores(logical = FALSE) - 2
+  cl <- makePSOCKcluster(cores)
+  registerDoParallel(cl)
+}
+
 set.seed(1)
 
 fitted_models <- 
