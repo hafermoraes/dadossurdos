@@ -1,21 +1,62 @@
-# library(arrow)    # open_dataset, collect
-# library(duckdb)   # to_duckdb()
-# library(dplyr)    # |>,  mutate, transmute, rename_with
-# library(readr)    # write_csv
 
+# dicionário de variáveis
+dvar_censo2000 <-
+  read_delim(
+    '/tmp/etl/br_ibge_censo_2000/variables_dictionary.txt',
+    delim = '|'
+  ) |>
+  filter(base=='pes')
+
+# harmonização das variáveis de migração
 subset_censo2000 <-
-  open_dataset("/tmp/etl/br_ibge_censo_2000/parquet/pes") |> 
+  open_dataset("/tmp/etl/br_ibge_censo_2000/parquet/pes") |>
   rename_with(tolower) |>  # converte nomes de colunas para minúsculas
+  select(
+    areap,v0102,v1103,v4572,v0401,v0428,v0438,v0432,v0408,v0411,v0412,v0413,
+    v0415,v0416,v0417,v0418,v0419,v0420,v4210,v0422,v4230,v4250,v4260
+  ) |>
+  mutate(across(everything(), ~ str_trim(.))) |>
   to_duckdb() |>
+  mutate(
+    # qual é a unidade da federação ou país estrangeiro de nascimento?
+    v4210_uf   =  case_when(v4210 == '' ~ NA, v4210 <= '27' ~ v4210, TRUE ~ NA),
+    v4210_pais =  case_when(v4210 == '' ~ NA, v4210 >= '30' ~ v4210, TRUE ~ NA),
+    # qual é a unidade da federação ou país estrangeiro de residência anterior?
+    v4230_uf   =  case_when(v4230 == '' ~ NA, v4230 <= '27' ~ v4230, TRUE ~ NA),
+    v4230_pais =  case_when(v4230 == '' ~ NA, v4230 >= '30' ~ v4230, TRUE ~ NA),
+    # em que unidade da federação ou país estrangeiro residia em 31 de julho de 1995?
+    v4260_uf   =  case_when(v4260 == '' ~ NA, v4260 <= '27' ~ v4260, TRUE ~ NA),
+    v4260_pais =  case_when(v4260 == '' ~ NA, v4260 >= '30' ~ v4260, TRUE ~ NA)
+  ) |>
+  to_arrow() |>
+  # joins com dicionário de variáveis
+  # v0102: uf de residência
+  left_join(dvar_censo2000 |> filter(q_code=='v0102') |>
+              transmute(v0102 = a_code, uf_residencia = a_desc),keep=FALSE) |> 
+  # v1103: município de residência
+  left_join(dvar_censo2000 |> filter(q_code=='v1103') |>
+              transmute(v1103 = a_code, municipio_residencia = a_desc), keep=FALSE) |>
+  # v4210: uf de nascimento
+  left_join(dvar_censo2000 |> filter(q_code=='v4210') |>
+              transmute(v4210_uf = a_code, uf_nascimento = a_desc), keep=FALSE) |>
+  # v4230: uf de residência anterior
+  left_join(dvar_censo2000 |> filter(q_code=='v4230') |>
+              transmute(v4230_uf = a_code, uf_residencia_anterior = a_desc), keep=FALSE) |>
+  # v4260: uf de residência data fixa
+  left_join(dvar_censo2000 |> filter(q_code=='v4260') |>
+              transmute(v4260_uf = a_code, uf_residencia_anterior = a_desc), keep=FALSE) |>
+  head(10) |> View()
+  ## to_duckdb() |> 
+  # finalização da tabela de análises
   transmute(
     # ......... Variáveis de expansão da amostra ........
     area_ponderacao=areap,
     peso_amostral=as.numeric(p001)/1e8,
     # ......... Variáveis comuns ........................
-    uf = v0102, # unidade da federação
-    municipio = v1103, # código município
+    uf_residencia = v0102, # unidade da federação
+    municipio_residencia = v1103, # código município
     # idade calculada em anos completos - a partir de 1 ano
-    idade = as.numeric(v4572), 
+    idade = v4572, 
     # sexo
     sexo = case_when(
       v0401 == '1' ~ 'masculino',
@@ -88,46 +129,68 @@ subset_censo2000 <-
       TRUE ~ NA
     ),
     # ......... Variáveis referentes à Migração .........
-    # mora neste município desde que nasceu?
+    # mora neste município desde que nasceu?   # provavelmente dá pra retirar essa variavel pois não serve...
     sempre_morou = case_when(
       v0415 == "1" ~ 1, # sim
       v0415 == "2" ~ 0, # não
       TRUE ~ NA
     ),
     # há quanto tempo mora sem interrupção neste município?
-    anos_residencia_municipio = as.numeric(v0416), 
+    municipio_residencia_tempo_anos = v0416, 
     # nasceu neste município?
-    natural_municipio = case_when(
+    natural_do_municipio = case_when(
       v0417 == '1' ~ 1, # sim
       v0417 == '2' ~ 0, # não
+      TRUE ~ NA
     ),
     # nasceu nesta unidade da federação?
-    natural_uf = case_when(
+    natural_da_uf = case_when(
       v0418 == '1' ~ 1, # sim
       v0418 == '2' ~ 0, # não
+      TRUE ~ NA
     ),
     # qual é a sua nacionalidade?
-    estrangeiro = case_when(
-      v0419 == '1' ~ 0, # brasileiro nato
-      v0419 == '2' ~ 0, # naturalizado brasileiro
-      v0419 == '3' ~ 1, # estrangeiro
+    nacionalidade = case_when(
+      v0419 == '1' ~ 'brasileiro nato',
+      v0419 == '2' ~ 'naturalizado brasileiro',
+      v0419 == '3' ~ 'estrangeiro',
       TRUE ~ NA
     ),
     # em que ano fixou residência no brasil?
-    ano_residencia_brasil = as.numeric(v0420),
+    ano_residencia_brasil = v0420,
     # qual é a unidade da federação ou país estrangeiro de nascimento?
     uf_nascimento = v4210,    # UF:   v4210 <= 27
     pais_nascimento = v4210,  # País: v4210 >= 30
     # há quanto tempo mora sem interrupção nesta unidade da federação?
-    anos_residencia_uf = v0422,
+    uf_residencia_tempo_anos = v0422,
     # qual é a unidade da federação ou país estrangeiro de residência anterior?
     uf_residencia_anterior = v4230,    # UF:   v4230 <= 27
     pais_residencia_anterior = v4230,  # País: v4230 >= 30
     v0424, # onde residia em 31 de julho de 1995?
     # em que município residia em 31 de julho de 1995?
-    municipio_residencia_5anos = v4250,
+    municipio_residencia_datafixa = v4250,
     # em que unidade da federação ou país estrangeiro residia em 31 de julho de 1995?
-    uf_residencia_5anos = v4260,   # UF:   v4260 <= 27
-    pais_residencia_5anos = v4260  # País: v4260 >= 30
-  )
+    uf_residencia_datafixa = v4260,   # UF:   v4260 <= 27
+    pais_residencia_datafixa = v4260  # País: v4260 >= 30
+  ) |>
+  head(30) |>
+  View()
 
+## --nomenclatura usada na tese--
+## uf_nascimento = =
+## uf_residencia =
+## uf_residencia_tempo_anos =
+## uf_residencia_anterior =
+## uf_residencia_datafixa =
+
+## municipio_nascimento =
+## municipio_residencia =
+## municipio_residencia_tempo_anos =
+## municipio_residencia_anterior
+## municipio_residencia_datafixa =
+
+## estrangeiro =
+## ano_residencia_brasil = 
+## pais_nascimento =
+## pais_residencia_anterior =
+## pais_residencia_datafixa =
