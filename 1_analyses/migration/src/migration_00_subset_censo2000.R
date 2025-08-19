@@ -33,7 +33,6 @@ subset_censo2000 <-
     v4260_uf   =  case_when(v4260 == '' ~ NA, v4260 <= '27' ~ v4260, TRUE ~ NA),
     v4260_pais =  case_when(v4260 == '' ~ NA, v4260 >= '30' ~ v4260, TRUE ~ NA)
   ) |>
-  ## to_arrow() |>
   # joins com dicionário de variáveis
   # v0102: uf de residência
   left_join(dvar_censo2000 |> filter(q_code=='v0102') |>
@@ -80,7 +79,7 @@ subset_censo2000 <-
     # ......... Variáveis comuns ........................
     uf_residencia, 
     municipio_residencia,
-    idade = v4572, # idade calculada em anos completos - a partir de 1 ano
+    idade = if_else(v4572=='',NA,as.numeric(v4572)), 
     sexo = case_when(
       v0401 == '1' ~ 'masculino',
       v0401 == '2' ~ 'feminino',
@@ -145,14 +144,14 @@ subset_censo2000 <-
       TRUE ~ NA
     ),
     # ......... Variáveis referentes à Migração .........
-    # mora neste município desde que nasceu?   # provavelmente dá pra retirar essa variavel pois não serve...
+    # mora neste município desde que nasceu?   # provavelmente dá pra retirar essa variável pois não serve...
     sempre_morou = case_when(
       v0415 == "1" ~ 1, # sim
       v0415 == "2" ~ 0, # não
       TRUE ~ NA
     ),
     # há quanto tempo mora sem interrupção neste município?
-    municipio_residencia_tempo_anos = v0416, 
+    municipio_residencia_tempo_anos = if_else(v0416=='',NA,as.numeric(v0416)), 
     # nasceu neste município?
     natural_do_municipio = case_when(
       v0417 == '1' ~ 1, # sim
@@ -173,12 +172,12 @@ subset_censo2000 <-
       TRUE ~ NA
     ),
     # em que ano fixou residência no brasil?
-    ano_residencia_brasil = v0420,
+    ano_residencia_brasil = if_else(v0420=='',NA,as.numeric(v0420)),
     # qual é a unidade da federação ou país estrangeiro de nascimento?
     uf_nascimento,
     pais_nascimento,
     # há quanto tempo mora sem interrupção nesta unidade da federação?
-    uf_residencia_tempo_anos = v0422,
+    uf_residencia_tempo_anos = if_else(v0422=='',NA,as.numeric(v0422)),
     # qual é a unidade da federação ou país estrangeiro de residência anterior?
     uf_residencia_anterior,
     pais_residencia_anterior,
@@ -187,9 +186,7 @@ subset_censo2000 <-
     # em que unidade da federação ou país estrangeiro residia em 31 de julho de 1995?
     uf_residencia_datafixa,
     pais_residencia_datafixa
-  ) |>
-  head(10) |>
-  View()
+  )
 
 ## --nomenclatura usada na tese--
 ## uf_nascimento = =

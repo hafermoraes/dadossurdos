@@ -23,7 +23,7 @@ source(paste0(base_dir, 'migration_00_subset_censo2000.R'))
 # expansão da amostra
 surveydesign <-
   subset_censo2000 |>
-  select(peso_amostral, dif_ouvir, nasceu_municipio) |>
+  select(peso_amostral, dif_ouvir, natural_do_municipio) |>
   as_survey_design(
     ids = 1,
     weights = peso_amostral
@@ -33,6 +33,6 @@ surveydesign <-
 surveydesign |>
   group_by(dif_ouvir) |>
   summarise(
-    pct = survey_mean(nasceu_municipio, vartype = 'ci')
+    pct = survey_mean(natural_do_municipio, vartype = 'ci')
   )
 
