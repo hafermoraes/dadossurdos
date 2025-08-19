@@ -5,7 +5,11 @@ dvar_censo2000 <-
     '/tmp/etl/br_ibge_censo_2000/variables_dictionary.txt',
     delim = '|'
   ) |>
-  filter(base=='pes')
+  filter(base=='pes') |>
+  mutate(
+    a_desc = str_trim(a_desc),
+    a_desc = str_to_title(a_desc, locale = 'pt-br')
+  )
 
 # harmonização das variáveis de migração
 subset_censo2000 <-
@@ -32,29 +36,49 @@ subset_censo2000 <-
   # joins com dicionário de variáveis
   # v0102: uf de residência
   left_join(dvar_censo2000 |> filter(q_code=='v0102') |>
-              transmute(v0102 = a_code, uf_residencia = a_desc),keep=FALSE) |> 
-  # v1103: município de residência
-  left_join(dvar_censo2000 |> filter(q_code=='v1103') |>
-              transmute(v1103 = a_code, municipio_residencia = a_desc), keep=FALSE) |>
+              transmute(v0102 = a_code, uf_residencia = a_desc),
+            keep=FALSE) |> 
   # v4210: uf de nascimento
   left_join(dvar_censo2000 |> filter(q_code=='v4210') |>
-              transmute(v4210_uf = a_code, uf_nascimento = a_desc), keep=FALSE) |>
+              transmute(v4210_uf = a_code, uf_nascimento = a_desc),
+            keep=FALSE) |>
   # v4230: uf de residência anterior
   left_join(dvar_censo2000 |> filter(q_code=='v4230') |>
-              transmute(v4230_uf = a_code, uf_residencia_anterior = a_desc), keep=FALSE) |>
+              transmute(v4230_uf = a_code, uf_residencia_anterior = a_desc),
+            keep=FALSE) |>
   # v4260: uf de residência data fixa
   left_join(dvar_censo2000 |> filter(q_code=='v4260') |>
-              transmute(v4260_uf = a_code, uf_residencia_anterior = a_desc), keep=FALSE) |>
-  head(10) |> View()
-  ## to_duckdb() |> 
+              transmute(v4260_uf = a_code, uf_residencia_datafixa = a_desc),
+            keep=FALSE) |>
+  # v4210: pais de nascimento
+  left_join(dvar_censo2000 |> filter(q_code=='v4210') |>
+              transmute(v4210_pais = a_code, pais_nascimento = a_desc),
+            keep=FALSE) |>
+  # v4230: pais de residência anterior
+  left_join(dvar_censo2000 |> filter(q_code=='v4230') |>
+              transmute(v4230_pais = a_code, pais_residencia_anterior = a_desc),
+            keep=FALSE) |>
+  # v4260: pais de residência data fixa
+  left_join(dvar_censo2000 |> filter(q_code=='v4260') |>
+              transmute(v4260_pais = a_code, pais_residencia_datafixa = a_desc),
+            keep=FALSE) |>
+  # v1103: município de residência
+  left_join(dvar_censo2000 |> filter(q_code=='v1103') |>
+              transmute(v1103 = a_code, municipio_residencia = a_desc),
+            keep=FALSE) |>
+  # v4250: município de residência data fixa
+  left_join(dvar_censo2000 |> filter(q_code=='v4250') |>
+              transmute(v4250 = a_code, municipio_residencia_datafixa = a_desc),
+            keep=FALSE) |>
+  to_duckdb() |> 
   # finalização da tabela de análises
   transmute(
     # ......... Variáveis de expansão da amostra ........
     area_ponderacao=areap,
     peso_amostral=as.numeric(p001)/1e8,
     # ......... Variáveis comuns ........................
-    uf_residencia = v0102, # unidade da federação
-    municipio_residencia = v1103, # código município
+    uf_residencia, 
+    municipio_residencia,
     # idade calculada em anos completos - a partir de 1 ano
     idade = v4572, 
     # sexo
@@ -159,19 +183,18 @@ subset_censo2000 <-
     # em que ano fixou residência no brasil?
     ano_residencia_brasil = v0420,
     # qual é a unidade da federação ou país estrangeiro de nascimento?
-    uf_nascimento = v4210,    # UF:   v4210 <= 27
-    pais_nascimento = v4210,  # País: v4210 >= 30
+    uf_nascimento,
+    pais_nascimento,
     # há quanto tempo mora sem interrupção nesta unidade da federação?
     uf_residencia_tempo_anos = v0422,
     # qual é a unidade da federação ou país estrangeiro de residência anterior?
-    uf_residencia_anterior = v4230,    # UF:   v4230 <= 27
-    pais_residencia_anterior = v4230,  # País: v4230 >= 30
-    v0424, # onde residia em 31 de julho de 1995?
+    uf_residencia_anterior,
+    pais_residencia_anterior,
     # em que município residia em 31 de julho de 1995?
-    municipio_residencia_datafixa = v4250,
+    municipio_residencia_datafixa,
     # em que unidade da federação ou país estrangeiro residia em 31 de julho de 1995?
-    uf_residencia_datafixa = v4260,   # UF:   v4260 <= 27
-    pais_residencia_datafixa = v4260  # País: v4260 >= 30
+    uf_residencia_datafixa,
+    pais_residencia_datafixa
   ) |>
   head(30) |>
   View()
