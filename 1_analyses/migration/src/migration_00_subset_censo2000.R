@@ -1,19 +1,17 @@
-library(arrow)    # open_dataset, collect
-library(duckdb)   # to_duckdb()
-library(dplyr)    # |>,  mutate, transmute, rename_with
-library(readr)    # write_csv
+# library(arrow)    # open_dataset, collect
+# library(duckdb)   # to_duckdb()
+# library(dplyr)    # |>,  mutate, transmute, rename_with
+# library(readr)    # write_csv
 
-subset <-
-  open_dataset(
-    "/tmp/etl/br_ibge_censo_2000/parquet/pes"
-  ) |> 
+subset_censo2000 <-
+  open_dataset("/tmp/etl/br_ibge_censo_2000/parquet/pes") |> 
   rename_with(tolower) |>  # converte nomes de colunas para minúsculas
   to_duckdb() |>
   transmute(
-    # Variáveis de expansão da amostra
+    # ......... Variáveis de expansão da amostra ........
     area_ponderacao=areap,
-    peso_amostral=as.numeric(p001)/1e8, # peso amostral do indivíduo
-    # Variáveis comuns
+    peso_amostral=as.numeric(p001)/1e8,
+    # ......... Variáveis comuns ........................
     v0102, # unidade da federação
     v1103, # código município
     v4572, # idade calculada em anos completos - a partir de 1 ano
@@ -23,10 +21,22 @@ subset <-
     v0432, # curso mais elevado que freqüentou, concluindo pelo menos uma série
     v0408, # cor ou raça
     v0411, # capacidade de enxergar
-    v0412, # capacidade de ouvir
+    # capacidade de ouvir
+    dif_ouvir = case_when(
+      v0412 == '1' ~ 'incapaz',
+      v0412 == '2' ~ 'grande',
+      v0412 == '3' ~ 'alguma',
+      v0412 == '4' ~ 'nenhuma',
+      TRUE ~ NA
+    ),
     v0413, # capacidade de caminhar/subir escadas
-    # Variáveis referentes à Migração
-    v0415, # mora neste município desde que nasceu?
+    # ......... Variáveis referentes à Migração .........
+    # mora neste município desde que nasceu?
+    nasceu_municipio = case_when(
+      v0415 == "2" ~ 0, # não
+      v0415 == "1" ~ 1, # sim
+      TRUE ~ NA
+    ),
     v0416, # há quanto tempo mora sem interrupção neste município?
     v0417, # nasceu neste município?
     v0418, # nasceu nesta unidade da federação?
