@@ -9,14 +9,15 @@ dvar_censo2000 <-
   mutate(
     a_desc = str_trim(a_desc),
     a_desc = str_to_title(a_desc, locale = 'pt-br')
-  )
-
+  ) |>
+  to_duckdb()
+  
 # harmonização das variáveis de migração
 subset_censo2000 <-
   open_dataset("/tmp/etl/br_ibge_censo_2000/parquet/pes") |>
   rename_with(tolower) |>  # converte nomes de colunas para minúsculas
   select(
-    areap,v0102,v1103,v4572,v0401,v0428,v0438,v0432,v0408,v0411,v0412,v0413,
+    areap,p001,v0102,v1103,v4572,v0401,v0428,v0438,v0432,v0408,v0411,v0412,v0413,
     v0415,v0416,v0417,v0418,v0419,v0420,v4210,v0422,v4230,v4250,v4260
   ) |>
   mutate(across(everything(), ~ str_trim(.))) |>
@@ -32,7 +33,7 @@ subset_censo2000 <-
     v4260_uf   =  case_when(v4260 == '' ~ NA, v4260 <= '27' ~ v4260, TRUE ~ NA),
     v4260_pais =  case_when(v4260 == '' ~ NA, v4260 >= '30' ~ v4260, TRUE ~ NA)
   ) |>
-  to_arrow() |>
+  ## to_arrow() |>
   # joins com dicionário de variáveis
   # v0102: uf de residência
   left_join(dvar_censo2000 |> filter(q_code=='v0102') |>
@@ -70,7 +71,7 @@ subset_censo2000 <-
   left_join(dvar_censo2000 |> filter(q_code=='v4250') |>
               transmute(v4250 = a_code, municipio_residencia_datafixa = a_desc),
             keep=FALSE) |>
-  to_duckdb() |> 
+  ## to_duckdb() |> 
   # finalização da tabela de análises
   transmute(
     # ......... Variáveis de expansão da amostra ........
@@ -79,21 +80,17 @@ subset_censo2000 <-
     # ......... Variáveis comuns ........................
     uf_residencia, 
     municipio_residencia,
-    # idade calculada em anos completos - a partir de 1 ano
-    idade = v4572, 
-    # sexo
+    idade = v4572, # idade calculada em anos completos - a partir de 1 ano
     sexo = case_when(
       v0401 == '1' ~ 'masculino',
       v0401 == '2' ~ 'feminino',
       TRUE ~ NA
     ),
-    # sabe ler e escrever
-    alfabetizado = case_when(
+    alfabetizado = case_when( # sabe ler e escrever
       v0428 == '1' ~ 'sim',
       v0428 == '2' ~ 'nao',
       TRUE ~ NA
     ),
-    # estado civil
     estado_civil = case_when(
       v0438 == '1' ~ 'casado',     # Casado(a)
       v0438 == '2' ~ 'separado',   # desquitado(a) ou separado(a) judicialmente
@@ -102,8 +99,7 @@ subset_censo2000 <-
       v0438 == '5' ~ 'solteiro',   # Solteiro(a)
       TRUE ~ NA
     ),
-    # curso mais elevado que freqüentou, concluindo pelo menos uma série
-    instrucao = case_when(
+    instrucao = case_when( # curso mais elevado que freqüentou, concluindo pelo menos uma série
       v0432 == '01' ~ 'outros',      # alfabetização de jovens e adultos
       v0432 == '02' ~ 'fundamental', # antigo primário
       v0432 == '03' ~ 'fundamental', # antigo ginásio
@@ -115,7 +111,6 @@ subset_censo2000 <-
       v0432 == '09' ~ 'outros',      # nenhum
       TRUE ~ NA
     ),
-    # cor ou raça
     cor_raca = case_when(
       v0408 == '1' ~ 'branca',
       v0408 == '2' ~ 'preta',
@@ -125,8 +120,7 @@ subset_censo2000 <-
       v0408 == '9' ~ 'outros',
       TRUE ~ NA
       ),
-    # capacidade de enxergar
-    dif_enxergar = case_when(
+    dif_enxergar = case_when( # capacidade de enxergar
       v0411 == '4' ~ 'incapaz',   # incapaz
       v0411 == '3' ~ 'grande',    # grande dificuldade permanente
       v0411 == '2' ~ 'alguma',    # alguma dificuldade permanente
@@ -134,8 +128,7 @@ subset_censo2000 <-
       v0411 == '9' ~ 'ignorado',  # ignorado
       TRUE ~ NA
     ),
-    # capacidade de ouvir
-    dif_ouvir = case_when(
+    dif_ouvir = case_when( # capacidade de ouvir
       v0412 == '1' ~ 'incapaz',   # incapaz
       v0412 == '2' ~ 'grande',    # grande dificuldade permanente
       v0412 == '3' ~ 'alguma',    # alguma dificuldade permanente
@@ -143,8 +136,7 @@ subset_censo2000 <-
       v0412 == '9' ~ 'ignorado',  # ignorado
       TRUE ~ NA
     ),
-    # capacidade de caminhar/subir escadas
-    dif_locomover = case_when(
+    dif_locomover = case_when( # capacidade de caminhar/subir escadas
       v0413 == '1' ~ 'incapaz',   # incapaz
       v0413 == '2' ~ 'grande',    # grande dificuldade permanente
       v0413 == '3' ~ 'alguma',    # alguma dificuldade permanente
@@ -196,7 +188,7 @@ subset_censo2000 <-
     uf_residencia_datafixa,
     pais_residencia_datafixa
   ) |>
-  head(30) |>
+  head(10) |>
   View()
 
 ## --nomenclatura usada na tese--
