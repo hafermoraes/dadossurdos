@@ -22,6 +22,7 @@ subset_censo2010 <-
   ) |> 
   mutate(
     across(everything(), ~ str_trim(.)),
+    v0010 = as.numeric(v0010),
     v0002 = paste0(v0001,v0002),
     v6222 = str_sub(v6222, start=1, end=2),
     v6252 = str_sub(v6252, start=1, end=2),
@@ -74,7 +75,7 @@ subset_censo2010 <-
   transmute(
     # ......... Variáveis de expansão da amostra ........
     area_ponderacao=v0011,
-    peso_amostral=as.numeric(v0010)/1e8,
+    peso_amostral=v0010/1e13,
     # ......... Variáveis comuns ........................
     uf_residencia, 
     municipio_residencia,
