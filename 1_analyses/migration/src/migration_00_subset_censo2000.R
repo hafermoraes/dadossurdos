@@ -11,7 +11,7 @@ dvar_censo2000 <-
     a_desc = str_to_title(a_desc, locale = 'pt-br')
   ) |>
   to_duckdb()
-  
+
 # harmonização das variáveis de migração
 subset_censo2000 <-
   open_dataset("/tmp/etl/br_ibge_censo_2000/parquet/pes") |>
@@ -120,10 +120,10 @@ subset_censo2000 <-
       TRUE ~ NA
       ),
     dif_enxergar = case_when( # capacidade de enxergar
-      v0411 == '4' ~ 'incapaz',   # incapaz
-      v0411 == '3' ~ 'grande',    # grande dificuldade permanente
-      v0411 == '2' ~ 'alguma',    # alguma dificuldade permanente
-      v0411 == '1' ~ 'nenhuma',   # nenhuma dificuldade
+      v0411 == '1' ~ 'incapaz',   # incapaz
+      v0411 == '2' ~ 'grande',    # grande dificuldade permanente
+      v0411 == '3' ~ 'alguma',    # alguma dificuldade permanente
+      v0411 == '4' ~ 'nenhuma',   # nenhuma dificuldade
       v0411 == '9' ~ 'ignorado',  # ignorado
       TRUE ~ NA
     ),
