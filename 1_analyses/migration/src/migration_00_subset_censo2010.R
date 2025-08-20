@@ -18,59 +18,56 @@ subset_censo2010 <-
   rename_with(tolower) |>  # converte nomes de colunas para minúsculas
   select(
     v0011,v0010,v0001,v0002,v6036,v0601,v0627,v0640,v0633,v0606,v0614,v0615,v0616,
-
-    
-    v0415,v0416,v0417,v0418,v0419,v0420,v4210,v0422,v4230,v4250,v4260
-  ) |>
-  mutate(across(everything(), ~ str_trim(.))) |>
-  to_duckdb() |>
+    v0618,v0624,v0619,v0620,v0621,v0623,v6222,v6252,v6262,v6224,v6256,v6266,v6264,v6254
+  ) |> 
   mutate(
-    # qual é a unidade da federação ou país estrangeiro de nascimento?
-    v4210_uf   =  case_when(v4210 == '' ~ NA, v4210 <= '27' ~ v4210, TRUE ~ NA),
-    v4210_pais =  case_when(v4210 == '' ~ NA, v4210 >= '30' ~ v4210, TRUE ~ NA),
-    # qual é a unidade da federação ou país estrangeiro de residência anterior?
-    v4230_uf   =  case_when(v4230 == '' ~ NA, v4230 <= '27' ~ v4230, TRUE ~ NA),
-    v4230_pais =  case_when(v4230 == '' ~ NA, v4230 >= '30' ~ v4230, TRUE ~ NA),
-    # em que unidade da federação ou país estrangeiro residia em 31 de julho de 1995?
-    v4260_uf   =  case_when(v4260 == '' ~ NA, v4260 <= '27' ~ v4260, TRUE ~ NA),
-    v4260_pais =  case_when(v4260 == '' ~ NA, v4260 >= '30' ~ v4260, TRUE ~ NA)
+    across(everything(), ~ str_trim(.)),
+    v0002 = paste0(v0001,v0002),
+    v6222 = str_sub(v6222, start=1, end=2),
+    v6252 = str_sub(v6252, start=1, end=2),
+    v6262 = str_sub(v6262, start=1, end=2)
   ) |>
+  to_duckdb() |>
   # joins com dicionário de variáveis
   # v0001: uf de residência
   left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v0001') |>
               transmute(v0001 = a_code, uf_residencia = a_desc),
             keep=FALSE) |> 
-  # v4210: uf de nascimento
-  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v4210') |>
-              transmute(v4210_uf = a_code, uf_nascimento = a_desc),
+  # v6222: uf de nascimento
+  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v6222') |>
+              transmute(v6222 = a_code, uf_nascimento = a_desc),
             keep=FALSE) |>
-  # v4230: uf de residência anterior
-  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v4230') |>
-              transmute(v4230_uf = a_code, uf_residencia_anterior = a_desc),
+  # v6252: uf de residência anterior
+  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v6252') |>
+              transmute(v6252 = a_code, uf_residencia_anterior = a_desc),
             keep=FALSE) |>
-  # v4260: uf de residência data fixa
-  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v4260') |>
-              transmute(v4260_uf = a_code, uf_residencia_datafixa = a_desc),
+  # v6262: uf de residência data fixa
+  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v6262') |>
+              transmute(v6262 = a_code, uf_residencia_datafixa = a_desc),
             keep=FALSE) |>
-  # v4210: pais de nascimento
-  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v4210') |>
-              transmute(v4210_pais = a_code, pais_nascimento = a_desc),
+  # v6224: pais de nascimento
+  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v6224') |>
+              transmute(v6224 = a_code, pais_nascimento = a_desc),
             keep=FALSE) |>
-  # v4230: pais de residência anterior
-  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v4230') |>
-              transmute(v4230_pais = a_code, pais_residencia_anterior = a_desc),
+  # v6256: pais de residência anterior
+  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v6256') |>
+              transmute(v6256 = a_code, pais_residencia_anterior = a_desc),
             keep=FALSE) |>
-  # v4260: pais de residência data fixa
-  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v4260') |>
-              transmute(v4260_pais = a_code, pais_residencia_datafixa = a_desc),
+  # v6266: pais de residência data fixa
+  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v6266') |>
+              transmute(v6266 = a_code, pais_residencia_datafixa = a_desc),
             keep=FALSE) |>
   # v0002: município de residência
   left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v0002') |>
               transmute(v0002 = a_code, municipio_residencia = a_desc),
             keep=FALSE) |>
-  # v4250: município de residência data fixa
-  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v4250') |>
-              transmute(v4250 = a_code, municipio_residencia_datafixa = a_desc),
+  # v6264: município de residência data fixa
+  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v6264') |>
+              transmute(v6264 = a_code, municipio_residencia_datafixa = a_desc),
+            keep=FALSE) |>
+  # v6254: município de residência anterior
+  left_join(dvar_censo2010 |> filter(base == 'pess', q_code=='v6254') |>
+              transmute(v6254 = a_code, municipio_residencia_anterior = a_desc),
             keep=FALSE) |>
   ## to_duckdb() |> 
   # finalização da tabela de análises
@@ -151,43 +148,47 @@ subset_censo2010 <-
       TRUE ~ NA
     ),
     # ......... Variáveis referentes à Migração .........
-    # mora neste município desde que nasceu?   # provavelmente dá pra retirar essa variável pois não serve...
+    # nasceu neste município?   # provavelmente dá pra retirar essa variável pois não serve...
     sempre_morou = case_when(
-      v0415 == "1" ~ 1, # sim
-      v0415 == "2" ~ 0, # não
+      v0618 == "1" ~ 1, # Sim e sempre morou
+      v0618 == "2" ~ 0, # Sim mas morou em outro município ou país estrangeiro
+      v0618 == "3" ~ 0, # Não
       TRUE ~ NA
     ),
-    # há quanto tempo mora sem interrupção neste município?
-    municipio_residencia_tempo_anos = if_else(v0416=='',NA,as.numeric(v0416)), 
+    # tempo de moradia no município
+    municipio_residencia_tempo_anos = if_else(v0624=='',NA,as.numeric(v0624)), 
     # nasceu neste município?
     natural_do_municipio = case_when(
-      v0417 == '1' ~ 1, # sim
-      v0417 == '2' ~ 0, # não
+      v0618 == '1' ~ 1, # Sim e sempre morou
+      v0618 == '2' ~ 1, # Sim mas morou em outro município ou país estrangeiro
+      v0618 == '3' ~ 0, # Não
       TRUE ~ NA
     ),
     # nasceu nesta unidade da federação?
     natural_da_uf = case_when(
-      v0418 == '1' ~ 1, # sim
-      v0418 == '2' ~ 0, # não
+      v0619 == '1' ~ 1, # Sim e sempre morou
+      v0619 == '2' ~ 1, # Sim mas morou em outro município ou país estrangeiro
+      v0619 == '3' ~ 0, # Não
       TRUE ~ NA
     ),
     # qual é a sua nacionalidade?
     nacionalidade = case_when(
-      v0419 == '1' ~ 'brasileiro nato',
-      v0419 == '2' ~ 'naturalizado brasileiro',
-      v0419 == '3' ~ 'estrangeiro',
+      v0620 == '1' ~ 'brasileiro nato',
+      v0620 == '2' ~ 'naturalizado brasileiro',
+      v0620 == '3' ~ 'estrangeiro',
       TRUE ~ NA
     ),
     # em que ano fixou residência no brasil?
-    ano_residencia_brasil = if_else(v0420=='',NA,as.numeric(v0420)),
+    ano_residencia_brasil = if_else(v0621=='',NA,as.numeric(v0621)),
     # qual é a unidade da federação ou país estrangeiro de nascimento?
     uf_nascimento,
     pais_nascimento,
     # há quanto tempo mora sem interrupção nesta unidade da federação?
-    uf_residencia_tempo_anos = if_else(v0422=='',NA,as.numeric(v0422)),
+    uf_residencia_tempo_anos = if_else(v0623=='',NA,as.numeric(v0623)),
     # qual é a unidade da federação ou país estrangeiro de residência anterior?
     uf_residencia_anterior,
     pais_residencia_anterior,
+    municipio_residencia_anterior,
     # em que município residia em 31 de julho de 1995?
     municipio_residencia_datafixa,
     # em que unidade da federação ou país estrangeiro residia em 31 de julho de 1995?
