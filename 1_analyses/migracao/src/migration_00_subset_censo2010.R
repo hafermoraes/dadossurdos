@@ -150,7 +150,7 @@ subset_censo2010 <-
     ),
     # ......... Variáveis referentes à Migração .........
     # nasceu neste município?   # provavelmente dá pra retirar essa variável pois não serve...
-    sempre_morou = case_when(
+    municipio_sempre_morou = case_when(
       v0618 == "1" ~ 1, # Sim e sempre morou
       v0618 == "2" ~ 0, # Sim mas morou em outro município ou país estrangeiro
       v0618 == "3" ~ 0, # Não
@@ -159,14 +159,14 @@ subset_censo2010 <-
     # tempo de moradia no município
     municipio_residencia_tempo_anos = if_else(v0624=='',NA,as.numeric(v0624)), 
     # nasceu neste município?
-    natural_do_municipio = case_when(
+    municipio_naturalidade = case_when(
       v0618 == '1' ~ 1, # Sim e sempre morou
       v0618 == '2' ~ 1, # Sim mas morou em outro município ou país estrangeiro
       v0618 == '3' ~ 0, # Não
       TRUE ~ NA
     ),
     # nasceu nesta unidade da federação?
-    natural_da_uf = case_when(
+    uf_naturalidade = case_when(
       v0619 == '1' ~ 1, # Sim e sempre morou
       v0619 == '2' ~ 1, # Sim mas morou em outro município ou país estrangeiro
       v0619 == '3' ~ 0, # Não
@@ -180,7 +180,7 @@ subset_censo2010 <-
       TRUE ~ NA
     ),
     # em que ano fixou residência no brasil?
-    ano_residencia_brasil = if_else(v0621=='',NA,as.numeric(v0621)),
+    ano_fixou_residencia_brasil = if_else(v0621=='',NA,as.numeric(v0621)),
     # qual é a unidade da federação ou país estrangeiro de nascimento?
     uf_nascimento,
     pais_nascimento,

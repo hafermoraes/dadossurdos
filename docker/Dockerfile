@@ -17,7 +17,9 @@
 # Note: This rocker image contains all needed packages for etl and analyses purposes
 FROM rocker/tidyverse:4.4.1
 
-RUN Rscript -e "install.packages(c('survey', 'srvyr', 'tictoc', 'censobr', 'tidymodels', 'vip', 'probably', 'discrim'))"
+RUN apt-get update && apt-get upgrade -y && apt-get install libudunits2-dev libproj-dev libgdal-dev -y
+
+RUN Rscript -e "install.packages(c('survey', 'srvyr', 'tictoc', 'censobr', 'tidymodels', 'vip', 'probably', 'discrim', 'geobr'))"
 
 WORKDIR /home/rstudio/
 

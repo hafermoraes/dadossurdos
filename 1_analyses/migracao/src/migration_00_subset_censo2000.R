@@ -145,7 +145,7 @@ subset_censo2000 <-
     ),
     # ......... Variáveis referentes à Migração .........
     # mora neste município desde que nasceu?   # provavelmente dá pra retirar essa variável pois não serve...
-    sempre_morou = case_when(
+    municipio_sempre_morou = case_when(
       v0415 == "1" ~ 1, # sim
       v0415 == "2" ~ 0, # não
       TRUE ~ NA
@@ -153,13 +153,13 @@ subset_censo2000 <-
     # há quanto tempo mora sem interrupção neste município?
     municipio_residencia_tempo_anos = if_else(v0416=='',NA,as.numeric(v0416)), 
     # nasceu neste município?
-    natural_do_municipio = case_when(
+    municipio_naturalidade = case_when(
       v0417 == '1' ~ 1, # sim
       v0417 == '2' ~ 0, # não
       TRUE ~ NA
     ),
     # nasceu nesta unidade da federação?
-    natural_da_uf = case_when(
+    uf_naturalidade = case_when(
       v0418 == '1' ~ 1, # sim
       v0418 == '2' ~ 0, # não
       TRUE ~ NA
@@ -172,7 +172,7 @@ subset_censo2000 <-
       TRUE ~ NA
     ),
     # em que ano fixou residência no brasil?
-    ano_residencia_brasil = if_else(v0420=='',NA,as.numeric(v0420)),
+    ano_fixou_residencia_brasil = if_else(v0420=='',NA,as.numeric(v0420)),
     # qual é a unidade da federação ou país estrangeiro de nascimento?
     uf_nascimento,
     pais_nascimento,
@@ -187,22 +187,3 @@ subset_censo2000 <-
     uf_residencia_datafixa,
     pais_residencia_datafixa
   )
-
-## --nomenclatura usada na tese--
-## uf_nascimento = =
-## uf_residencia =
-## uf_residencia_tempo_anos =
-## uf_residencia_anterior =
-## uf_residencia_datafixa =
-
-## municipio_nascimento =
-## municipio_residencia =
-## municipio_residencia_tempo_anos =
-## municipio_residencia_anterior
-## municipio_residencia_datafixa =
-
-## estrangeiro =
-## ano_residencia_brasil = 
-## pais_nascimento =
-## pais_residencia_anterior =
-## pais_residencia_datafixa =
