@@ -15,5 +15,6 @@ metrics_set <-
     roc_auc,
     average_precision,
     brier_class,
+    mn_log_loss,
     pr_auc
   )
