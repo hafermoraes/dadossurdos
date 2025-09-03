@@ -15,7 +15,7 @@ microdados <-
   select(
     v0024,v0029,upa_pns,
     v00292,v00293,
-    v0001,c006,c008,c009,d001,c011,d00901,g058,g05801
+    v0001,c006,c008,c009,d001,c011,d00901,g046,g057,g070,g05801
   ) |>
   mutate(v0029=as.numeric(v0029)) |>
   collect()
@@ -51,7 +51,7 @@ pns2019_posterior <-
 ## matriz de modelo preditivo libras
 abt <-
   svytable(
-  formula=~v0001+c006+c008+c009+d001+c011+d00901+g058+g05801,
+  formula=~v0001+c006+c008+c009+d001+c011+d00901+g046+g057+g070+g05801,
   design=pns2019_posterior
   ) |>
   as_tibble() |>
@@ -122,24 +122,33 @@ pns2019_modelmatrix <-
       c009 == '9' ~ 'outros',
       TRUE ~ NA
       ),
-    # ___ tem dificuldade permanente de ouvir? (Para moradores com 5 anos ou mais de idade.)OU___ tem dificuldade permanente de ouvir sons como vozes ou música? (Para moradores com 2 a 4 anos de idade.)
-    dif_ouvir = case_when(
-      g058 == '4' ~ 'incapaz',   # Sim, não consegue de modo algum
-      g058 == '3' ~ 'grande',    # Sim, muita dificuldade
-      g058 == '2' ~ 'alguma',    # Sim, alguma dificuldade
-      g058 == '1' ~ 'nenhuma',   # Não, nenhuma dificuldade
-      g058 == '9' ~ 'ignorado',  # ignorado
+    # . ___ tem dificuldade permanente de enxergar mesmo usando óculos, lentes de contato ou lupas?
+    dif_enxergar = case_when(
+      g046 == '4' ~ 'incapaz',   # Sim, não consegue de modo algum
+      g046 == '3' ~ 'grande',    # Sim, muita dificuldade
+      g046 == '2' ~ 'alguma',    # Sim, alguma dificuldade
+      g046 == '1' ~ 'nenhuma',   # Não, nenhuma dificuldade
+      g046 == '9' ~ 'ignorado',  # ignorado
       TRUE ~ NA
     ),
-    # . ___ tem dificuldade permanente de enxergar mesmo usando óculos, lentes de contato ou lupas?
-    # dif_enxergar = case_when(
-    #   g047 == '4' ~ 'incapaz',   # Sim, não consegue de modo algum
-    #   g047 == '3' ~ 'grande',    # Sim, muita dificuldade
-    #   g047 == '2' ~ 'alguma',    # Sim, alguma dificuldade
-    #   g047 == '1' ~ 'nenhuma',   # Não, nenhuma dificuldade
-    #   g047 == '9' ~ 'ignorado',  # ignorado
-    #   TRUE ~ NA
-    # ),
+    # ___ tem dificuldade permanente de ouvir mesmo usando aparelhos auditivos? (Para moradores com 5 anos ou mais de idade.) OU ___ tem dificuldade permanente para ouvir sons como vozes ou música, mesmo usando aparelhos auditivos? (Para moradores com 2 a 4 anos de idade.)
+    dif_ouvir = case_when(
+      g057 == '4' ~ 'incapaz',   # Sim, não consegue de modo algum
+      g057 == '3' ~ 'grande',    # Sim, muita dificuldade
+      g057 == '2' ~ 'alguma',    # Sim, alguma dificuldade
+      g057 == '1' ~ 'nenhuma',   # Não, nenhuma dificuldade
+      g057 == '9' ~ 'ignorado',  # ignorado
+      TRUE ~ NA
+    ),
+    # ___ tem dificuldade permanente de caminhar ou subir degraus, mesmo usando prótese, bengala ou outro aparelho de auxílio? (Para moradores com 5 anos ou mais de idade.)OUComparado com crianças da mesma idade, ___ tem dificuldade permanente para caminhar, mesmo usando prótese, bengala ou aparelho de auxílio? (Para moradores com 2 a 4 anos de idade.)
+    dif_locomover = case_when(
+      g070 == '4' ~ 'incapaz',   # Sim, não consegue de modo algum
+      g070 == '3' ~ 'grande',    # Sim, muita dificuldade
+      g070 == '2' ~ 'alguma',    # Sim, alguma dificuldade
+      g070 == '1' ~ 'nenhuma',   # Não, nenhuma dificuldade
+      g070 == '9' ~ 'ignorado',  # ignorado
+      TRUE ~ NA
+    ),
     # Sabe usar a Língua Brasileira de Sinais – Libras? (Para moradores com 5 anos ou mais de idade.)
     libras = case_when(
       g05801 == 1 ~ 'sim',
