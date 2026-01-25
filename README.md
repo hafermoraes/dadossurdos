@@ -7,6 +7,12 @@ Este repositório contém os código de extração e preparação dos dados sobr
 - Edição 2013 e 2019 da Pesquisa Nacional de Saúde (PNS)
 - Edição 2022/3ºTrimestre da Pesquisa Nacional de Amostra pr Domicílios - Contínua (PNADC)
 
-O repositório também contempla os scripts de análise para a caracterização demográfica da população surda brasileira sob as dinâmicas demográficas da migração, fecundidade e mortalidade, bem como o arranjo familiar e o modelo preditivo Libras
+O repositório também contempla os scripts de análise para a caracterização demográfica da população surda brasileira através 
+- da componente demográfica da migração, 
+- da componente demográfica da fecundidade 
+- da componente demográfica da mortalidade
+- do arranjo domiciliar
+- do modelo preditivo Libras
+- da análise espacial da população surda no país
 
 
