@@ -12,7 +12,7 @@ microdados <-
   filter(v0015 == '01', !is.na(v0015), m001 == '1', !is.na(m001)) |>
   mutate(across(everything(), as.numeric))
 
-## Survey design (source: https://rdrr.io/cran/PNSIBGE/src/R/pns_design.R, accessed on September, 2nd 2022)
+## Delineamento da amostral (fonte: https://rdrr.io/cran/PNSIBGE/src/R/pns_design.R, acessado em 02/09/2022)
 options(survey.lonely.psu="adjust")
 options(survey.adjust.domain.lonely=TRUE)
 
@@ -24,7 +24,7 @@ pns2019_prior <-
     weights = ~v0029, 
     nest = TRUE
   )
-# Post-stratification
+# Pós-estratificação
 popc.types <-
   data.frame( 
     v00293=as.character(unique(microdados$v00293)), 

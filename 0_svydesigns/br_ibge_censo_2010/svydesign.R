@@ -14,7 +14,7 @@ microdados <-
   collect()
 
 svydesign_censo2010 <-
-  svydesign(
+  survey::svydesign(
     ids = ~1,
     weights = ~v0010,
     data = microdados
