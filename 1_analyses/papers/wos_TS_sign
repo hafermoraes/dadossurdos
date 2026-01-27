@@ -1,0 +1,5 @@
+AND (
+  TS=("sign language")
+  OR TS=("língua de sinais" OR "línguas de sinais")
+  OR TS=("lengua de signos" OR "lenguas de signos")
+)

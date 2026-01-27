@@ -1,0 +1,6 @@
+AND PY=(1980-2025)
+AND (
+  TS=("sign language")
+  OR TS=("língua de sinais" OR "línguas de sinais")
+  OR TS=("lengua de signos" OR "lenguas de signos")
+)

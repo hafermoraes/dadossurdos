@@ -1,0 +1,7 @@
+AND (
+  TS=(pessoa* AND defic*)
+  OR TS=(defici* AND (físic* OR fisic*))
+  OR TS=(portador* AND necessidad* AND especi*)
+  OR TS=((peopl* OR person*) AND disab*)
+  OR TS=(persona* AND discapaci*)
+)

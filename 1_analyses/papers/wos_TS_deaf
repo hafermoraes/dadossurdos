@@ -1,0 +1,5 @@
+AND (
+  TS=(surd* OR (defic* AND audit*))
+  OR TS=(deaf* OR (heari* AND (hard OR impair*)))
+  OR TS=(sord* OR (discapaci* AND auditi*))
+)
