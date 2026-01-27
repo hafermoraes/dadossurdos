@@ -60,4 +60,40 @@ dat %>%
     values_from = n,
     values_fill = 0
   ) %>%
+  select(
+    journal,
+    overall,
+    disab,
+    deaf,
+    sign
+  ) %>%
+  ## mutate(
+  ##   disab_pct = disab/overall,
+  ##   deaf_pct = deaf/overall,
+  ##   sign_pct = sign/overall,
+  ##   ) %>%
+  View
+
+
+dat %>%
+  group_by(journal) %>%
+  mutate(
+    period = paste0(min(year),'-',max(year))
+  ) %>%
+  ungroup() %>%
+  count(journal, period, filter) %>%
+  pivot_wider(
+    id_cols = c('journal', 'period'),
+    names_from = filter,
+    values_from = n,
+    values_fill = 0
+  ) %>%
+  select(
+    journal,
+    period,
+    overall,
+    disab,
+    deaf,
+    sign
+  ) %>%
   View
