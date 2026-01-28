@@ -7,26 +7,27 @@ library(stringr)
 library(xtable)
 
 BASE_DIR <- "1_analyses/papers/"
+XLS_DIR <- paste0(BASE_DIR, "raw/")
 
 APPEND <- FALSE
 
 FILES <-
   list.files(
-    paste0(BASE_DIR,"raw/"),
+    XLS_DIR,
     full.names = FALSE
   )
 
 for(file in FILES){
-
   name <- strsplit(file, split="\\.")[[1]]
   split <- strsplit(name, split="_")[[1]]
   journal <- split[1]
   context <- split[2]
 
-  raw <- read_excel(
-    path = paste0(BASE_DIR, "raw/", file),
-    col_types = "text" 
-  ) %>%
+  raw <-
+    read_excel(
+      path = paste0(XLS_DIR, file),
+      col_types = "text" 
+    ) %>%
     transmute(
       journal = journal,
       context = context,
@@ -37,21 +38,19 @@ for(file in FILES){
 
   raw %>%
     write_delim(
-      file = paste0(BASE_DIR, "wos.psv"),
+      file = paste0(BASE_DIR, "wos_papers.psv"),
       delim = "|",
       append = APPEND
     )
 
-  APPEND <- TRUE
-  
+  APPEND <- TRUE 
 }
 
 dat <-
   read_delim(
-    file = paste0(BASE_DIR, "wos.psv"),
+    file = paste0(BASE_DIR, "wos_papers.psv"),
     delim = "|",
   )
-
 
 prod <-
   dat %>%
@@ -76,8 +75,18 @@ prod <-
     sign
   )
 
+WOS_SUMMARY <-
+  prod %>% 
+  mutate(
+    journal=paste0('\\', journal),
+    disab=ifelse(disab==0,'-',disab),
+    deaf=ifelse(deaf==0,'-',deaf),
+    sign=ifelse(sign==0,'-',sign)
+  ) %>%
+  arrange( desc(overall))
+
 print(
-  xtable( prod %>% mutate(journal=paste0('\\', journal)) ),
+  xtable( WOS_SUMMARY ),
   sanitize.text.function = identity,
   only.contents=TRUE,
   include.rownames=FALSE,
@@ -85,58 +94,160 @@ print(
   hline.after=NULL,
   comment=FALSE,
   format.args = list(big.mark = ".", decimal.mark = ""),
-  file=paste0(BASE_DIR, "wos_results.tex")
+  file=paste0(BASE_DIR, "wos_summary.tex")
 )
 
-cat('% Variáveis utilizadas na quantificação de produção acadêmica\n\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=FALSE)
 
-cat('% Nomes dos periódicos\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\aps}{Asian Population Studies}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\csp}{Canadian Studies in Population}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\demography}{Demography}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\dr}{Demographic Research}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\ejp}{European Journal of Population}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\ijps}{International Journal of Population Studies}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\japs}{Journal of African Population Studies}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\pdr}{Population and Development Review}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\prpr}{Population Research and Policy Review}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\ps}{Population Studies}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\psp}{Population, Space and Place}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\rebep}{Revista Brasileira de Estudos de População}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\relap}{Revista Latinoamericana de Población}\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
+OUTPUT_FILE <- paste0(BASE_DIR, "annex_wos_variables.tex")
+cat('\n% Detalhamento da busca na Web of Science (wos)\n', file = OUTPUT_FILE, append=FALSE)
+cat('\\newcommand{\\wosAccessDate}{27/01/2026} % Data de acesso\n\n', file = OUTPUT_FILE, append=TRUE)
 
-cat('\n% Detalhamento da busca na Web of Science\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\WosAccessDate}{27/01/2026} % Data de acesso\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
-cat('\\newcommand{\\WosAccessDate}{27/01/2026} % Data de acesso\n', file = paste0(BASE_DIR, "wos_vars.tex"), append=TRUE)
+cat('\\newcommand{\\Journal}{}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\wosSO}{}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\wosLabel}{}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\wosURLoverall}{}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\wosPAPERSsoverall}{}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\wosURLdisab}{}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\wosPAPERSdisab}{}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\wosURLdeaf}{}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\wosPAPERSdeaf}{}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\wosURLsign}{}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\wosPAPERSsign}{}\n', file = OUTPUT_FILE, append=TRUE)
 
-\newcommand{\\WosSO}{SO=(DEMOGRAPHY)}
-\newcommand{\\WosUrlOverall}{https://www.webofscience.com/wos/alldb/summary/3a08855d-b53b-4d35-9277-b0ede1858ba6-019b63afd6/relevance/1}
-\newcommand{\\WosUrlDisab}{https://www.webofscience.com/wos/alldb/summary/d9c82ee5-162d-46cc-86f7-ccb2c89a07d2-019b63e8de/relevance/1}
-\newcommand{\\WosUrlDeaf}{https://www.webofscience.com/wos/alldb/summary/c22c68b7-4d42-47f0-9408-b1efb078b6ba-019b6404fc/relevance/1}
+OUTPUT_FILE <- paste0(BASE_DIR, "wos_summary_variables.tex")
 
-URLS <-
+cat('% Variáveis utilizadas na quantificação de produção acadêmica\n\n', file = OUTPUT_FILE, append=FALSE)
+cat('% Nomes dos periódicos\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\aps}{Asian Population Studies}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\csp}{Canadian Studies in Population}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\demography}{Demography}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\dr}{Demographic Research}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\ejp}{European Journal of Population}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\ijps}{International Journal of Population Studies}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\japs}{Journal of African Population Studies}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\pdr}{Population and Development Review}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\prpr}{Population Research and Policy Review}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\ps}{Population Studies}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\psp}{Population, Space and Place}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\rebep}{Revista Brasileira de Estudos de População}\n', file = OUTPUT_FILE, append=TRUE)
+cat('\\newcommand{\\relap}{Revista Latinoamericana de Población}\n', file = OUTPUT_FILE, append=TRUE)
+
+cat('\n% Quantificação da escassez de publicações de deficiência, surdez e língua de sinais\n', file = OUTPUT_FILE, append=TRUE)
+
+SUM_OVERALL <- format(sum(prod$overall), big.mark = ".", decimal.mark = ",")
+cat(paste0('\\newcommand{\\wosSUMoverall}{', SUM_OVERALL,'}\n'), file = OUTPUT_FILE, append=TRUE)
+
+SUM_DISAB <- format(sum(prod$disab), big.mark = ".", decimal.mark = ",")
+cat(paste0('\\newcommand{\\wosSUMdisab}{', SUM_DISAB,'}\n'), file = OUTPUT_FILE, append=TRUE)
+
+SUM_DEAF <- format(sum(prod$deaf), big.mark = ".", decimal.mark = ",")
+cat(paste0('\\newcommand{\\wosSUMdeaf}{', SUM_DEAF,'}\n'), file = OUTPUT_FILE, append=TRUE)
+
+SUM_SIGN <- format(sum(prod$sign), big.mark = ".", decimal.mark = ",")
+cat(paste0('\\newcommand{\\wosSUMsign}{', SUM_SIGN,'}\n\n'), file = OUTPUT_FILE, append=TRUE)
+
+## 30% = 30 / 100     # porcentagem
+## 30 : (100 - 30)    # proporção, razão
+## 1 : (100 - 30)/30
+## 1 : 100/30 -1
+
+PROP_DISAB <- round(sum(prod$overall)/sum(prod$disab)-1,0)
+cat(paste0('\\newcommand{\\wosRATIOdisab}{', PROP_DISAB,'}\n'), file = OUTPUT_FILE, append=TRUE)
+
+PROP_DEAF <- round(sum(prod$overall)/sum(prod$deaf)-1,0)
+cat(paste0('\\newcommand{\\wosRATIOdeaf}{', PROP_DEAF,'}\n'), file = OUTPUT_FILE, append=TRUE)
+
+PROP_SIGN <- round(sum(prod$overall)/sum(prod$sign)-1,0)
+cat(paste0('\\newcommand{\\wosRATIOsign}{', PROP_SIGN,'}\n'), file = OUTPUT_FILE, append=TRUE)
+
+
+JOURNALS <-
   read_delim(
-    paste0(BASE_DIR, "wos_urls"),
+    paste0(BASE_DIR, "wos_journals.psv"),
     delim='|'
   )
 
-
-arg_journal <- prod$journal[1]
-arg_context <- 'overall'
+URLS <-
+  read_delim(
+    paste0(BASE_DIR, "wos_urls.psv"),
+    delim='|'
+  )
 
 for( arg_journal in prod$journal){
+
+  ANNEX <- paste0(BASE_DIR, "annex_", arg_journal, "_variables.tex")
+
+  cat(
+    paste0('\n% Variáveis do anexo -- ', arg_journal, '\n'),
+    file = ANNEX,
+    append=FALSE
+  )
+
+  cat(
+    paste0(
+      '\n\\renewcommand{\\Journal}{',
+      filter(JOURNALS, key == arg_journal)['journal'],
+      '}'
+    ),
+    file = ANNEX,
+    append=TRUE
+  )
+
+  cat(
+    paste0(
+      '\n\\renewcommand{\\wosSO}{',
+      filter(JOURNALS, key == arg_journal)['wos_so_argument'],
+      '}'
+    ),
+    file = ANNEX,
+    append=TRUE
+  )
+
+  cat(
+    paste0(
+      '\n\\renewcommand{\\wosLabel}{tab:annex_papers_',
+      arg_journal,
+      '}'
+    ),
+    file = ANNEX,
+    append=TRUE
+  )
+
+  results <- filter(prod, journal == arg_journal)
+  
   for( arg_context in c('overall','disab','deaf','sign')){
-    row <- filter(prod, journal == arg_journal)
-    if(row[arg_context]>0){
-      cat(
-        paste0(
-          '\\newcommand{\\Wos',
-          arg_context,
-          '}{27/01/2026} % Data de acesso\n'
-        ),
-        file = paste0(BASE_DIR, "wos_vars.tex"),
-        append=TRUE
-      )
+    
+    urls <- filter(URLS, key == arg_journal, context == arg_context)
+    
+    if(results[arg_context]>0){
+      msg <- urls['url']
+    } else {
+      msg <- 'Busca não retornou resultados'
     }
+    
+    cat(
+      paste0(
+        '\n\\renewcommand{\\wosURL',
+        arg_context,
+        '}{',
+        msg,
+        '}'
+      ),
+      file = ANNEX,
+      append=TRUE
+    )
+
+    cat(
+      paste0(
+        '\n\\renewcommand{\\wosPAPERS',
+        arg_context,
+        '}{',
+        results[arg_context],
+        '}'
+      ),
+      file = ANNEX,
+      append=TRUE
+    )    
   }
 }
+
