@@ -151,15 +151,39 @@ cat(paste0('\\newcommand{\\wosSUMsign}{', SUM_SIGN,'}\n\n'), file = OUTPUT_FILE,
 ## 1 : (100 - 30)/30
 ## 1 : 100/30 -1
 
-PROP_DISAB <- round(sum(prod$overall)/sum(prod$disab)-1,0)
+
+PROP_DISAB <-
+  format(
+    round(
+      sum(prod$overall)/sum(prod$disab)-1,
+      0
+    ),
+    big.mark = ".",
+    decimal.mark = ","
+  )
 cat(paste0('\\newcommand{\\wosRATIOdisab}{', PROP_DISAB,'}\n'), file = OUTPUT_FILE, append=TRUE)
 
-PROP_DEAF <- round(sum(prod$overall)/sum(prod$deaf)-1,0)
+PROP_DEAF <-
+  format(
+    round(
+      sum(prod$overall)/sum(prod$deaf)-1,
+      0
+    ),
+    big.mark = ".",
+    decimal.mark = ","
+  )
 cat(paste0('\\newcommand{\\wosRATIOdeaf}{', PROP_DEAF,'}\n'), file = OUTPUT_FILE, append=TRUE)
 
-PROP_SIGN <- round(sum(prod$overall)/sum(prod$sign)-1,0)
+PROP_SIGN <-
+  format(
+    round(
+      sum(prod$overall)/sum(prod$sign)-1,
+      0
+    ),
+    big.mark = ".",
+    decimal.mark = ","
+  )
 cat(paste0('\\newcommand{\\wosRATIOsign}{', PROP_SIGN,'}\n'), file = OUTPUT_FILE, append=TRUE)
-
 
 JOURNALS <-
   read_delim(
