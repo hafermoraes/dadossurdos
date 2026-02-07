@@ -280,5 +280,5 @@ pns2019_modelmatrix |>
   left_join(uf, by=c('cod_uf'), keep = FALSE) |>
   select(-cod_uf) |> 
   write_csv(
-    '1_analyses/predictive_signlanguage/pns2019_modelmatrix.csv'
+    '1_analyses/predictive_signlanguage/data/pns2019_modelmatrix.csv'
   )
