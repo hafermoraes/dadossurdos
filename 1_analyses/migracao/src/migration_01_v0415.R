@@ -12,7 +12,7 @@
 base_dir <-
   paste0(
     '1_analyses/',
-    'migration/',
+    'migracao/',
     'src/'
   )
 
@@ -23,7 +23,7 @@ source(paste0(base_dir, 'migration_00_subset_censo2000.R'))
 # expansão da amostra
 surveydesign <-
   subset_censo2000 |>
-  select(peso_amostral, dif_ouvir, sempre_morou) |>
+  select(peso_amostral, dif_ouvir, municipio_sempre_morou) |>
   as_survey_design(
     ids = 1,
     weights = peso_amostral
@@ -35,6 +35,6 @@ gc()
 surveydesign |>
   group_by(dif_ouvir) |>
   summarise(
-    pct = survey_mean(sempre_morou, vartype = 'ci', na.rm = TRUE)
+    pct = survey_mean(municipio_sempre_morou, vartype = 'ci', na.rm = TRUE)
   )
 
