@@ -16,11 +16,14 @@ packs <- c(
   'C50',
   'betacal',
   'NeuralNetTools',
-  'dbarts'
+  'dbarts',
+  'parsnip',
+  'hardhat',
+  'sparsevctrs',
+  'bonsai',
+  'baguette',
+  'brulee'
 )
 install.packages(packs)
 
 pak::pak('tidymodels/tailor')
-pak::pak('tidymodels/bonsai')
-pak::pak('tidymodels/baguette')
-pak::pak('tidymodels/brulee')

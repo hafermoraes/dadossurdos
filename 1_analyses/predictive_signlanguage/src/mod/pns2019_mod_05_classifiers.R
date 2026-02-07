@@ -106,12 +106,12 @@ model_gam <-
     set_mode("classification") |> 
     set_engine("mgcv")
 
-# model_bart <-
-#   bart(
-#     trees = tune()
-#   ) |> 
-#   set_mode("classification") |> 
-#   set_engine("dbarts")
+model_bart <-
+  bart(
+    trees = tune()
+  ) |>
+  set_mode("classification") |>
+  set_engine("dbarts")
 
 # model_mlp2 <-
 #   mlp(

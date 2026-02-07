@@ -23,7 +23,7 @@ wflow_set <-
       # model_bart = model_bart,
       # model_mlp2 = model_mlp2,
       # model_bagc50 = model_bagc50,
-      # model_bagrpart = model_bagrpart,
+      # model_bagrpart = model_bagrpart
       model_nb = model_nb
     ),
     cross = TRUE,
