@@ -7,7 +7,7 @@ packs <- c(
   'xgboost',
   'glmnet',
   'ranger',
-  ## 'naivebayes',
+  'naivebayes',
   'finetune',
   'doParallel',
   ## 'earth',

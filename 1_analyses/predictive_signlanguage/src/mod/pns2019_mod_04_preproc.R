@@ -6,7 +6,7 @@ recipe_basic <-
   step_integer(all_nominal_predictors()) |>
   step_clean_names(all_nominal_predictors()) |>
   # class_weights implementado só com step_upsample() ou step_downsample()
-  step_downsample(libras, under_ratio = 1)  
+  step_upsample(libras, over_ratio = 2)  
   
 
 # recipe2 <- prep(recipe_basic, training = libras_train)

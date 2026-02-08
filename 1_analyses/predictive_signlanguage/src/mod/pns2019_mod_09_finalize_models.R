@@ -47,7 +47,7 @@ for(CLF in classifiers$wflow_id) {
   
   # salva metricas do modelo final em disco
   best_clf |>
-    collect_metrics() |>
+    collect_metrics() |> 
     select(.metric, .estimate) |>
     write_csv(paste0(save_path, 'metrics.csv'))
   
@@ -96,7 +96,7 @@ for(CLF in classifiers$wflow_id) {
     )
   
   opt_threshold <-
-    thresholds |>
+    thresholds |> 
     filter(.metric == "j_index") |>
     arrange(desc(.estimate)) |>
     head(1)

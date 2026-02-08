@@ -21,19 +21,3 @@ if(FALSE){
     )
 }
 
-if(FALSE){
-    
-  # isolation forest
-  # install.packages("solitude")
-  library(solitude)
-  
-  iso_forest <- isolationForest$new(
-    num_trees = 1000,         # number of trees (default = 100)
-    sample_size = 512,       # subsample size per tree (default = 256)
-    max_depth = 30            # max depth per tree (default = 8)
-  )
-  iso_forest$fit(libras)
-  iso_scores <- iso_forest$predict(libras)$anomaly_score
-  libras$isolation_forest_score <- iso_scores
-
-}

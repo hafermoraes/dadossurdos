@@ -1,4 +1,6 @@
 
+if(FALSE){
+  
 WIDTH <- 10
 HEIGHT <- 7
 
@@ -65,4 +67,6 @@ for(CLF in classifiers$wflow_id) {
       height=HEIGHT
     )
     
+}
+
 }
