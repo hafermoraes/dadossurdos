@@ -14,7 +14,7 @@ if(FALSE){
       verbose_elim = TRUE
     )
   
-  fitted_models <-
+  fitted_models_racing <-
     wflow_set |>
     workflow_map(
       "tune_race_anova",
@@ -27,7 +27,7 @@ if(FALSE){
     )
   
   # passo 12: lista melhores modelos por métrica
-  fitted_models |>
+  fitted_models_racing |>
     collect_metrics() |>
     mutate(
       wflow_id = str_remove_all(
@@ -48,7 +48,7 @@ if(FALSE){
 
   # diagnóstico gráfico dos melhores modelos por classificador
   (
-    fitted_models |>
+    fitted_models_racing |>
       mutate( 
         wflow_id = str_remove_all(
           wflow_id, 

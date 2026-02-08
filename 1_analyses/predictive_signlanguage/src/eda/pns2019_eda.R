@@ -30,6 +30,19 @@ ggplot(data = rawdata) +
   coord_flip() + 
   labs(title='f(dif_ouvir)')
 
+# libras vs dif_enxergar
+ggplot(data = rawdata) +
+  geom_mosaic(aes(x = product(dif_enxergar), fill=libras)) + 
+  coord_flip() + 
+  labs(title='f(dif_enxergar)')
+
+# libras vs dif_locomover
+ggplot(data = rawdata) +
+  geom_mosaic(aes(x = product(dif_locomover), fill=libras)) + 
+  coord_flip() + 
+  labs(title='f(dif_locomover)')
+
+
 # libras vs instrucao
 ggplot(data = rawdata) +
   geom_mosaic(aes(x = product(instrucao), fill=libras)) + 
@@ -122,3 +135,26 @@ recipe(libras ~ ., data = rawdata) |>
   # scale_color_gradient2(low = 'orange', high = 'light blue') + 
   theme(axis.text.x = element_text(angle = 90)) +
   labs(title = "Correlation Plot")
+
+
+library(ggplot2)
+rawdata %>% 
+  select(libras,!where(is.numeric)) %>%
+  mutate(
+    across(everything(), as.character),
+    libras = if_else( libras == 'sim', 1, 0)
+  ) %>%
+  drop_na() %>%
+  pivot_longer(-libras, names_to = "Variables", values_to = "Values") %>%
+  group_by(Variables, Values) %>% 
+  summarise(mean = mean(libras),
+            conf_int = 1.96*sd(libras)/sqrt(n())) %>% 
+  ggplot(aes(x=Values, y=mean, color=Values)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean - conf_int, ymax = mean + conf_int), width = 0.1) +
+  theme(legend.position = "none") + 
+  scale_color_viridis_d(aesthetics = c("color", "fill"), end = 0.5) +
+  facet_wrap(~Variables, scales = 'free') +
+  labs(title = 'Categorical Variable Analysis', subtitle = 'With 95% Confidence Intervals') + 
+  coord_flip()
+

@@ -1,5 +1,5 @@
 
-if(FALSE){
+if(TRUE){
 
   WIDTH <- 7
   HEIGHT <- 7

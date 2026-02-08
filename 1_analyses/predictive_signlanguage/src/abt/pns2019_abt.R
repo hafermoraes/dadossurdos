@@ -14,16 +14,16 @@ microdados <-
   filter(v0015 == '01', !is.na(v0015), m001 == '1', !is.na(m001)) |>
   select(
     v0024,v0029,upa_pns,v00292,v00293, # expansão da amostra probabilística
-    v0001,  # uf de residÊncia
+    #v0001,  # uf de residência
     c006,   # sexo
     c008,   # idade
-    c009,   # cor ou raça
-    d001,   # alfabetizado
-    c011,   # estado civil
+    #c009,   # cor ou raça
+    #d001,   # alfabetizado
+    #c011,   # estado civil
     d00901, # instrução
-    g046,   # dificuldade de enxergar
-    g057,   # dificuldade de ouvir
-    g070,   # dificuldade de locomover
+    #g046,   # dificuldade de enxergar
+    g058,   # dificuldade de ouvir
+    #g070,   # dificuldade de locomover
     g05801  # sabe libras
   ) |>
   mutate(v0029=as.numeric(v0029)) |>
@@ -61,8 +61,9 @@ gc()
 tic()
 abt <-
   svytable(
-  formula=~v0001+c006+c008+c009+d001+c011+d00901+g057+g05801,
-  design=pns2019_posterior
+    # formula=~v0001+c006+c008+c009+d001+c011+d00901+g057+g05801,
+    formula=~c006+c008+d00901+g058+g05801,
+    design=pns2019_posterior
   ) |>
   as_tibble() |>
   filter(n>0) |>
@@ -82,8 +83,8 @@ abt |>
 pns2019_modelmatrix <-
   abt |>
   transmute(
-    # unidade da federação
-    cod_uf = v0001,
+    # # unidade da federação
+    # cod_uf = v0001,
     # idade calculada em anos completos - a partir de 1 ano
     idade = as.numeric(c008),
     # sexo
@@ -92,20 +93,20 @@ pns2019_modelmatrix <-
       c006 == '2' ~ 'feminino',
       TRUE ~ NA
     ),
-    # Sabe ler e escrever
-    alfabetizado = case_when(
-      d001 == '1' ~ 'sim',
-      d001 == '2' ~ 'nao',
-      TRUE ~ NA
-    ),
-    # Qual é o estado civil de ___?
-    estado_civil = case_when(
-      c011 == '1' ~ 'casado',    # Casado(a)
-      c011 == '2' ~ 'separado',  # Divorciado(a) ou desquitado(a) ou separado(a) judicialmente
-      c011 == '3' ~ 'viuvo',     # Viúvo(a)
-      c011 == '4' ~ 'solteiro',  # Solteiro(a)
-      TRUE ~ NA
-    ),
+    # # Sabe ler e escrever
+    # alfabetizado = case_when(
+    #   d001 == '1' ~ 'sim',
+    #   d001 == '2' ~ 'nao',
+    #   TRUE ~ NA
+    # ),
+    # # Qual é o estado civil de ___?
+    # estado_civil = case_when(
+    #   c011 == '1' ~ 'casado',    # Casado(a)
+    #   c011 == '2' ~ 'separado',  # Divorciado(a) ou desquitado(a) ou separado(a) judicialmente
+    #   c011 == '3' ~ 'viuvo',     # Viúvo(a)
+    #   c011 == '4' ~ 'solteiro',  # Solteiro(a)
+    #   TRUE ~ NA
+    # ),
     # Qual foi o curso mais elevado que ___frequentou
     instrucao = case_when(
       d00901 == '05' ~ 'fundamental', # Antigo primário (elementar)
@@ -121,47 +122,47 @@ pns2019_modelmatrix <-
       d00901 == '15' ~ 'superior',   # Doutorado
       d00901 == '01' ~ 'outros',      # Creche
       d00901 == '02' ~ 'outros',      # Pré-escola
-      d00901 == '03' ~ 'outros',      # Classe de alfabetização – CA
-      d00901 == '04' ~ 'outros',      # Alfabetização de jovens e adultos
-      TRUE ~ NA
+      d00901 == '03' ~ 'fundamental', # Classe de alfabetização – CA
+      d00901 == '04' ~ 'fundamental', # Alfabetização de jovens e adultos
+      TRUE ~ 'outros'
     ),
-    # cor ou raça
-    cor_raca = case_when(
-      c009 == '1' ~ 'branca',
-      c009 == '2' ~ 'preta',
-      c009 == '3' ~ 'amarela',
-      c009 == '4' ~ 'parda',
-      c009 == '5' ~ 'indigena',
-      c009 == '9' ~ 'outros',
-      TRUE ~ NA
-      ),
+    # # cor ou raça
+    # cor_raca = case_when(
+    #   c009 == '1' ~ 'branca',
+    #   c009 == '2' ~ 'preta',
+    #   c009 == '3' ~ 'amarela',
+    #   c009 == '4' ~ 'parda',
+    #   c009 == '5' ~ 'indigena',
+    #   c009 == '9' ~ 'outros',
+    #   TRUE ~ NA
+    #   ),
     # . ___ tem dificuldade permanente de enxergar mesmo usando óculos, lentes de contato ou lupas?
-    ## dif_enxergar = case_when(
-    ##   g046 == '4' ~ 'incapaz',   # Sim, não consegue de modo algum
-    ##   g046 == '3' ~ 'grande',    # Sim, muita dificuldade
-    ##   g046 == '2' ~ 'alguma',    # Sim, alguma dificuldade
-    ##   g046 == '1' ~ 'nenhuma',   # Não, nenhuma dificuldade
-    ##   g046 == '9' ~ 'ignorado',  # ignorado
-    ##   TRUE ~ NA
-    ## ),
+    # dif_enxergar = case_when(
+    #   g046 == '4' ~ 'incapaz',   # Sim, não consegue de modo algum
+    #   g046 == '3' ~ 'grande',    # Sim, muita dificuldade
+    #   g046 == '2' ~ 'alguma',    # Sim, alguma dificuldade
+    #   g046 == '1' ~ 'nenhuma',   # Não, nenhuma dificuldade
+    #   g046 == '9' ~ 'ignorado',  # ignorado
+    #   TRUE ~ NA
+    # ),
     # ___ tem dificuldade permanente de ouvir mesmo usando aparelhos auditivos? (Para moradores com 5 anos ou mais de idade.) OU ___ tem dificuldade permanente para ouvir sons como vozes ou música, mesmo usando aparelhos auditivos? (Para moradores com 2 a 4 anos de idade.)
     dif_ouvir = case_when(
-      g057 == '4' ~ 'incapaz',   # Sim, não consegue de modo algum
-      g057 == '3' ~ 'grande',    # Sim, muita dificuldade
-      g057 == '2' ~ 'alguma',    # Sim, alguma dificuldade
-      g057 == '1' ~ 'nenhuma',   # Não, nenhuma dificuldade
-      g057 == '9' ~ 'ignorado',  # ignorado
-      TRUE ~ NA
+      g058 == '4' ~ 'incapaz',   # Sim, não consegue de modo algum
+      g058 == '3' ~ 'grande',    # Sim, muita dificuldade
+      g058 == '2' ~ 'alguma',    # Sim, alguma dificuldade
+      g058 == '1' ~ 'nenhuma',   # Não, nenhuma dificuldade
+      g058 == '9' ~ 'ignorado',  # ignorado
+      TRUE ~ 'nenhuma'
     ),
     # ___ tem dificuldade permanente de caminhar ou subir degraus, mesmo usando prótese, bengala ou outro aparelho de auxílio? (Para moradores com 5 anos ou mais de idade.)OUComparado com crianças da mesma idade, ___ tem dificuldade permanente para caminhar, mesmo usando prótese, bengala ou aparelho de auxílio? (Para moradores com 2 a 4 anos de idade.)
-    ## dif_locomover = case_when(
-    ##   g070 == '4' ~ 'incapaz',   # Sim, não consegue de modo algum
-    ##   g070 == '3' ~ 'grande',    # Sim, muita dificuldade
-    ##   g070 == '2' ~ 'alguma',    # Sim, alguma dificuldade
-    ##   g070 == '1' ~ 'nenhuma',   # Não, nenhuma dificuldade
-    ##   g070 == '9' ~ 'ignorado',  # ignorado
-    ##   TRUE ~ NA
-    ## ),
+    # dif_locomover = case_when(
+    #   g070 == '4' ~ 'incapaz',   # Sim, não consegue de modo algum
+    #   g070 == '3' ~ 'grande',    # Sim, muita dificuldade
+    #   g070 == '2' ~ 'alguma',    # Sim, alguma dificuldade
+    #   g070 == '1' ~ 'nenhuma',   # Não, nenhuma dificuldade
+    #   g070 == '9' ~ 'ignorado',  # ignorado
+    #   TRUE ~ NA
+    # ),
     # Sabe usar a Língua Brasileira de Sinais – Libras? (Para moradores com 5 anos ou mais de idade.)
     libras = case_when(
       g05801 == 1 ~ 'sim',
@@ -221,31 +222,6 @@ pns2019_modelmatrix |>
   summarise(count=sum(case_weights)) |>
   mutate(pct=count/sum(count))
 
-
-
-library(ggplot2)
-pns2019_modelmatrix %>% 
-  select(libras,!where(is.numeric)) %>%
-  mutate(
-    across(everything(), as.character),
-    libras = if_else( libras == 'sim', 1, 0)
-  ) %>%
-  drop_na() %>%
-  pivot_longer(-libras, names_to = "Variables", values_to = "Values") %>%
-  group_by(Variables, Values) %>% 
-  summarise(mean = mean(libras),
-            conf_int = 1.96*sd(libras)/sqrt(n())) %>% 
-  ggplot(aes(x=Values, y=mean, color=Values)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = mean - conf_int, ymax = mean + conf_int), width = 0.1) +
-  theme(legend.position = "none") + 
-  scale_color_viridis_d(aesthetics = c("color", "fill"), end = 0.5) +
-  facet_wrap(~Variables, scales = 'free') +
-  labs(title = 'Categorical Variable Analysis', subtitle = 'With 95% Confidence Intervals') + 
-  coord_flip()
-
-
-
 # importação das unidades da federação
 uf <-
   read_delim(
@@ -258,27 +234,35 @@ uf <-
 
 pns2019_modelmatrix |>
   mutate(
-    cor_raca = case_when(
-      cor_raca == 'amarela' ~ 'outros',
-      cor_raca == 'indigena' ~ 'outros',
-      TRUE ~ as.character(cor_raca)
-    ),
-    estado_civil = case_when(
-      estado_civil == 'separado' ~ 'outros',
-      estado_civil == 'viuvo' ~ 'outros',
-      TRUE ~ as.character(estado_civil)
-    ),
-    instrucao = case_when(
-      is.na(instrucao) ~ 'outros',
-      TRUE ~ as.character(instrucao)
-    ),
+    # cor_raca = case_when(
+    #   cor_raca == 'amarela' ~ 'outros',
+    #   cor_raca == 'indigena' ~ 'outros',
+    #   TRUE ~ as.character(cor_raca)
+    # ),
+    # estado_civil = case_when(
+    #   estado_civil == 'separado' ~ 'outros',
+    #   estado_civil == 'viuvo' ~ 'outros',
+    #   TRUE ~ as.character(estado_civil)
+    # ),
+    # instrucao = case_when(
+    #   is.na(instrucao) ~ 'outros',
+    #   TRUE ~ as.character(instrucao)
+    # ),
     dif_ouvir = case_when(
       is.na(dif_ouvir) ~ 'nenhuma',
       TRUE ~ as.character(dif_ouvir)
-    )
+    ),
+    # dif_enxergar = case_when(
+    #   is.na(dif_enxergar) ~ 'nenhuma',
+    #   TRUE ~ as.character(dif_enxergar)
+    # ),
+    # dif_locomover = case_when(
+    #   is.na(dif_locomover) ~ 'nenhuma',
+    #   TRUE ~ as.character(dif_locomover)
+    # )
   ) |>
-  left_join(uf, by=c('cod_uf'), keep = FALSE) |>
-  select(-cod_uf) |> 
+  # left_join(uf, by=c('cod_uf'), keep = FALSE) |>
+  # select(-cod_uf) |> 
   write_csv(
     '1_analyses/predictive_signlanguage/data/pns2019_modelmatrix.csv'
   )

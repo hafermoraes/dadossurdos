@@ -79,15 +79,53 @@ for(CLF in classifiers$wflow_id) {
         height=5
       )
   }
-
+  
+  # threshold
+  library(probably)
+  
+  preds <-
+    best_clf |>
+    collect_predictions()
+  
+  thresholds <- 
+    preds |>
+    threshold_perf(
+      libras, 
+      .pred_sim, 
+      thresholds = seq(0, 0.9, by = 0.01)
+    )
+  
+  opt_threshold <-
+    thresholds |>
+    filter(.metric == "j_index") |>
+    arrange(desc(.estimate)) |>
+    head(1)
+  
+  best_thres <-
+    preds |>
+    mutate(
+      .pred_class = make_two_class_pred(
+        .pred_sim,
+        levels(libras),
+        threshold = opt_threshold$.threshold
+      )
+    )
+  
   # matriz de confusão (gráfico de mosaico)
   clf_confmat <-
-    collect_predictions(best_clf) |>
-    conf_mat(libras, .pred_class)
+    best_thres |> 
+    conf_mat(
+      truth=libras, 
+      .pred_class
+      )
   
   (
      clf_confmat |> 
-      autoplot(type = "mosaic")
+      autoplot(type = "mosaic") +
+      labs(
+        title = "Mosaic",
+        subtitle = paste0("Threshold: ", opt_threshold$.threshold)
+      )
   ) |>
     ggsave(
       filename = paste0(save_path, "uncalibrated_confmat_mosaic.pdf"),
@@ -98,7 +136,11 @@ for(CLF in classifiers$wflow_id) {
   # matriz de confusão (heatmap)
   (
     clf_confmat |>
-      autoplot(type = "heatmap")
+      autoplot(type = "heatmap") + 
+      labs(
+        title = "Confusion Matrix",
+        subtitle = paste0("Threshold: ", opt_threshold$.threshold)
+      )
   ) |>
     ggsave(
       filename = paste0(save_path, "uncalibrated_confmat_heatmap.pdf"),
