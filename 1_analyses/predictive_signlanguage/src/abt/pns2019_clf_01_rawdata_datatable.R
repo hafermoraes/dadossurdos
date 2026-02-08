@@ -1,11 +1,3 @@
-library(data.table)
-library(dplyr)   # manipulação de dados
-library(survey)  # amostragem complexa
-library(tictoc)  # tempo de execução dos comandos
-library(tidyr)   # pivot_wider
-library(readr)   # write_csv
-library(arrow)   # read_parquet, open_dataset, to_duckdb, collect
-library(duckdb)
 
 microdados_dt <- open_dataset(
   "/tmp/etl/br_ibge_pns_2019/parquet"
@@ -21,9 +13,9 @@ microdados_dt <- open_dataset(
     d001,   # alfabetizado
     c011,   # estado civil
     d00901, # instrução
-    #g046,   # dificuldade de enxergar
+    g047,   # dificuldade de enxergar
     g058,   # dificuldade de ouvir
-    #g070,   # dificuldade de locomover
+    g071,   # dificuldade de locomover
     g05801  # sabe libras
   ) |>
   mutate(v0029 = as.numeric(v0029)) |>
@@ -49,14 +41,23 @@ microdados_dt <- merge(microdados_dt, strata_weights[, .(v00293, scale)], by = "
 microdados_dt[, weight := v0029 * scale]
 
 tic()
-# keys <- c("v0001", "c006",  "c008", "c009", "d001", "c011", "d00901", "g046", "g070", "g058", "g05801")
-keys <- c("v0001", "c006",  "c008", "c009", "d001", "c011", "d00901", "g058", "g05801")
-
-abt_dt <- microdados_dt[
-  , .(n = sum(weight)), # weighted sum, matching survey
-  by = keys
+rawdata <- microdados_dt[
+  , 
+  .(n = sum(weight)), 
+  by = c(
+    "v0001", 
+    "c006",  
+    "c008", 
+    "c009", 
+    "d001", 
+    "c011", 
+    "d00901", 
+    "g047", 
+    "g071", 
+    "g058", 
+    "g05801"
+  )
 ][n > 0][order(-n)]
 toc()
 
-all.equal(abt, abt_dt)
 
