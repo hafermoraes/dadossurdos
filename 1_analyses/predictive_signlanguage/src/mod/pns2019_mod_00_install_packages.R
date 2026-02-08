@@ -1,5 +1,7 @@
 packs <- c(
   'pak',
+  'corr',
+  'mosaic',
   'textrecipes',
   'janitor',
   'themis',
@@ -10,19 +12,18 @@ packs <- c(
   'naivebayes',
   'finetune',
   'doParallel',
-  ## 'earth',
+  'earth',
   'lme4',
-  ## 'kernlab', # svm
-  ## 'C50',
+  'kernlab', # svm
   'betacal',
   'NeuralNetTools',
-  ## 'dbarts',
   'parsnip',
   'hardhat',
   'sparsevctrs',
   'bonsai',
   'baguette',
-  'brulee'
+  'brulee',
+  'solitude'
 )
 install.packages(packs)
 

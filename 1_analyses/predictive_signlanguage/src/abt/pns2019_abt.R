@@ -14,12 +14,12 @@ microdados <-
   filter(v0015 == '01', !is.na(v0015), m001 == '1', !is.na(m001)) |>
   select(
     v0024,v0029,upa_pns,v00292,v00293, # expansão da amostra probabilística
-    #v0001,  # uf de residência
+    v0001,  # uf de residência
     c006,   # sexo
     c008,   # idade
-    #c009,   # cor ou raça
-    #d001,   # alfabetizado
-    #c011,   # estado civil
+    c009,   # cor ou raça
+    d001,   # alfabetizado
+    c011,   # estado civil
     d00901, # instrução
     #g046,   # dificuldade de enxergar
     g058,   # dificuldade de ouvir
@@ -61,8 +61,8 @@ gc()
 tic()
 abt <-
   svytable(
-    # formula=~v0001+c006+c008+c009+d001+c011+d00901+g057+g05801,
-    formula=~c006+c008+d00901+g058+g05801,
+    # formula=~v0001+c006+c008+c009+d001+c011+d00901+g046+g070+g058+g05801,
+    formula=~v0001+c006+c008+c009+d001+c011+d00901+g058+g05801,
     design=pns2019_posterior
   ) |>
   as_tibble() |>
@@ -80,35 +80,49 @@ abt |>
   summarise(count=sum(n))
 
 
+# importação das unidades da federação
+uf <-
+  read_delim(
+    '/tmp/etl/br_ibge_pns_2019/variables_dictionary.txt',
+    delim='|'
+  ) |>
+  filter( q_code == 'v0001') |>
+  transmute( cod_uf = a_code, uf = a_desc)
+
+
 pns2019_modelmatrix <-
   abt |>
   transmute(
-    # # unidade da federação
-    # cod_uf = v0001,
+    # unidade da federação
+    cod_uf = v0001,
     # idade calculada em anos completos - a partir de 1 ano
     idade = as.numeric(c008),
     # sexo
     sexo = case_when(
       c006 == '1' ~ 'masculino',
       c006 == '2' ~ 'feminino',
-      TRUE ~ NA
+      TRUE ~ 'nao_informado'
     ),
-    # # Sabe ler e escrever
-    # alfabetizado = case_when(
-    #   d001 == '1' ~ 'sim',
-    #   d001 == '2' ~ 'nao',
-    #   TRUE ~ NA
-    # ),
-    # # Qual é o estado civil de ___?
-    # estado_civil = case_when(
-    #   c011 == '1' ~ 'casado',    # Casado(a)
-    #   c011 == '2' ~ 'separado',  # Divorciado(a) ou desquitado(a) ou separado(a) judicialmente
-    #   c011 == '3' ~ 'viuvo',     # Viúvo(a)
-    #   c011 == '4' ~ 'solteiro',  # Solteiro(a)
-    #   TRUE ~ NA
-    # ),
+    # Sabe ler e escrever
+    alfabetizado = case_when(
+      d001 == '1' ~ 'sim',
+      d001 == '2' ~ 'nao',
+      TRUE ~ 'nao_informado'
+    ),
+    # Qual é o estado civil de ___?
+    estado_civil = case_when(
+      c011 == '1' ~ 'casado',    # Casado(a)
+      c011 == '2' ~ 'separado',  # Divorciado(a) ou desquitado(a) ou separado(a) judicialmente
+      c011 == '3' ~ 'viuvo',     # Viúvo(a)
+      c011 == '4' ~ 'solteiro',  # Solteiro(a)
+      TRUE ~ 'nao_informado'
+    ),
     # Qual foi o curso mais elevado que ___frequentou
     instrucao = case_when(
+      d00901 == '01' ~ 'outros',      # Creche
+      d00901 == '02' ~ 'outros',      # Pré-escola
+      d00901 == '03' ~ 'fundamental', # Classe de alfabetização – CA
+      d00901 == '04' ~ 'fundamental', # Alfabetização de jovens e adultos
       d00901 == '05' ~ 'fundamental', # Antigo primário (elementar)
       d00901 == '06' ~ 'fundamental', # Antigo ginasial (médio 1º ciclo)
       d00901 == '07' ~ 'fundamental', # Regular do ensino fundamental ou do 1º grau
@@ -120,22 +134,18 @@ pns2019_modelmatrix <-
       d00901 == '13' ~ 'superior',   # Especialização de nível superior (duração mínima de 360 horas)
       d00901 == '14' ~ 'superior',   # Mestrado
       d00901 == '15' ~ 'superior',   # Doutorado
-      d00901 == '01' ~ 'outros',      # Creche
-      d00901 == '02' ~ 'outros',      # Pré-escola
-      d00901 == '03' ~ 'fundamental', # Classe de alfabetização – CA
-      d00901 == '04' ~ 'fundamental', # Alfabetização de jovens e adultos
-      TRUE ~ 'outros'
+      TRUE ~ 'nao_informado'
     ),
-    # # cor ou raça
-    # cor_raca = case_when(
-    #   c009 == '1' ~ 'branca',
-    #   c009 == '2' ~ 'preta',
-    #   c009 == '3' ~ 'amarela',
-    #   c009 == '4' ~ 'parda',
-    #   c009 == '5' ~ 'indigena',
-    #   c009 == '9' ~ 'outros',
-    #   TRUE ~ NA
-    #   ),
+    # cor ou raça
+    cor_raca = case_when(
+      c009 == '1' ~ 'branca',
+      c009 == '2' ~ 'preta',
+      c009 == '3' ~ 'amarela',
+      c009 == '4' ~ 'parda',
+      c009 == '5' ~ 'indigena',
+      c009 == '9' ~ 'outros',
+      TRUE ~ 'nao_informado'
+      ),
     # . ___ tem dificuldade permanente de enxergar mesmo usando óculos, lentes de contato ou lupas?
     # dif_enxergar = case_when(
     #   g046 == '4' ~ 'incapaz',   # Sim, não consegue de modo algum
@@ -171,6 +181,8 @@ pns2019_modelmatrix <-
     ),
     n
   ) |>
+  left_join(uf, by=c('cod_uf'), keep = FALSE) |>
+  select(-cod_uf) |>
   group_by(across(-n)) |>
   summarise(n=sum(n)) |>
   arrange(desc(n)) |>
@@ -222,47 +234,29 @@ pns2019_modelmatrix |>
   summarise(count=sum(case_weights)) |>
   mutate(pct=count/sum(count))
 
-# importação das unidades da federação
-uf <-
-  read_delim(
-    '/tmp/etl/br_ibge_pns_2019/variables_dictionary.txt',
-    delim='|'
-  ) |>
-  filter( q_code == 'v0001') |>
-  transmute( cod_uf = a_code, uf = a_desc)
 
 
 pns2019_modelmatrix |>
-  mutate(
-    # cor_raca = case_when(
-    #   cor_raca == 'amarela' ~ 'outros',
-    #   cor_raca == 'indigena' ~ 'outros',
-    #   TRUE ~ as.character(cor_raca)
-    # ),
-    # estado_civil = case_when(
-    #   estado_civil == 'separado' ~ 'outros',
-    #   estado_civil == 'viuvo' ~ 'outros',
-    #   TRUE ~ as.character(estado_civil)
-    # ),
-    # instrucao = case_when(
-    #   is.na(instrucao) ~ 'outros',
-    #   TRUE ~ as.character(instrucao)
-    # ),
-    dif_ouvir = case_when(
-      is.na(dif_ouvir) ~ 'nenhuma',
-      TRUE ~ as.character(dif_ouvir)
-    ),
-    # dif_enxergar = case_when(
-    #   is.na(dif_enxergar) ~ 'nenhuma',
-    #   TRUE ~ as.character(dif_enxergar)
-    # ),
-    # dif_locomover = case_when(
-    #   is.na(dif_locomover) ~ 'nenhuma',
-    #   TRUE ~ as.character(dif_locomover)
-    # )
-  ) |>
-  # left_join(uf, by=c('cod_uf'), keep = FALSE) |>
-  # select(-cod_uf) |> 
+  # mutate(
+  #   cor_raca = case_when(
+  #     cor_raca == 'amarela' ~ 'outros',
+  #     cor_raca == 'indigena' ~ 'outros',
+  #     TRUE ~ as.character(cor_raca)
+  #   ),
+  #   estado_civil = case_when(
+  #     estado_civil == 'separado' ~ 'outros',
+  #     estado_civil == 'viuvo' ~ 'outros',
+  #     TRUE ~ as.character(estado_civil)
+  #   ),
+  #   instrucao = case_when(
+  #     is.na(instrucao) ~ 'outros',
+  #     TRUE ~ as.character(instrucao)
+  #   ),
+  #   dif_ouvir = case_when(
+  #     is.na(dif_ouvir) ~ 'nenhuma',
+  #     TRUE ~ as.character(dif_ouvir)
+  #   )
+  # ) |>
   write_csv(
     '1_analyses/predictive_signlanguage/data/pns2019_modelmatrix.csv'
   )

@@ -9,7 +9,8 @@ libras <-
     across(where(is.character), as.factor),
     # https://workflowsets.tidymodels.org/reference/workflow_set.html
     case_weights = importance_weights(case_weights),
-    libras = relevel(libras, 'sim')
+    libras = relevel(libras, 'sim'),
+    instrucao = as.factor( instrucao, levels = c('outros', 'fundamental', 'medio', 'superior'))
   ) 
   
 # passo 1.1: redução do dataset para prototipagem de tidymodels

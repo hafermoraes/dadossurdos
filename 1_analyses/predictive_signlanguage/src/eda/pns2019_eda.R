@@ -9,7 +9,11 @@ rawdata <-
   read_csv(
     '1_analyses/predictive_signlanguage/data/pns2019_modelmatrix.csv'
   ) |> 
-  mutate(across(where(is.character), as.factor))
+  mutate(
+    across(where(is.character), as.factor),
+    instrucao = factor(instrucao, levels=c('outros','fundamental','medio','superior')),
+    dif_ouvir = factor(dif_ouvir, levels=c('nenhuma','alguma','grande','incapaz'))
+    )
 
 # checagem dos dados importados
 rawdata |> glimpse()
@@ -21,7 +25,7 @@ rawdata |>
   mutate( pct = n/sum(n))
 
 # mosaic plots
-install.packages('ggmosaic')
+# install.packages('ggmosaic')
 library(ggmosaic)
 
 # libras vs dif_ouvir
@@ -30,17 +34,17 @@ ggplot(data = rawdata) +
   coord_flip() + 
   labs(title='f(dif_ouvir)')
 
-# libras vs dif_enxergar
-ggplot(data = rawdata) +
-  geom_mosaic(aes(x = product(dif_enxergar), fill=libras)) + 
-  coord_flip() + 
-  labs(title='f(dif_enxergar)')
+# # libras vs dif_enxergar
+# ggplot(data = rawdata) +
+#   geom_mosaic(aes(x = product(dif_enxergar), fill=libras)) + 
+#   coord_flip() + 
+#   labs(title='f(dif_enxergar)')
 
-# libras vs dif_locomover
-ggplot(data = rawdata) +
-  geom_mosaic(aes(x = product(dif_locomover), fill=libras)) + 
-  coord_flip() + 
-  labs(title='f(dif_locomover)')
+# # libras vs dif_locomover
+# ggplot(data = rawdata) +
+#   geom_mosaic(aes(x = product(dif_locomover), fill=libras)) + 
+#   coord_flip() + 
+#   labs(title='f(dif_locomover)')
 
 
 # libras vs instrucao
@@ -48,32 +52,32 @@ ggplot(data = rawdata) +
   geom_mosaic(aes(x = product(instrucao), fill=libras)) + 
   labs(title='f(instrucao)')
 
-# libras vs alfabetizado
-ggplot(data = rawdata) +
-  geom_mosaic(aes(x = product(alfabetizado), fill=libras)) + 
-  labs(title='f(alfabetizado)')
+# # libras vs alfabetizado
+# ggplot(data = rawdata) +
+#   geom_mosaic(aes(x = product(alfabetizado), fill=libras)) + 
+#   labs(title='f(alfabetizado)')
 
 # libras vs sexo
 ggplot(data = rawdata) +
   geom_mosaic(aes(x = product(sexo), fill=libras)) + 
   labs(title='f(sexo)')
 
-# libras vs cor_raca
-ggplot(data = rawdata) +
-  geom_mosaic(aes(x = product(cor_raca), fill=libras)) + 
-  labs(title='f(cor_raca)') +
-  coord_flip()
+# # libras vs cor_raca
+# ggplot(data = rawdata) +
+#   geom_mosaic(aes(x = product(cor_raca), fill=libras)) + 
+#   labs(title='f(cor_raca)') +
+#   coord_flip()
 
-# libras vs estado_civil
-ggplot(data = rawdata) +
-  geom_mosaic(aes(x = product(estado_civil), fill=libras)) + 
-  labs(title='f(estado_civil)')
+# # libras vs estado_civil
+# ggplot(data = rawdata) +
+#   geom_mosaic(aes(x = product(estado_civil), fill=libras)) + 
+#   labs(title='f(estado_civil)')
 
-# libras vs uf
-ggplot(data = rawdata) +
-  geom_mosaic(aes(x = product(uf), fill=libras)) + 
-  coord_flip() +
-  labs(title='f(uf)')
+# # libras vs uf
+# ggplot(data = rawdata) +
+#   geom_mosaic(aes(x = product(uf), fill=libras)) + 
+#   coord_flip() +
+#   labs(title='f(uf)')
 
 # libras vs idade
 ggplot(data = rawdata) + 
@@ -90,11 +94,9 @@ ggplot(data = rawdata) +
 
 # facets com geom_errorbar
 # adaptado de https://towardsdatascience.com/bank-customer-churn-with-tidymodels-part-1-model-development-cdec4eeb131c/
-
 rawdata |>
   select(libras,!where(is.numeric)) |>
   mutate(
-    across(everything(), as.character),
     libras = if_else( libras == 'sim', 1, 0)
   ) |>
   drop_na() |>
@@ -114,7 +116,7 @@ rawdata |>
   coord_flip()
 
 # correlações
-install.packages('corrr')
+# install.packages('corrr')
 library(corrr)
 library(recipes)
 
@@ -141,7 +143,6 @@ library(ggplot2)
 rawdata %>% 
   select(libras,!where(is.numeric)) %>%
   mutate(
-    across(everything(), as.character),
     libras = if_else( libras == 'sim', 1, 0)
   ) %>%
   drop_na() %>%
