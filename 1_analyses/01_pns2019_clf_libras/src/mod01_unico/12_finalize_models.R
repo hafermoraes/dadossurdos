@@ -155,16 +155,29 @@ for(CLF in classifiers$wflow_id) {
   # variable importance (vip)
   if(VARIABLE_IMPORTANCE){
     if (! str_remove_all(CLF, "basic_model_") %in% c('svm', 'nb', 'bc5', 'bart', 'bagrpart')){
-      (
-        best_clf |>
-          extract_fit_parsnip() |>
-          vip(geom="point")
-      ) |>
-        ggsave(
-          filename = paste0(save_path, "plot_feature_importance.pdf"),
-          width=5,
-          height=5
-        )
+
+      tryCatch({
+        (
+          best_clf |>
+            extract_fit_parsnip() |>
+            vip(geom="point")
+        ) |>
+          ggsave(
+            filename = paste0(save_path, "plot_feature_importance.pdf"),
+            width=5,
+            height=5
+          )
+      },
+      error = function(e) {
+        message("Erro: ", e$message)
+      },
+      warning = function(w) {
+        message("Warning: ", w$message)
+      },
+      finally = {
+        message("Sem erros")
+      }
+      )
     }    
   }
   

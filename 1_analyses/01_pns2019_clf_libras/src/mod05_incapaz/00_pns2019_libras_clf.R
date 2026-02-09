@@ -10,7 +10,7 @@ METRIC <- "j_index"
 
 CONF_MAT_SUB <- FALSE
 
-VARIABLE_IMPORTANCE <- FALSE
+VARIABLE_IMPORTANCE <- TRUE
 
 base_dir <-
   paste0(

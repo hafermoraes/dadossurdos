@@ -7,6 +7,8 @@ classifiers <-
 for(CLF in classifiers$wflow_id) {
 
   gc()
+  
+  print(paste0("Exportando métricas, parâmetros e modelo para ", CLF))
 
   save_path <- 
     paste0(
@@ -79,9 +81,6 @@ for(CLF in classifiers$wflow_id) {
     clf_model = best_clf |> extract_workflow(),
     optimum_threshold = opt_threshold$.threshold
   )    
-  if(ANOMALY_DETECTION_ISOLATION_FOREST){
-    all_objects[["isolation_forest"]] <- iso_forest
-  }
   write_rds(
       all_objects,
       paste0(save_path, 'model.rds')
@@ -155,16 +154,29 @@ for(CLF in classifiers$wflow_id) {
   # variable importance (vip)
   if(VARIABLE_IMPORTANCE){
     if (! str_remove_all(CLF, "basic_model_") %in% c('svm', 'nb', 'bc5', 'bart', 'bagrpart')){
-      (
-        best_clf |>
-          extract_fit_parsnip() |>
-          vip(geom="point")
-      ) |>
-        ggsave(
-          filename = paste0(save_path, "plot_feature_importance.pdf"),
-          width=5,
-          height=5
-        )
+
+      tryCatch({
+        (
+          best_clf |>
+            extract_fit_parsnip() |>
+            vip(geom="point")
+        ) |>
+          ggsave(
+            filename = paste0(save_path, "plot_feature_importance.pdf"),
+            width=5,
+            height=5
+          )
+      },
+      error = function(e) {
+        message("Erro: ", e$message)
+      },
+      warning = function(w) {
+        message("Warning: ", w$message)
+      },
+      finally = {
+        message("Sem erros")
+      }
+      )
     }    
   }
   

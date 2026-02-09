@@ -16,8 +16,8 @@ wflow_set <-
       model_mlp = model_mlp,
       model_nb = model_nb,
       model_rf = model_rf,
-      model_svm = model_svm,
-      model_xgb = model_xgb
+      model_svm = model_svm
+      #model_xgb = model_xgb
     ),
     cross = TRUE,
     case_weights = "case_weights"
