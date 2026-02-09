@@ -1,10 +1,4 @@
 
-eda_path <-
-  paste0(
-    base_dir,
-    "eda/"
-  )
-
 # importação da matriz de modelo
 pre_modelmatrix <-
   pre_modelmatrix |>
@@ -118,8 +112,11 @@ print(
   include.colnames=TRUE,
   hline.after=NULL,
   comment=FALSE,
-  format.args = list(big.mark = ".", decimal.mark = ","),
-  file=paste0(eda_path, "eda_table.tex")
+  format.args=list(big.mark = ".", decimal.mark = ","),
+  file=paste0(
+    eda_dir,
+    "eda_table.tex"
+  )
 )
 
 print("Class imbalance for response variable libras (g05801): ")
@@ -146,7 +143,10 @@ pre_modelmatrix |>
     labs(title='f(dif_ouvir)') 
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_mosaic_dif_ouvir.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_mosaic_dif_ouvir.pdf"
+    ),
     width=12,
     height=8
   )
@@ -166,7 +166,10 @@ pre_modelmatrix |>
     labs(title='f(dif_enxergar)')
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_mosaic_dif_enxergar.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_mosaic_dif_enxergar.pdf"
+    ),
     width=12,
     height=8
   )
@@ -187,7 +190,10 @@ pre_modelmatrix |>
     labs(title='f(dif_locomover)')
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_mosaic_dif_locomover.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_mosaic_dif_locomover.pdf"
+    ),
     width=12,
     height=8
   )
@@ -207,7 +213,10 @@ pre_modelmatrix |>
     labs(title='f(instrucao)')
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_mosaic_instrucao.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_mosaic_instrucao.pdf"
+    ),
     width=12,
     height=8
   )
@@ -227,7 +236,10 @@ pre_modelmatrix |>
     labs(title='f(alfabetizado)')
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_mosaic_alfabetizado.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_mosaic_alfabetizado.pdf"
+    ),
     width=12,
     height=8
   )
@@ -246,7 +258,10 @@ pre_modelmatrix |>
     labs(title='f(sexo)')
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_mosaic_sexo.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_mosaic_sexo.pdf"
+    ),
     width=12,
     height=8
   )
@@ -267,7 +282,10 @@ pre_modelmatrix |>
     coord_flip()
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_mosaic_cor_raca.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_mosaic_cor_raca.pdf"
+    ),
     width=12,
     height=8
   )
@@ -287,7 +305,10 @@ pre_modelmatrix |>
     labs(title='f(estado_civil)')
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_mosaic_estado_civil.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_mosaic_estado_civil.pdf"
+    ),
     width=12,
     height=8
   )
@@ -306,7 +327,10 @@ pre_modelmatrix |>
     labs(title='f(uf)')
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_mosaic_uf.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_mosaic_uf.pdf"
+    ),
     width=12,
     height=8
   )
@@ -318,7 +342,10 @@ pre_modelmatrix |>
   geom_boxplot( aes(x = libras, y=idade, fill = libras))
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_boxplot_idade.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_boxplot_idade.pdf"
+    ),
     width=12,
     height=8
   )
@@ -336,7 +363,10 @@ pre_modelmatrix |>
   labs(title='f(idade)')
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_mosaic_idade.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_mosaic_idade.pdf"
+    ),
     width=12,
     height=8
   )
@@ -347,7 +377,10 @@ pre_modelmatrix |>
     facet_wrap( ~ dif_ouvir)
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_density_idade.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_density_idade.pdf"
+    ),
     width=12,
     height=8
   )
@@ -379,7 +412,10 @@ pre_modelmatrix |>
   coord_flip()
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_facet.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_facet.pdf"
+    ),
     width=12,
     height=8
   )
@@ -406,7 +442,10 @@ pre_modelmatrix |>
     labs(title = "Correlation Plot")
 ) |>
   ggsave(
-    filename = paste0(eda_path, "eda_corr_plot.pdf"),
+    filename = paste0(
+      eda_dir,
+      "eda_corr_plot.pdf"
+    ),
     width=12,
     height=8
   )

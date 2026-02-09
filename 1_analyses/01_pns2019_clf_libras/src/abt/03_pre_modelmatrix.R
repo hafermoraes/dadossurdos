@@ -112,7 +112,10 @@ print("Pre Model matrix assembled for classification model")
 
 pre_modelmatrix |>
   write_csv(
-    paste0(base_dir, 'data/pns2019_02_pre_modelmatrix.csv')
+    paste0(
+      data_dir,
+      'pns2019_02_pre_modelmatrix.csv'
+    )
   )
 print("Pre-Model Matrix exported to disk")
 

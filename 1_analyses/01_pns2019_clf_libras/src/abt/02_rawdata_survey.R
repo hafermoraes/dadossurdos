@@ -69,5 +69,8 @@ gc()
 
 rawdata |>
   write_csv(
-    paste0(base_dir, 'data/pns2019_01_rawdata.csv')
+    paste0(
+      data_dir,
+      'pns2019_01_rawdata.csv'
+    )
   )

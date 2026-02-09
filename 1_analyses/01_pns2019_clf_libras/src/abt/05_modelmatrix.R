@@ -36,7 +36,7 @@ modelmatrix |>
   arrange(desc(case_weights)) |>
   write_csv(
     paste0(
-      base_dir,
-      "data/pns2019_03_modelmatrix.csv"
+      data_dir,
+      "pns2019_03_modelmatrix.csv"
     )
   )
