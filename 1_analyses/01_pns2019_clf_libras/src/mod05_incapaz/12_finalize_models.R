@@ -65,8 +65,7 @@ for(CLF in classifiers$wflow_id) {
     bind_cols(
       libras_test |> 
         transmute(
-          case_weights = round(as.numeric(case_weights),0),
-          dif_ouvir
+          case_weights = round(as.numeric(case_weights),0)
         )
     )
   

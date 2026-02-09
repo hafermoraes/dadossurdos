@@ -8,6 +8,7 @@ libras <-
       )
   ) |>
   filter(dif_ouvir == 'incapaz') |>
+  select(-dif_ouvir) |>
   mutate(
     across(where(is.character), as.factor),
     # https://workflowsets.tidymodels.org/reference/workflow_set.html
