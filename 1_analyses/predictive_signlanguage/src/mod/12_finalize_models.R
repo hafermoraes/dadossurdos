@@ -48,6 +48,8 @@ for(CLF in classifiers$wflow_id) {
     arrange(desc(.estimate)) |>
     head(1)
   
+  optimum_threshold <- opt_threshold$.threshold
+  
   preds_with_optimum_threshold <-
     preds |>
     mutate(

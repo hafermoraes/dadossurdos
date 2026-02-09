@@ -14,7 +14,7 @@ metrics_set <-
     ## 'class prob' type
     roc_auc,
     average_precision,
-    brier_class,
-    mn_log_loss,
-    pr_auc
+    brier_class
+    # mn_log_loss,
+    # pr_auc
   )
