@@ -1,4 +1,4 @@
-# passo 5: classificadores usados na comparação
+
 
 ## classificadores
 # https://parsnip.tidymodels.org/articles/Examples.html

@@ -25,18 +25,48 @@ RUN apt-get update \
     libgdal-dev \
     libglpk-dev
 
-RUN Rscript -e "install.packages(c(\
+RUN Rscript -e "install.packages(\
+    c( \
     'survey', \
     'srvyr', \
     'tictoc', \
     'censobr', \
     'tidymodels', \
     'vip', \
+    'ggmosaic', \
+    'arrow', \
+    'duckdb', \
     'probably', \
     'discrim', \
     'geobr', \
-    'DDM'\
-    ))"
+    'DDM', \
+    'corrr', \
+    'mosaic', \
+    'textrecipes', \
+    'janitor', \
+    'themis', \
+    'lightgbm', \
+    'xgboost', \
+    'glmnet', \
+    'ranger', \
+    'naivebayes', \
+    'finetune', \
+    'doParallel', \
+    'earth', \
+    'lme4', \
+    'kernlab', \
+    'betacal', \
+    'NeuralNetTools', \
+    'parsnip', \
+    'hardhat', \
+    'sparsevctrs', \
+    'bonsai', \
+    'baguette', \
+    'brulee', \
+    'solitude', \
+    'tailor'\
+    )\
+    )"
 
 WORKDIR /home/rstudio/
 

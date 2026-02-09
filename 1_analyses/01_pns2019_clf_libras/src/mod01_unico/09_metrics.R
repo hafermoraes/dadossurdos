@@ -1,4 +1,4 @@
-# passo 7: definição das métricas de avaliação dos classificadores
+
 metrics_set <-
   metric_set(
     ## 'class' type

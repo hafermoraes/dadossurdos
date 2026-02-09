@@ -1,4 +1,4 @@
-# passo 8: ajuste dos modelos
+
 
 if(PARALLEL){
   cores <- parallel::detectCores(logical = FALSE) - 2

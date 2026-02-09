@@ -8,6 +8,8 @@ for(CLF in classifiers$wflow_id) {
 
   gc()
 
+  print(paste0("Exportando métricas, parâmetros e modelo para ", CLF))
+
   save_path <- 
     paste0(
       results_dir,
@@ -80,9 +82,6 @@ for(CLF in classifiers$wflow_id) {
     clf_model = best_clf |> extract_workflow(),
     optimum_threshold = opt_threshold$.threshold
   )    
-  if(ANOMALY_DETECTION_ISOLATION_FOREST){
-    all_objects[["isolation_forest"]] <- iso_forest
-  }
   write_rds(
       all_objects,
       paste0(save_path, 'model.rds')

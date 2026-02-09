@@ -1,4 +1,4 @@
-# passo 3: preparação da validação cruzada em 10 partes (folds)
+
 
 if(KFOLD){
   

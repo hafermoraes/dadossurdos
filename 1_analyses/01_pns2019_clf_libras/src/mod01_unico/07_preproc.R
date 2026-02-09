@@ -1,4 +1,4 @@
-# passo 4: transformação das variáveis independentes
+
 recipe_basic <-
   recipe(libras ~ ., data = libras_train) |>
   step_impute_knn(all_predictors(), neighbors = 3) |>

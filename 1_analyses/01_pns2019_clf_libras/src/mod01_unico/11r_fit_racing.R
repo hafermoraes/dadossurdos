@@ -1,4 +1,5 @@
-# passo -8: finetune + racing
+
+
 if(FALSE){
   # ## https://finetune.tidymodels.org/reference/tune_race_anova.html
   # cores <- parallel::detectCores(logical = FALSE)

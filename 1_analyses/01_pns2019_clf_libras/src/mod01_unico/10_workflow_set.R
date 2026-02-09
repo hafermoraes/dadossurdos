@@ -1,5 +1,5 @@
 
-# passo 6: criação dos fluxos de trabalho
+
 # https://workflowsets.tidymodels.org/reference/workflow_set.html#see-also
 
 wflow_set <- 
