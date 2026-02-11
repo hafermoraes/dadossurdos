@@ -6,81 +6,95 @@ message("preparando ", FILE, " no duckdb...")
 censo2010_common <-
   subset_censo2010 |>
   # joins com dicionário de variáveis
-  # v0102: uf de residência
-  left_join(dvar_censo2010 |> filter(q_code=='v0102') |>
-              transmute(v0102 = a_code, uf_residencia = a_desc),
-            keep=FALSE) |> 
-  # v1103: município de residência
-  left_join(dvar_censo2010 |> filter(q_code=='v1103') |>
-              transmute(v1103 = a_code, municipio_residencia = a_desc),
-            keep=FALSE) |>
+  # v0001: uf de residência
+  left_join(
+    dvar_censo2010 |>
+      filter(base == 'pess', q_code=='v0001') |>
+      transmute(v0001 = a_code, uf_residencia = a_desc) |>
+      distinct(v0001, .keep_all=TRUE),
+    keep=FALSE
+  ) |> 
+  # v0002: município de residência
+  left_join(
+    dvar_censo2010 |>
+      filter(base == 'pess', q_code=='v0002') |>
+      transmute(v0002 = a_code, municipio_residencia = a_desc) |>
+      distinct(v0002, .keep_all=TRUE),
+    keep=FALSE
+  ) |>
+  # finalização da tabela de análises
   transmute(
     row_id,
     # ......... Variáveis comuns ........................
     uf_residencia, 
     municipio_residencia,
-    idade = if_else(v4572=='',NA,as.numeric(v4572)), 
+    idade = if_else(v6036=='',NA,as.numeric(v6036)), 
     sexo = case_when(
-      v0401 == '1' ~ 'masculino',
-      v0401 == '2' ~ 'feminino',
+      v0601 == '1' ~ 'masculino',
+      v0601 == '2' ~ 'feminino',
       TRUE ~ NA
     ),
     alfabetizado = case_when( # sabe ler e escrever
-      v0428 == '1' ~ 'sim',
-      v0428 == '2' ~ 'nao',
+      v0627 == '1' ~ 'sim',
+      v0627 == '2' ~ 'nao',
       TRUE ~ NA
     ),
     estado_civil = case_when(
-      v0438 == '1' ~ 'casado',     # Casado(a)
-      v0438 == '2' ~ 'separado',   # desquitado(a) ou separado(a) judicialmente
-      v0438 == '3' ~ 'separado',   # divorciado(a)
-      v0438 == '4' ~ 'viúvo',      # viúvo(a)
-      v0438 == '5' ~ 'solteiro',   # Solteiro(a)
+      v0640 == '1' ~ 'casado',     # Casado(a)
+      v0640 == '2' ~ 'separado',   # Desquitado(a) ou separado(a) judicialmente
+      v0640 == '3' ~ 'separado',   # divorciado(a)
+      v0640 == '4' ~ 'viúvo',      # viúvo(a)
+      v0640 == '5' ~ 'solteiro',   # Solteiro(a)
       TRUE ~ NA
     ),
-    instrucao = case_when( # curso mais elevado que freqüentou, concluindo pelo menos uma série
-      v0432 == '01' ~ 'outros',      # alfabetização de jovens e adultos
-      v0432 == '02' ~ 'fundamental', # antigo primário
-      v0432 == '03' ~ 'fundamental', # antigo ginásio
-      v0432 == '04' ~ 'medio',       # antigo clássico, científico, etc.
-      v0432 == '05' ~ 'fundamental', # ensino fundamental ou 1º grau
-      v0432 == '06' ~ 'medio',       # ensino médio ou 2º grau
-      v0432 == '07' ~ 'superior',    # superior - graduação
-      v0432 == '08' ~ 'superior',    # mestrado ou doutorado
-      v0432 == '09' ~ 'outros',      # nenhum
+    instrucao = case_when( # curso mais elevado que frequentou
+      v0633 == '01' ~ 'outros',      # Creche, pré-escolar (maternal e jardim de infância), classe de alfabetização - CA
+      v0633 == '02' ~ 'outros',      # Alfabetização de jovens e adultos
+      v0633 == '03' ~ 'fundamental', # Antigo primário (elementar)
+      v0633 == '04' ~ 'fundamental', # Antigo ginásio (médio 1º ciclo)
+      v0633 == '05' ~ 'fundamental', # Ensino fundamental ou 1º grau (da 1ª a 3ª série/ do 1º ao 4º ano)
+      v0633 == '06' ~ 'fundamental', # Ensino fundamental ou 1º grau (4ª série/ 5º ano)
+      v0633 == '07' ~ 'fundamental', # Ensino fundamental ou 1º grau (da 5ª a 8ª série/ 6º ao 9º ano)
+      v0633 == '08' ~ 'fundamental', # Supletivo do ensino fundamental ou do 1º grau
+      v0633 == '09' ~ 'medio',       # Antigo científico, clássico, etc.....(médio 2º ciclo)
+      v0633 == '10' ~ 'medio',       # Regular ou supletivo do ensino médio ou do 2º grau
+      v0633 == '11' ~ 'superior',    # Superior de graduação
+      v0633 == '12' ~ 'superior',    # Especialização de nível superior ( mínimo de 360 horas )
+      v0633 == '13' ~ 'superior',    # Mestrado
+      v0633 == '14' ~ 'superior',    # Doutorado
       TRUE ~ NA
     ),
     cor_raca = case_when(
-      v0408 == '1' ~ 'branca',
-      v0408 == '2' ~ 'preta',
-      v0408 == '3' ~ 'amarela',
-      v0408 == '4' ~ 'parda',
-      v0408 == '5' ~ 'indigena',
-      v0408 == '9' ~ 'outros',
+      v0606 == '1' ~ 'branca',
+      v0606 == '2' ~ 'preta',
+      v0606 == '3' ~ 'amarela',
+      v0606 == '4' ~ 'parda',
+      v0606 == '5' ~ 'indigena',
+      v0606 == '9' ~ 'outros',
       TRUE ~ NA
       ),
     dif_enxergar = case_when( # capacidade de enxergar
-      v0411 == '1' ~ 'incapaz',   # incapaz
-      v0411 == '2' ~ 'grande',    # grande dificuldade permanente
-      v0411 == '3' ~ 'alguma',    # alguma dificuldade permanente
-      v0411 == '4' ~ 'nenhuma',   # nenhuma dificuldade
-      v0411 == '9' ~ 'ignorado',  # ignorado
+      v0614 == '1' ~ 'incapaz',   # incapaz
+      v0614 == '2' ~ 'grande',    # grande dificuldade permanente
+      v0614 == '3' ~ 'alguma',    # alguma dificuldade permanente
+      v0614 == '4' ~ 'nenhuma',   # nenhuma dificuldade
+      v0614 == '9' ~ 'ignorado',  # ignorado
       TRUE ~ NA
     ),
     dif_ouvir = case_when( # capacidade de ouvir
-      v0412 == '1' ~ 'incapaz',   # incapaz
-      v0412 == '2' ~ 'grande',    # grande dificuldade permanente
-      v0412 == '3' ~ 'alguma',    # alguma dificuldade permanente
-      v0412 == '4' ~ 'nenhuma',   # nenhuma dificuldade
-      v0412 == '9' ~ 'ignorado',  # ignorado
+      v0615 == '1' ~ 'incapaz',   # incapaz
+      v0615 == '2' ~ 'grande',    # grande dificuldade permanente
+      v0615 == '3' ~ 'alguma',    # alguma dificuldade permanente
+      v0615 == '4' ~ 'nenhuma',   # nenhuma dificuldade
+      v0615 == '9' ~ 'ignorado',  # ignorado
       TRUE ~ NA
     ),
     dif_locomover = case_when( # capacidade de caminhar/subir escadas
-      v0413 == '1' ~ 'incapaz',   # incapaz
-      v0413 == '2' ~ 'grande',    # grande dificuldade permanente
-      v0413 == '3' ~ 'alguma',    # alguma dificuldade permanente
-      v0413 == '4' ~ 'nenhuma',   # nenhuma dificuldade
-      v0413 == '9' ~ 'ignorado',  # ignorado
+      v0616 == '1' ~ 'incapaz',   # incapaz
+      v0616 == '2' ~ 'grande',    # grande dificuldade permanente
+      v0616 == '3' ~ 'alguma',    # alguma dificuldade permanente
+      v0616 == '4' ~ 'nenhuma',   # nenhuma dificuldade
+      v0616 == '9' ~ 'ignorado',  # ignorado
       TRUE ~ NA
     )
   )

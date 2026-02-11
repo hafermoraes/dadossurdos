@@ -58,12 +58,6 @@ subset_censo2010 <-
     v6222, # OK uf de nascimento
     v0619, # OK uf_naturalidade
     
-    v6256, # OK país de residência anterior
-    v6266, # OK país de residência data fixa
-    v6224, # OK país de nascimento
-    v0620, # OK nacionalidade (qual é a sua nacionalidade?)
-    v0621  # OK ano_fixou_residencia_brasil (em que ano fixou residência no brasil?)
-
     v0002, # OK município de residência
     v6254, # OK município de residência anterior
     v6264, # OK município de residência data fixa
@@ -71,9 +65,20 @@ subset_censo2010 <-
     v0618, # OK municipio_sempre_morou (mora neste município desde que nasceu?)
     #         e municipio_naturalidade (nasceu neste município?)
     
+    v6256, # OK país de residência anterior
+    v6266, # OK país de residência data fixa
+    v6224, # OK país de nascimento
+    v0620, # OK nacionalidade (qual é a sua nacionalidade?)
+    v0621  # OK ano_fixou_residencia_brasil (em que ano fixou residência no brasil?)
+
   ) |>
   mutate(
-    across(everything(), ~ str_trim(.))
+    across(everything(), ~ str_trim(.)),
+    v0010 = as.numeric(v0010),
+    v0002 = paste0(v0001,v0002),
+    v6222 = str_sub(v6222, start=1, end=2),
+    v6252 = str_sub(v6252, start=1, end=2),
+    v6262 = str_sub(v6262, start=1, end=2)
   ) |>
   to_duckdb() |>
   mutate(

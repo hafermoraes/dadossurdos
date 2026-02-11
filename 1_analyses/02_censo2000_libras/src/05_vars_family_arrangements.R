@@ -5,10 +5,21 @@ tic()
 message("preparando ", FILE, " no duckdb...")
 censo2000_family_arrangements <-
   subset_censo2000 |>
+  # joins com dicionário de variáveis
+  # v0402: relação de convivência existente com a pessoa responsável pelo domicílio
+  left_join(
+    dvar_censo2000 |>
+      filter(base == 'pes', q_code=='v0402') |>
+      transmute(v0402 = a_code, relacao_resp_domicilio = a_desc) |>
+      distinct(v0402, .keep_all=TRUE),
+    keep=FALSE
+  ) |> 
+  # finalização da tabela de análises
   transmute(
     row_id,
     # ......... Variáveis referentes ao Arranjo Domiciliar .........
-    relacao_resp_domicilio = v0402,
+    id_relacao_resp_domicilio = v0402,
+    relacao_resp_domicilio,
     nr_ordem_pessoa = v0400,
     id_domicilio = v0300
   )

@@ -5,13 +5,14 @@ tic()
 message("preparando ", FILE, " no duckdb...")
 censo2010_fertility <-
   subset_censo2010 |>
+  # finalização da tabela de análises
   transmute(
     row_id,
     # ......... Variáveis referentes à Fecundidade .........
-    filhos_nascidos_vivos = v4620,
-    filhos_nascidos_vivos_vivos = v0463,
-    filhos_nascidos_mortos = v4670,
-    filhos_nascidos = v4690
+    filhos_nascidos_vivos = ifelse(v6633=='', NA, as.numeric(v6633)),
+    filhos_nascidos_vivos_vivos = ifelse(v6643=='', NA, as.numeric(v6643)),
+    filhos_nascidos_mortos = ifelse(v6633=='' && v6643=='', NA, filhos_nascidos_vivos - filhos_nascidos_vivos_vivos),
+    filhos_nascidos = ifelse(v6800=='', NA, as.numeric(v6800))    
   )
 toc()
 

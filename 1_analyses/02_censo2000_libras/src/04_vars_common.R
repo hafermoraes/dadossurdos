@@ -7,13 +7,22 @@ censo2000_common <-
   subset_censo2000 |>
   # joins com dicionário de variáveis
   # v0102: uf de residência
-  left_join(dvar_censo2000 |> filter(q_code=='v0102') |>
-              transmute(v0102 = a_code, uf_residencia = a_desc),
-            keep=FALSE) |> 
+  left_join(
+    dvar_censo2000 |>
+      filter(base == 'pes', q_code=='v0102') |>
+      transmute(v0102 = a_code, uf_residencia = a_desc) |>
+      distinct(v0102, .keep_all=TRUE),
+    keep=FALSE
+  ) |> 
   # v1103: município de residência
-  left_join(dvar_censo2000 |> filter(q_code=='v1103') |>
-              transmute(v1103 = a_code, municipio_residencia = a_desc),
-            keep=FALSE) |>
+  left_join(
+    dvar_censo2000 |>
+      filter(base == 'pes', q_code=='v1103') |>
+      transmute(v1103 = a_code, municipio_residencia = a_desc) |>
+      distinct(v1103, .keep_all=TRUE),
+    keep=FALSE
+  ) |>
+  # finalização da tabela de análises
   transmute(
     row_id,
     # ......... Variáveis comuns ........................

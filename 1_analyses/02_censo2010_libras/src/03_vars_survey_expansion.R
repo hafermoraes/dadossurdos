@@ -4,11 +4,12 @@ tic()
 message("preparando ", FILE, " no duckdb...")
 censo2010_survey_expansion <-
   subset_censo2010 |>
+  # finalização da tabela de análises
   transmute(
     row_id, 
     # ......... Variáveis de expansão da amostra ........
-    area_ponderacao=areap,
-    peso_amostral=as.numeric(p001)/1e8
+    area_ponderacao=v0011,
+    peso_amostral=as.numeric(v0010)/1e13
   )
 toc()
 

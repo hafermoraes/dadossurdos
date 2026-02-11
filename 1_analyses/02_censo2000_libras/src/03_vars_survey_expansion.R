@@ -4,6 +4,7 @@ tic()
 message("preparando ", FILE, " no duckdb...")
 censo2000_survey_expansion <-
   subset_censo2000 |>
+  # finalização da tabela de análises
   transmute(
     row_id, 
     # ......... Variáveis de expansão da amostra ........
