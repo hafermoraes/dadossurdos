@@ -1,5 +1,5 @@
 
-# dicionário de variáveis
+message("importando dicionário de variáveis ...")
 dvar_censo2000 <-
   read_delim(
     '/tmp/etl/br_ibge_censo_2000/variables_dictionary.txt',
@@ -14,7 +14,8 @@ dvar_censo2000 <-
   ) |>
   to_duckdb()
 
-# harmonização das variáveis do censo2000
+tic()
+message("harmonizando as variáveis do censo2000 ...")
 subset_censo2000 <-
   open_dataset(
     "/tmp/etl/br_ibge_censo_2000/parquet/pes"
@@ -71,7 +72,7 @@ subset_censo2000 <-
   mutate(
     row_id = row_number()
   )
-  
+toc()
 
 
 

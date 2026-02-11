@@ -1,4 +1,8 @@
 
+FILE <- "censo2000_common"
+
+tic()
+message("preparando ", FILE, " no duckdb...")
 censo2000_common <-
   subset_censo2000 |>
   # joins com dicionário de variáveis
@@ -80,3 +84,16 @@ censo2000_common <-
       TRUE ~ NA
     )
   )
+toc()
+
+tic()
+message("exportando ", FILE, " em disco...")
+censo2000_common |>
+  collect() |>
+  write_csv(
+    file = paste0(data_dir, "censo2000_common.csv")
+  )
+toc()
+
+gc()
+

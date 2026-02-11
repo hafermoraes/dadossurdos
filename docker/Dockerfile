@@ -18,12 +18,12 @@
 FROM rocker/tidyverse:4.4.1
 
 RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y \
+    && apt-get install -y --no-install-recommends \
     libudunits2-dev \
     libproj-dev \
     libgdal-dev \
-    libglpk-dev
+    libglpk-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN Rscript -e "install.packages(\
     c( \

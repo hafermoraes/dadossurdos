@@ -1,71 +1,69 @@
 
-con <- dbplyr::remote_con(subset_censo2000)
-
-censo2000_common <- 
-  censo2000_common |> 
-  compute(name = "tab_common", temporary = FALSE)
-
-censo2000_family_arrangements <- 
-  censo2000_family_arrangements |> 
-  compute(name = "tab_family_arrangements", temporary = FALSE)
-
-censo2000_fertility <- 
-  censo2000_fertility |> 
-  compute(name = "tab_fertility", temporary = FALSE)
-
-censo2000_libras <- 
-  censo2000_libras |> 
-  compute(name = "tab_libras", temporary = FALSE)
-
-censo2000_migration <- 
-  censo2000_migration |> 
-  compute(name = "tab_migration", temporary = FALSE)
-
-censo2000_survey_expansion <- 
-  censo2000_survey_expansion |> 
-  compute(name = "tab_survey_expansion", temporary = FALSE)
-
-
-
-dbExecute(con, "CREATE TABLE censo2000_common AS SELECT * FROM tab_common") 
-dbExecute(con, "CREATE TABLE censo2000_family_arrangements AS SELECT * FROM tab_family_arrangements") 
-dbExecute(con, "CREATE TABLE censo2000_fertility AS SELECT * FROM tab_fertility") 
-dbExecute(con, "CREATE TABLE censo2000_libras AS SELECT * FROM tab_libras") 
-dbExecute(con, "CREATE TABLE censo2000_migration AS SELECT * FROM tab_migration") 
-dbExecute(con, "CREATE TABLE censo2000_survey_expansion AS SELECT * FROM tab_survey_expansion") 
-
-
-dbExecute(con, "ALTER TABLE censo2000_common ADD PRIMARY KEY (row_id)")
-dbExecute(con, "ALTER TABLE censo2000_family_arrangements ADD PRIMARY KEY (row_id)")
-dbExecute(con, "ALTER TABLE censo2000_fertility ADD PRIMARY KEY (row_id)")
-dbExecute(con, "ALTER TABLE censo2000_libras ADD PRIMARY KEY (row_id)")
-dbExecute(con, "ALTER TABLE censo2000_migration ADD PRIMARY KEY (row_id)")
-dbExecute(con, "ALTER TABLE censo2000_survey_expansion ADD PRIMARY KEY (row_id)")
-
-dbExecute(con, "CREATE TABLE censo2000_abt AS ")
-
-
-censo2000_abt <- 
-  censo2000_survey_expansion |>
-  left_join(
-    censo2000_common, by = "row_id" 
-    ) |>
-  left_join(
-    censo2000_family_arrangements, by = "row_id" 
-  ) |>
-  left_join(
-    censo2000_fertility, by = "row_id" 
-  ) |>
-  left_join(
-    censo2000_migration, by = "row_id" 
-  ) |>
-  left_join(
-    censo2000_libras, by = "row_id" 
-  ) 
-
-censo2000_abt |>
-  to_arrow() |>
-  write_dataset(
-    path = '/tmp/censo2000_abt',
-    format = "parquet"
+# comandos rodam via linux para não usar memória
+FILES <- paste0(
+  data_dir, 
+  c(
+    "censo2000_survey_expansion.csv",
+    "censo2000_common.csv",
+    "censo2000_family_arrangements.csv",
+    "censo2000_fertility.csv",
+    "censo2000_migration.csv",
+    "censo2000_libras.csv"
   )
+)
+
+INPUTS <- paste(FILES, collapse = " ")
+OUTPUT_CSV <- paste0(data_dir, "censo2000_abt.csv")
+OUTPUT_PARQUET <- paste0(data_dir, "censo2000_abt.parquet")
+
+
+# ordena o arquivo conforme row_id
+# e remove coluna row_id
+for(FILE in FILES){
+  tic()
+  message("tratando arquivo ", FILE, " ...")
+  system(paste0("sort -t, -k1,1n -o ", FILE, " ",FILE))
+  system(paste0("sed -i 's/^[^,]*,//' ", FILE))
+  toc()
+}
+
+tic()
+message("concatenando arquivos em uma base única...")
+system(paste0("paste -d ',' ", INPUTS, " > ", OUTPUT_CSV))
+toc()
+
+tic()
+message("removendo arquivos intermediários...")
+for(FILE in FILES){
+  message("tratando arquivo ", FILE)
+  system(paste0("rm ", FILE))
+}
+toc()
+
+tic()
+message("convertendo arquivo csv em parquet para eficiência em disco...")
+censo2000_abt_csv <-
+  open_dataset(
+    OUTPUT_CSV,
+    format = "csv",
+    skip=0
+  )
+write_parquet(
+  censo2000_abt_csv,
+  sink = OUTPUT_PARQUET
+)
+toc()
+
+size_csv <- file.info(OUTPUT_CSV)$size
+size_csv <- utils:::format.object_size(size_csv, "auto")
+
+size_parquet <- file.info(OUTPUT_PARQUET)$size
+size_parquet <- utils:::format.object_size(size_parquet, "auto")
+
+message("redução de ", size_csv, " (csv) para ", size_parquet, " (parquet)")
+message("removendo arquivo ", OUTPUT_CSV)
+system(paste0("rm ", OUTPUT_CSV))
+
+rm(censo2000_abt_csv)
+
+gc()

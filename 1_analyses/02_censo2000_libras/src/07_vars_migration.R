@@ -1,4 +1,8 @@
 
+FILE <- "censo2000_migration"
+
+tic()
+message("preparando ", FILE, " no duckdb...")
 censo2000_migration <-
   subset_censo2000 |>
   mutate(
@@ -17,49 +21,56 @@ censo2000_migration <-
   left_join(
     dvar_censo2000 |>
       filter(q_code=='v4210') |>
-      transmute(v4210_uf = a_code, uf_nascimento = a_desc),
+      transmute(v4210_uf = a_code, uf_nascimento = a_desc) |>
+      distinct(v4210_uf, .keep_all = TRUE),
     keep=FALSE
   ) |>
   # v4230: uf de residência anterior
   left_join(
     dvar_censo2000 |>
       filter(q_code=='v4230') |>
-      transmute(v4230_uf = a_code, uf_residencia_anterior = a_desc),
+      transmute(v4230_uf = a_code, uf_residencia_anterior = a_desc) |>
+      distinct(v4230_uf, .keep_all = TRUE),
     keep=FALSE
   ) |>
   # v4260: uf de residência data fixa
   left_join(
     dvar_censo2000 |>
       filter(q_code=='v4260') |>
-      transmute(v4260_uf = a_code, uf_residencia_datafixa = a_desc),
+      transmute(v4260_uf = a_code, uf_residencia_datafixa = a_desc) |>
+      distinct(v4260_uf, .keep_all = TRUE),
     keep=FALSE
   ) |>
   # v4210: pais de nascimento
   left_join(
     dvar_censo2000 |>
       filter(q_code=='v4210') |>
-      transmute(v4210_pais = a_code, pais_nascimento = a_desc),
+      transmute(v4210_pais = a_code, pais_nascimento = a_desc) |>
+      distinct(v4210_pais, .keep_all = TRUE),
     keep=FALSE
   ) |>
   # v4230: pais de residência anterior
   left_join(
     dvar_censo2000 |>
       filter(q_code=='v4230') |>
-      transmute(v4230_pais = a_code, pais_residencia_anterior = a_desc),
+      transmute(v4230_pais = a_code, pais_residencia_anterior = a_desc) |>
+      distinct(v4230_pais, .keep_all = TRUE),
     keep=FALSE
   ) |>
   # v4260: pais de residência data fixa
   left_join(
     dvar_censo2000 |>
       filter(q_code=='v4260') |>
-      transmute(v4260_pais = a_code, pais_residencia_datafixa = a_desc),
+      transmute(v4260_pais = a_code, pais_residencia_datafixa = a_desc) |>
+      distinct(v4260_pais, .keep_all = TRUE),
     keep=FALSE
   ) |>
   # v4250: município de residência data fixa
   left_join(
     dvar_censo2000 |>
       filter(q_code=='v4250') |>
-      transmute(v4250 = a_code, municipio_residencia_datafixa = a_desc),
+      transmute(v4250 = a_code, municipio_residencia_datafixa = a_desc) |>
+      distinct(v4250, .keep_all = TRUE),
     keep=FALSE
   ) |>
   # finalização da tabela de análises
@@ -109,3 +120,15 @@ censo2000_migration <-
     uf_residencia_datafixa,
     pais_residencia_datafixa
   )
+toc()
+
+tic()
+message("exportando ", FILE, " em disco...")
+censo2000_migration |>
+  collect() |>
+  write_csv(
+    file = paste0(data_dir, "censo2000_migration.csv")
+  )
+toc()
+
+gc()

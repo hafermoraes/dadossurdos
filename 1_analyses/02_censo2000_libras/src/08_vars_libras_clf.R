@@ -1,6 +1,11 @@
 
 gc()
 
+FILE <- "censo2000_libras"
+
+tic()
+message("preparando ", FILE, " no duckdb...")
+
 censo2000_oos <-
   censo2000_common |>
   select(
@@ -283,10 +288,17 @@ rm(preds_incapaz, dif_ouvir_incapaz, PREDICT_INCAPAZ)
 rm(dif_ouvir_ignorado)
 rm(pns2019_clf_base_dir, clf, predict_probs)
 
+toc()
+
 gc()
 
-censo2000_libras |> count()
+tic()
+message("exportando ", FILE, " em disco...")
+censo2000_libras |>
+  collect() |>
+  write_csv(
+    file = paste0(data_dir, "censo2000_libras.csv")
+  )
+toc()
 
-censo2000_oos |> count()
-rm(censo2000_oos)
-
+gc()
