@@ -23,7 +23,10 @@ for(FILE in FILES){
   tic()
   message("tratando arquivo ", FILE, " ...")
   system(paste0("sort -t, -k1,1n -o ", FILE, " ",FILE))
-  system(paste0("sed -i 's/^[^,]*,//' ", FILE))
+  if(FILE != FILES[1]){
+    # deixando coluna row_id no primeiro arquivo somente...
+    system(paste0("sed -i 's/^[^,]*,//' ", FILE))
+  }
   toc()
 }
 
