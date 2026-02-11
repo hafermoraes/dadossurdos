@@ -42,14 +42,24 @@ toc()
 
 tic()
 message("convertendo arquivo csv em parquet para eficiência em disco...")
+col_names <- names(read_csv(OUTPUT_CSV, n_max = 0))
+csv_schema <- schema(
+  sapply(col_names, function(x) field(x, utf8()))
+)
+
 censo2000_abt_csv <-
   open_dataset(
     OUTPUT_CSV,
-    format = "csv",
-    skip=0
+    format = "csv"
   )
+
+censo2000_abt_parquet <- 
+  censo2000_abt_csv |>
+  mutate(across(everything(), as.character)) |>
+  mutate(across(everything(), ~if_else(is.na(.x) | .x == "NA" | .x == "NULL", "", .x)))
+
 write_parquet(
-  censo2000_abt_csv,
+  censo2000_abt_parquet,
   sink = OUTPUT_PARQUET
 )
 toc()
@@ -65,5 +75,16 @@ message("removendo arquivo ", OUTPUT_CSV)
 system(paste0("rm ", OUTPUT_CSV))
 
 rm(censo2000_abt_csv)
+
+rm(censo2000_common)
+rm(censo2000_family_arrangements)
+rm(censo2000_fertility)
+rm(censo2000_libras)
+rm(censo2000_migration)
+rm(censo2000_oos)
+rm(censo2000_survey_expansion)
+
+rm(dvar_censo2000)
+rm(subset_censo2000)
 
 gc()

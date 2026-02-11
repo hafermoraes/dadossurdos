@@ -19,7 +19,8 @@ message("exportando ", FILE, " em disco...")
 censo2000_family_arrangements |>
   collect() |>
   write_csv(
-    file = paste0(data_dir, "censo2000_family_arrangements.csv")
+    file = paste0(data_dir, "censo2000_family_arrangements.csv"),
+    na = ""
   )
 toc()
 
