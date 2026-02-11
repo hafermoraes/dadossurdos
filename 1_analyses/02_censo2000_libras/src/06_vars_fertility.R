@@ -1,4 +1,3 @@
-
 FILE <- "censo2000_fertility"
 
 tic()
@@ -9,10 +8,10 @@ censo2000_fertility <-
   transmute(
     row_id,
     # ......... Variáveis referentes à Fecundidade .........
-    filhos_nascidos_vivos = v4620,
-    filhos_nascidos_vivos_vivos = v0463,
-    filhos_nascidos_mortos = v4670,
-    filhos_nascidos = v4690
+    filhos_nascidos_vivos = ifelse(v4620=='', NA, as.numeric(v4620)),
+    filhos_nascidos_vivos_vivos = ifelse(v0463=='', NA, as.numeric(v0463)),
+    filhos_nascidos_mortos = ifelse(v4670=='', NA, as.numeric(v4670)),
+    filhos_nascidos = ifelse(v4690=='', NA, as.numeric(v4690))
   )
 toc()
 
@@ -27,4 +26,3 @@ censo2000_fertility |>
 toc()
 
 gc()
-

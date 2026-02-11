@@ -24,7 +24,7 @@ subset_censo2010 <-
   select(
     # expansão da amostra probabilística
     v0011, # area_ponderacao (área de ponderação)
-    v0010,  # peso_amostral (peso amostral)
+    v0010, # peso_amostral (peso amostral)
     
     # variáveis comuns às análises demográficas e ao preditivo libras
     v0001, # uf_residencia (uf de residência)
@@ -38,38 +38,36 @@ subset_censo2010 <-
     v0615, # dif_ouvir (capacidade de ouvir)
     v0616, # dif_locomover (capacidade de caminhar/subir escadas)
 
-    # TODO
     # variáveis de arranjos domiciliares
-    v0402, # relacao_resp_domicilio
-    v0400, # nr_ordem_pessoa
+    v0502, # relacao_resp_domicilio
+    v0504, # nr_ordem_pessoa
     v0300, # id_domicilio
 
-    # TODO
     # variáveis de fecundidade
-    v4620, # filhos_nascidos_vivos
-    v0463, # filhos_nascidos_vivos_vivos
-    v4670, # filhos_nascidos_mortos
-    v4690, # filhos_nascidos
+    v6633, # filhos_nascidos_vivos
+    v6643, # filhos_nascidos_vivos_vivos
+    # filhos_nascidos_mortos indisponível em 2010, mas sai por diferença
+    v6800, # filhos_nascidos
     
     # variáveis de migração
-    v6252, # OK uf de residência anterior
-    v6262, # OK uf de residência data fixa
-    v0623, # OK uf_residencia_tempo_anos
-    v6222, # OK uf de nascimento
-    v0619, # OK uf_naturalidade
+    v6252, # uf de residência anterior
+    v6262, # uf de residência data fixa
+    v0623, # uf_residencia_tempo_anos
+    v6222, # uf de nascimento
+    v0619, # uf_naturalidade
     
-    v0002, # OK município de residência
-    v6254, # OK município de residência anterior
-    v6264, # OK município de residência data fixa
-    v0624, # OK municipio_residencia_tempo_anos
-    v0618, # OK municipio_sempre_morou (mora neste município desde que nasceu?)
-    #         e municipio_naturalidade (nasceu neste município?)
+    v0002, # município de residência
+    v6254, # município de residência anterior
+    v6264, # município de residência data fixa
+    v0624, # municipio_residencia_tempo_anos
+    v0618, # municipio_sempre_morou (mora neste município desde que nasceu?)
+    #        e municipio_naturalidade (nasceu neste município?)
     
-    v6256, # OK país de residência anterior
-    v6266, # OK país de residência data fixa
-    v6224, # OK país de nascimento
-    v0620, # OK nacionalidade (qual é a sua nacionalidade?)
-    v0621  # OK ano_fixou_residencia_brasil (em que ano fixou residência no brasil?)
+    v6256, # país de residência anterior
+    v6266, # país de residência data fixa
+    v6224, # país de nascimento
+    v0620, # nacionalidade (qual é a sua nacionalidade?)
+    v0621  # ano_fixou_residencia_brasil (em que ano fixou residência no brasil?)
 
   ) |>
   mutate(
