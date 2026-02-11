@@ -9,7 +9,7 @@ censo2010_survey_expansion <-
     row_id, 
     # ......... Variáveis de expansão da amostra ........
     area_ponderacao=v0011,
-    peso_amostral=as.numeric(v0010)/1e13
+    peso_amostral=v0010/1e13
   )
 toc()
 
