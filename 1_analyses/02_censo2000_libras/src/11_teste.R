@@ -14,6 +14,10 @@ censo2000_abt |>
   View()
 
 censo2000_abt |>
+  count(dif_ouvir) 
+
+
+censo2000_abt |>
   glimpse()
 
 censo2000_abt |>

@@ -97,7 +97,7 @@ if(PREDICT_NENHUMA){
     transmute(
       row_id,
       sabe_libras = ifelse(
-        .pred_sim <= clf$optimum_threshold,
+        .pred_sim >= clf$optimum_threshold,
         "sim",
         "nao"
       )
@@ -148,7 +148,7 @@ if(PREDICT_ALGUMA){
     transmute(
       row_id,
       sabe_libras = ifelse(
-        .pred_sim <= clf$optimum_threshold,
+        .pred_sim >= clf$optimum_threshold,
         "sim",
         "nao"
       )
@@ -200,7 +200,7 @@ if(PREDICT_GRANDE){
     transmute(
       row_id,
       sabe_libras = ifelse(
-        .pred_sim <= clf$optimum_threshold,
+        .pred_sim >= clf$optimum_threshold,
         "sim",
         "nao"
       )
@@ -253,7 +253,7 @@ if(PREDICT_INCAPAZ){
     transmute(
       row_id,
       sabe_libras = ifelse(
-        .pred_sim <= clf$optimum_threshold,
+        .pred_sim >= clf$optimum_threshold,
         "sim",
         "nao"
       )

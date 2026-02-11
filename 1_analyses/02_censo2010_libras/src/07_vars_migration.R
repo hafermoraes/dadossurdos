@@ -92,25 +92,25 @@ censo2010_migration <-
     # ......... Variáveis referentes à Migração .........
     # nasceu neste município?   # provavelmente dá pra retirar essa variável pois não serve...
     municipio_sempre_morou = case_when(
-      v0618 == "1" ~ 1, # Sim e sempre morou
-      v0618 == "2" ~ 0, # Sim mas morou em outro município ou país estrangeiro
-      v0618 == "3" ~ 0, # Não
+      v0618 == "1" ~ "sim", # Sim e sempre morou
+      v0618 == "2" ~ "nao", # Sim mas morou em outro município ou país estrangeiro
+      v0618 == "3" ~ "nao", # Não
       TRUE ~ NA
     ),
     # tempo de moradia no município
     municipio_residencia_tempo_anos = if_else(v0624=='',NA,as.numeric(v0624)), 
     # nasceu neste município?
     municipio_naturalidade = case_when(
-      v0618 == '1' ~ 1, # Sim e sempre morou
-      v0618 == '2' ~ 1, # Sim mas morou em outro município ou país estrangeiro
-      v0618 == '3' ~ 0, # Não
+      v0618 == '1' ~ "sim", # Sim e sempre morou
+      v0618 == '2' ~ "sim", # Sim mas morou em outro município ou país estrangeiro
+      v0618 == '3' ~ "nao", # Não
       TRUE ~ NA
     ),
     # nasceu nesta unidade da federação?
     uf_naturalidade = case_when(
-      v0619 == '1' ~ 1, # Sim e sempre morou
-      v0619 == '2' ~ 1, # Sim mas morou em outro município ou país estrangeiro
-      v0619 == '3' ~ 0, # Não
+      v0619 == '1' ~ "sim", # Sim e sempre morou
+      v0619 == '2' ~ "sim", # Sim mas morou em outro município ou país estrangeiro
+      v0619 == '3' ~ "nao", # Não
       TRUE ~ NA
     ),
     # qual é a sua nacionalidade?

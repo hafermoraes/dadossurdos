@@ -13,8 +13,11 @@ microdados_dt <- open_dataset(
     d001,   # alfabetizado
     c011,   # estado civil
     d00901, # instrução
+    g046,   # dificuldade de enxergar
     g047,   # dificuldade de enxergar
+    g057,   # dificuldade de ouvir
     g058,   # dificuldade de ouvir
+    g070,   # dificuldade de locomover
     g071,   # dificuldade de locomover
     g05801  # sabe libras
   ) |>

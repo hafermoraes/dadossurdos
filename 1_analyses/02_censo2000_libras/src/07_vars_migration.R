@@ -79,22 +79,22 @@ censo2000_migration <-
     # ......... Variáveis referentes à Migração .........
     # mora neste município desde que nasceu?   # provavelmente dá pra retirar essa variável pois não serve...
     municipio_sempre_morou = case_when(
-      v0415 == "1" ~ 1, # sim
-      v0415 == "2" ~ 0, # não
+      v0415 == "1" ~ "sim",
+      v0415 == "2" ~ "nao",
       TRUE ~ NA
     ),
     # há quanto tempo mora sem interrupção neste município?
     municipio_residencia_tempo_anos = if_else(v0416=='',NA,as.numeric(v0416)), 
     # nasceu neste município?
     municipio_naturalidade = case_when(
-      v0417 == '1' ~ 1, # sim
-      v0417 == '2' ~ 0, # não
+      v0417 == '1' ~ "sim",
+      v0417 == '2' ~ "nao",
       TRUE ~ NA
     ),
     # nasceu nesta unidade da federação?
     uf_naturalidade = case_when(
-      v0418 == '1' ~ 1, # sim
-      v0418 == '2' ~ 0, # não
+      v0418 == '1' ~ "sim",
+      v0418 == '2' ~ "nao",
       TRUE ~ NA
     ),
     # qual é a sua nacionalidade?
