@@ -31,8 +31,6 @@ source(paste0(src_dir, '01_load_packages.R'))
 
 source(paste0(src_dir, '02_rawdata_datatable.R'))
 
-source(paste0(src_dir, '03_pre_modelmatrix.R'))
+source(paste0(src_dir, '03_eda.R'))
 
-source(paste0(src_dir, '04_eda.R'))
-
-source(paste0(src_dir, '05_modelmatrix.R'))
+source(paste0(src_dir, '04_modelmatrix.R'))

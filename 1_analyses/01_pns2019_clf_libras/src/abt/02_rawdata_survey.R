@@ -1,5 +1,5 @@
 
-microdados <-
+microdados_svy <-
   open_dataset(
     "/tmp/etl/br_ibge_pns_2019/parquet"
   ) |>
@@ -29,7 +29,7 @@ options(survey.adjust.domain.lonely=TRUE)
 pns2019_prior <- survey::svydesign(
   ids = ~upa_pns,
   strata = ~v0024,
-  data = microdados,
+  data = microdados_svy,
   weights = ~v0029,
   nest = TRUE
 )
@@ -37,8 +37,8 @@ pns2019_prior <- survey::svydesign(
 # Post-stratification
 popc.types <-
   data.frame(
-    v00293=as.character(unique(microdados$v00293)),
-    Freq=as.numeric(unique(microdados$v00292))
+    v00293=as.character(unique(microdados_svy$v00293)),
+    Freq=as.numeric(unique(microdados_svy$v00292))
   )
 popc.types <- popc.types[order(popc.types$v00293),]
 pns2019_posterior <-
