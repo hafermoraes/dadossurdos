@@ -15,8 +15,8 @@ wflow_set <-
       model_mars = model_mars,
       model_mlp = model_mlp,
       model_nb = model_nb,
-      model_rf = model_rf,
-      model_svm = model_svm
+      model_rf = model_rf
+      #model_svm = model_svm
       #model_xgb = model_xgb
     ),
     cross = TRUE,

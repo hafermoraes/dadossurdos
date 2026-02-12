@@ -1,10 +1,10 @@
 
-PARALLEL <- FALSE
+PARALLEL <- TRUE
 
 KFOLD <- FALSE
 KFOLD_NR <- 5
 
-BOOTSTRAP_TIMES <- 50
+BOOTSTRAP_TIMES <- 25
 
 METRIC <- "j_index"
 
@@ -37,7 +37,7 @@ src_dir <-
 
 source(paste0(src_dir, '01_empty_results_directory.R'))
 
-source(paste0(src_dir, '02_install_packages.R'))
+#source(paste0(src_dir, '02_install_packages.R'))
 
 source(paste0(src_dir, '03_load_packages.R'))
 

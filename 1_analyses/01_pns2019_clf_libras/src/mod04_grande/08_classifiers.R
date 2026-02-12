@@ -38,7 +38,7 @@ model_mlp <-
 # lightgbm
 model_lgb <-
   boost_tree(
-    mtry = tune(), trees = 1000, tree_depth = tune(),
+    mtry = 0.5, trees = 1000, tree_depth = tune(),
     learn_rate = tune(), min_n = tune(), loss_reduction = tune()
   ) |>
   set_engine("lightgbm") |>

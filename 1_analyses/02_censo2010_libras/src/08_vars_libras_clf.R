@@ -73,7 +73,7 @@ if(PREDICT_NENHUMA){
       paste0(
         pns2019_clf_base_dir,
         'mod02_nenhuma/',
-        'lgb/',
+        'mars/',
         'model.rds'
       )
     )
@@ -124,7 +124,7 @@ if(PREDICT_ALGUMA){
       paste0(
         pns2019_clf_base_dir,
         'mod03_alguma/',
-        'logres/',
+        'nb/',
         'model.rds'
       )
     )
@@ -176,7 +176,7 @@ if(PREDICT_GRANDE){
       paste0(
         pns2019_clf_base_dir,
         'mod04_grande/',
-        'logres/',
+        'xgb/',
         'model.rds'
       )
     )
@@ -229,7 +229,7 @@ if(PREDICT_INCAPAZ){
       paste0(
         pns2019_clf_base_dir,
         'mod05_incapaz/',
-        'logres/',
+        'nb/',
         'model.rds'
       )
     )
