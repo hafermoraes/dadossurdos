@@ -156,6 +156,39 @@ eda_stats_by_variable <- function(column) {
     )
 }
 
+eda_export_latex <- function(eda_summary, to_file = "eda_summary.tex", append_flag) {
+  print(
+    xtable( 
+      eda_summary, 
+      digits = c(
+        0, # row name
+        0, # key
+        0, # value
+        0, # n
+        0, # n_95ci
+        0, # l
+        0, # l_95ci
+        0, # p
+        0  # p_95ci
+      )
+    ),
+    sanitize.text.function = NULL,
+    only.contents=TRUE,
+    include.rownames=FALSE,
+    include.colnames=FALSE,
+    hline.after=NULL,
+    comment=FALSE,
+    append=append_flag,
+    file=paste0(
+      eda_dir,
+      to_file
+    )
+  )
+  
+}
+
+
+
 COLUMNS <- c(
   'sexo',
   'alfabetizado',
@@ -173,14 +206,15 @@ APPEND <- FALSE
 
 eda_base <- 
   tribble(
-    ~key, ~value, ~n, ~n_95ci, ~l, ~l_95ci, ~p, ~p_95ci, 
+    ~value, ~n, ~n_low, ~n_upp, ~l, ~l_low, ~l_upp, ~p, ~p_low, ~p_upp, ~key, 
   )
 
 for(arg_column in COLUMNS){
-  message("preparando análise exploratória da variável '", arg_column, "'")
+  tic()
+  message("preparando análise exploratória da variável '", arg_column, "'...")
   eda_stats <- eda_stats_by_variable(column=arg_column)
   
-  eda_base <- bind_rows(eda_base, eda_stats)
+  eda_base <- bind_rows(eda_base, eda_stats$base_table)
   
   eda_export_latex(
     eda_summary = eda_stats$summary_table |> as.data.frame(), 
@@ -188,17 +222,39 @@ for(arg_column in COLUMNS){
     append_flag=APPEND
   )
   
+  cat('\n\\midrule\n\n', file = paste0(eda_dir, "eda_summary.tex"), append=TRUE)
+  toc()
+  
   APPEND <- TRUE
+  
+  gc()
   
 }
 
 
-
-
 # facets com geom_errorbar
 # adaptado de https://towardsdatascience.com/bank-customer-churn-with-tidymodels-part-1-model-development-cdec4eeb131c/
+tic()
+message("exportando EDA gráfica (facet) em disco...")
 (
   eda_base |>
+    mutate(
+      key = factor(
+        key, 
+        levels = c(
+          "alfabetizado", 
+          "instrucao", 
+          "sexo",
+          "faixa_idade",
+          "cor_raca",
+          "estado_civil",
+          "dif_ouvir",
+          "dif_enxergar",
+          "dif_locomover",
+          "uf"
+          )
+        )
+      ) |> 
     select(p, p_low, p_upp, !where(is.numeric)) |>
     ggplot(aes(x=value, y=p, color=p)) +
     geom_point() +
@@ -217,11 +273,19 @@ for(arg_column in COLUMNS){
       color='red'
       ) +
     theme(legend.position = "none") + 
-    facet_wrap(~key, scales = 'free') +
+    facet_wrap(
+      ~key, 
+      nrow = 5, 
+      scales = 'free'
+    ) +
     scale_y_continuous(
       labels = scales::percent_format(accuracy = 0.1)
       ) +
     coord_flip() + 
+    theme(
+      axis.text.y = element_text(size = 6),
+      axis.text.x = element_text(size = 6)
+    )+
     labs(
       title = 'Análise exploratória de dados', 
       subtitle = 'Etapa prévia à Modelagem Preditiva',
@@ -234,102 +298,13 @@ for(arg_column in COLUMNS){
       eda_dir,
       "eda_facet.pdf"
     ),
-    width=12,
-    height=8
+    width=8,
+    height=10
   )
+toc()
 
 
-
-print("EDA Table")
-pct <- 
-  microdados |>
-  group_by(dif_ouvir) |>
-  summarise(count=sum(case_weights)) |>
-  mutate(pct_total=count/sum(count)) |>
-  select(-count)
-
-n_total_aux <- 
-  microdados |> 
-  select(case_weights, !where(is.numeric)) |>
-  drop_na() |>
-  pivot_longer(-c('case_weights'), names_to = "key", values_to = "value") |> 
-  group_by(key) |>
-  summarise(
-    n_total = sum(case_weights)
-  )
-
-pct_total <- 
-  microdados |> 
-  select(case_weights, !where(is.numeric)) |>
-  drop_na() |>
-  pivot_longer(-c('case_weights'), names_to = "key", values_to = "value") |> 
-  group_by(key, value) |>
-  summarise(
-    n = sum(case_weights)
-  ) |>
-  left_join(n_total_aux) |>
-  transmute(
-    key,
-    value,
-    pct_total = n/n_total
-  )
-
-eda_table <-
-  microdados |> 
-  select(libras, case_weights, !where(is.numeric)) |>
-  mutate(
-    libras = if_else( libras == 'sim', 1, 0)
-  ) |> 
-  drop_na() |>
-  pivot_longer(-c('libras','case_weights'), names_to = "key", values_to = "value") |> 
-  group_by(key, value) |>
-  summarise(
-    n_total = sum(case_weights),
-    n_libras = sum(libras*case_weights),
-    pct_libras = sum(libras*case_weights)/sum(case_weights),
-    errpd_pct_libras = sqrt(pct_libras*(1-pct_libras)/n_total)
-  ) |> 
-  left_join(pct_total) |>
-  # filter(key == 'dif_ouvir') |>
-  select(key, value, n_total, pct_total, n_libras, pct_libras, errpd_pct_libras) |> 
-  mutate(
-    n_total = format(round(n_total,0), big.mark = ".", decimal.mark=","),
-    n_libras = format(round(n_libras,0), big.mark = ".", decimal.mark=","),
-    pct_total = round(100*pct_total, 2),
-    pct_libras = round(100*pct_libras, 2),
-    errpd_pct_libras = round(errpd_pct_libras, 6)
-  ) 
-
-# eda_table |> View()
-
-print(
-  xtable( 
-    eda_table, 
-    digits = c(
-      0, # row name
-      0, # key
-      0, # value
-      0, # n_total
-      2, # pct_total
-      0, # n_libras
-      2, # pct_libras
-      6 # errpd_pct_libras
-      )
-    ),
-  sanitize.text.function = identity,
-  only.contents=TRUE,
-  include.rownames=FALSE,
-  include.colnames=TRUE,
-  hline.after=NULL,
-  comment=FALSE,
-  format.args=list(big.mark = ".", decimal.mark = ","),
-  file=paste0(
-    eda_dir,
-    "eda_table.tex"
-  )
-)
-
-print("Class imbalance for response variable libras (g05801): ")
+message("Class imbalance for response variable libras (g05801): ")
 # TODO exportar para LaTeX
 microdados |>
   group_by(libras) |>
