@@ -7,7 +7,22 @@ microdados <-
     dif_ouvir = factor(dif_ouvir, levels=c('nenhuma','alguma','grande','incapaz')),
     dif_enxergar = factor(dif_enxergar, levels=c('nenhuma','alguma','grande','incapaz')),
     dif_locomover = factor(dif_locomover, levels=c('nenhuma','alguma','grande','incapaz')),
-    libras_01 = ifelse(libras=='sim',1,0)
+    libras_01 = ifelse(libras=='sim',1,0),
+    faixa_idade = cut(
+      idade, 
+      breaks = c(0,4,10,20,30,40,50,60,70,80,120), 
+      labels = c("0 a 4 anos", 
+                 "5 a 10 anos", 
+                 "11 a 20 anos",
+                 "21 a 30 anos",
+                 "31 a 40 anos",
+                 "41 a 50 anos",
+                 "51 a 60 anos",
+                 "61 a 70 anos",
+                 "71 a 80 anos",
+                 "81 anos ou mais"
+                 ),
+      include.lowest = TRUE)
   )
 
 
@@ -94,7 +109,6 @@ pns2019_pct_libras <-
 
 
 eda_stats_by_variable <- function(column) {
-
   # tabela de cálculo da quantidade de pessoas, número e percentual de usuários de libras
   # bem como intervalos de confiança de 95%
   base_table <- 
@@ -106,29 +120,26 @@ eda_stats_by_variable <- function(column) {
         n = survey_total(na.rm = TRUE, vartype = 'ci'),
         l = survey_total(libras_01, na.rm = TRUE, vartype = 'ci'),
         p = survey_mean(libras_01, na.rm = TRUE, vartype = 'ci')
-      )
-      )
+      ) |>
+      rename(value = 1) |>
+      mutate(key = column)
+    )
   
   summary_table <-
     base_table |>
     mutate(
-        var = column,
-        across( 
-          c(
-            n, n_low, n_upp,
-            l, l_low, l_upp
-          ), 
+        across(
+          c(n, n_low, n_upp, l, l_low, l_upp), 
           label_number(accuracy = 1, big.mark = ".", decimal.mark = ",")
         ),
-        across( 
+        across(
           c(p, p_low, p_upp), 
           label_percent(accuracy = 0.1, big.mark = ".", decimal.mark = ",")
         )
       ) |>
-      rename(level = 1) |>
       transmute(
-        var,
-        level,
+        key,
+        value,
         n,
         n_95ci = paste0("[", n_low, "; ", n_upp, "]"),
         l,
@@ -143,36 +154,80 @@ eda_stats_by_variable <- function(column) {
       summary_table = summary_table
       )
     )
+}
+
+COLUMNS <- c(
+  'sexo',
+  'alfabetizado',
+  'estado_civil',
+  'instrucao',
+  'cor_raca',
+  'dif_enxergar',
+  'dif_ouvir',
+  'dif_locomover',
+  'uf',
+  'faixa_idade'
+)
+
+APPEND <- FALSE
+
+eda_base <- 
+  tribble(
+    ~key, ~value, ~n, ~n_95ci, ~l, ~l_95ci, ~p, ~p_95ci, 
+  )
+
+for(arg_column in COLUMNS){
+  message("preparando análise exploratória da variável '", arg_column, "'")
+  eda_stats <- eda_stats_by_variable(column=arg_column)
+  
+  eda_base <- bind_rows(eda_base, eda_stats)
+  
+  eda_export_latex(
+    eda_summary = eda_stats$summary_table |> as.data.frame(), 
+    to_file = "eda_summary.tex", 
+    append_flag=APPEND
+  )
+  
+  APPEND <- TRUE
   
 }
 
-
-eda_stats <- eda_stats_by_variable(column='sexo')
-eda_stats$summary_table |> View()
 
 
 
 # facets com geom_errorbar
 # adaptado de https://towardsdatascience.com/bank-customer-churn-with-tidymodels-part-1-model-development-cdec4eeb131c/
 (
-  eda_stats$base_table |>
+  eda_base |>
     select(p, p_low, p_upp, !where(is.numeric)) |>
-    ggplot(aes(x=sexo, y=p, color=p)) +
+    ggplot(aes(x=value, y=p, color=p)) +
     geom_point() +
     geom_errorbar(aes(ymin = p_low, ymax = p_upp), width = 0.1) +
-    annotate("rect", 
-             ymin = pns2019_pct_libras$pct_low, 
-             ymax = pns2019_pct_libras$pct_upp, 
-             xmin = -Inf, xmax = Inf, 
-             fill = "red", alpha = 0.1
+    annotate(
+      "rect", 
+      ymin = pns2019_pct_libras$pct_low, 
+      ymax = pns2019_pct_libras$pct_upp, 
+      xmin = -Inf, xmax = Inf, 
+      fill = "red", alpha = 0.1
     ) +
-    geom_hline(yintercept = pns2019_pct_libras$pct, linetype='dashed', linewidth=0.5, color='red') +
+    geom_hline(
+      yintercept = pns2019_pct_libras$pct, 
+      linetype='dashed', 
+      linewidth=0.5, 
+      color='red'
+      ) +
     theme(legend.position = "none") + 
-    #scale_color_viridis_d(aesthetics = c("color", "fill"), end = 0.5) +
-    #facet_wrap(~key, scales = 'free') +
-    scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) +
-    labs(title = 'Categorical Variable Analysis', subtitle = 'With 95% Confidence Intervals') + 
-    coord_flip()
+    facet_wrap(~key, scales = 'free') +
+    scale_y_continuous(
+      labels = scales::percent_format(accuracy = 0.1)
+      ) +
+    coord_flip() + 
+    labs(
+      title = 'Análise exploratória de dados', 
+      subtitle = 'Etapa prévia à Modelagem Preditiva',
+      y = 'percentual de usuários de libras',
+      x = ''
+      ) 
 ) |>
   ggsave(
     filename = paste0(
