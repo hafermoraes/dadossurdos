@@ -28,14 +28,14 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 39,feminino,medio,nenhuma,nao,703567.0011751181
 57,feminino,fundamental,nenhuma,nao,702833.3983577145
 54,masculino,fundamental,nenhuma,nao,691818.3338881119
-33,feminino,medio,nenhuma,nao,685048.2591817577
+33,feminino,medio,nenhuma,nao,685048.2591817576
 60,feminino,fundamental,nenhuma,nao,682768.1871936314
 21,masculino,medio,nenhuma,nao,672517.6705327064
 37,masculino,medio,nenhuma,nao,664649.7599829263
 26,masculino,medio,nenhuma,nao,658017.5585171945
 18,feminino,medio,nenhuma,nao,656712.5438670763
 36,masculino,medio,nenhuma,nao,652662.0110998005
-51,masculino,fundamental,nenhuma,nao,651230.6191607998
+51,masculino,fundamental,nenhuma,nao,651230.6191607997
 18,feminino,outros,nenhuma,nao,649847.782514427
 35,masculino,medio,nenhuma,nao,649288.230945987
 36,feminino,medio,nenhuma,nao,646158.1704526537
@@ -83,7 +83,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 45,feminino,medio,nenhuma,nao,558686.6797926363
 53,masculino,fundamental,nenhuma,nao,557198.808839269
 31,feminino,medio,nenhuma,nao,550796.288863575
-19,masculino,outros,nenhuma,nao,547246.4431597173
+19,masculino,outros,nenhuma,nao,547246.4431597171
 25,masculino,medio,nenhuma,nao,546769.6138630101
 43,feminino,medio,nenhuma,nao,545998.2579689722
 38,masculino,medio,nenhuma,nao,544385.184880801
@@ -94,7 +94,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 49,feminino,medio,nenhuma,nao,528572.1603507231
 42,masculino,fundamental,nenhuma,nao,527898.6099270266
 38,feminino,fundamental,nenhuma,nao,526167.1649519661
-40,feminino,medio,nenhuma,nao,524012.1019939149
+40,feminino,medio,nenhuma,nao,524012.10199391487
 46,feminino,fundamental,nenhuma,nao,523339.7512163966
 41,feminino,medio,nenhuma,nao,523028.3554236481
 62,feminino,fundamental,nenhuma,nao,522089.16267287784
@@ -151,7 +151,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 29,feminino,superior,nenhuma,nao,387538.0691625133
 48,masculino,medio,nenhuma,nao,384666.0489492147
 56,feminino,medio,nenhuma,nao,381361.2575478509
-35,feminino,fundamental,nenhuma,nao,381148.18164721195
+35,feminino,fundamental,nenhuma,nao,381148.1816472119
 31,feminino,superior,nenhuma,nao,379628.41105120984
 36,masculino,superior,nenhuma,nao,379214.0906790778
 34,masculino,fundamental,nenhuma,nao,377674.88645148365
@@ -162,10 +162,10 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 50,masculino,medio,nenhuma,nao,368750.5324617544
 51,masculino,medio,nenhuma,nao,368348.2463929892
 54,masculino,medio,nenhuma,nao,363508.4454817819
-68,masculino,fundamental,nenhuma,nao,363234.38573332014
+68,masculino,fundamental,nenhuma,nao,363234.3857333202
 20,feminino,outros,nenhuma,nao,362463.9443894754
 44,masculino,medio,nenhuma,nao,360523.99592854345
-35,masculino,fundamental,nenhuma,nao,357944.42758132
+35,masculino,fundamental,nenhuma,nao,357944.42758131993
 74,feminino,fundamental,nenhuma,nao,356486.5873174542
 30,feminino,superior,nenhuma,nao,356247.1927995475
 52,masculino,medio,nenhuma,nao,355379.1864303892
@@ -260,7 +260,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 27,feminino,superior,nenhuma,nao,230803.1307865428
 26,masculino,fundamental,nenhuma,nao,230767.44532748862
 47,masculino,superior,nenhuma,nao,228755.4279041963
-49,masculino,superior,nenhuma,nao,223876.8070456682
+49,masculino,superior,nenhuma,nao,223876.80704566822
 44,masculino,superior,nenhuma,nao,223320.9878770134
 52,feminino,superior,nenhuma,nao,221901.15316420505
 78,feminino,fundamental,nenhuma,nao,220901.55830584123
@@ -275,7 +275,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 25,feminino,outros,nenhuma,nao,211889.3813722296
 79,feminino,fundamental,nenhuma,nao,211740.2747491712
 53,masculino,superior,nenhuma,nao,211533.2577479555
-74,masculino,fundamental,nenhuma,nao,211314.68023671396
+74,masculino,fundamental,nenhuma,nao,211314.680236714
 55,masculino,superior,nenhuma,nao,210956.1493125239
 35,feminino,outros,nenhuma,nao,210228.99272081562
 65,feminino,medio,nenhuma,nao,208636.08691327253
@@ -303,7 +303,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 80,feminino,fundamental,nenhuma,nao,176534.3327888351
 34,feminino,outros,nenhuma,nao,175787.21381982966
 60,feminino,superior,nenhuma,nao,174375.68340458078
-28,feminino,outros,nenhuma,nao,174024.52343891823
+28,feminino,outros,nenhuma,nao,174024.52343891826
 30,masculino,outros,nenhuma,nao,173875.20159723997
 25,masculino,superior,nenhuma,nao,173296.13839073872
 18,feminino,fundamental,nenhuma,nao,172974.06871459633
@@ -331,7 +331,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 28,masculino,outros,nenhuma,nao,153889.20848512737
 61,feminino,superior,nenhuma,nao,153829.81905159118
 22,feminino,superior,nenhuma,nao,153786.17540759174
-58,masculino,superior,nenhuma,nao,153245.69990443147
+58,masculino,superior,nenhuma,nao,153245.6999044315
 22,feminino,fundamental,nenhuma,nao,152897.1165484441
 69,feminino,superior,nenhuma,nao,152642.6259036347
 64,masculino,medio,nenhuma,nao,151359.8707514385
@@ -359,7 +359,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 39,feminino,outros,nenhuma,nao,132196.20595301266
 40,feminino,outros,nenhuma,nao,132097.02018052284
 44,feminino,outros,nenhuma,nao,128349.76261147323
-29,masculino,outros,nenhuma,nao,127586.49453241023
+29,masculino,outros,nenhuma,nao,127586.49453241024
 79,masculino,fundamental,nenhuma,nao,127501.74244704064
 83,feminino,fundamental,nenhuma,nao,126703.36733968763
 15,masculino,fundamental,nenhuma,nao,125814.76152108028
@@ -367,11 +367,11 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 49,feminino,outros,nenhuma,nao,124288.35916965194
 66,masculino,superior,nenhuma,nao,124134.76813544524
 64,feminino,superior,nenhuma,nao,123610.92330338129
-69,masculino,superior,nenhuma,nao,121628.58851315358
+69,masculino,superior,nenhuma,nao,121628.58851315359
 31,masculino,outros,nenhuma,nao,121433.9519965671
 61,masculino,superior,nenhuma,nao,120283.63713224488
 26,masculino,outros,nenhuma,nao,119711.17051981603
-66,feminino,superior,nenhuma,nao,119048.90807308952
+66,feminino,superior,nenhuma,nao,119048.90807308951
 42,feminino,outros,nenhuma,nao,117837.58387112833
 68,masculino,medio,nenhuma,nao,117726.03104149249
 59,feminino,outros,nenhuma,nao,117341.04004240902
@@ -384,7 +384,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 62,masculino,superior,nenhuma,nao,112194.82374151921
 45,masculino,outros,nenhuma,nao,111375.31354764364
 67,masculino,medio,nenhuma,nao,110482.81512343852
-51,masculino,outros,nenhuma,nao,110305.88580142097
+51,masculino,outros,nenhuma,nao,110305.88580142095
 65,masculino,medio,nenhuma,nao,110093.34623642794
 68,masculino,superior,nenhuma,nao,110023.05615020556
 78,masculino,fundamental,nenhuma,nao,109726.05731194443
@@ -393,7 +393,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 53,masculino,outros,nenhuma,nao,107250.94550487894
 72,feminino,medio,nenhuma,nao,105172.1395388384
 68,feminino,superior,nenhuma,nao,105163.55719849207
-23,masculino,superior,nenhuma,nao,104918.70371219533
+23,masculino,superior,nenhuma,nao,104918.70371219532
 42,masculino,outros,nenhuma,nao,104904.27513578277
 67,masculino,superior,nenhuma,nao,104219.07320230133
 48,feminino,outros,nenhuma,nao,103936.98943918156
@@ -403,7 +403,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 69,feminino,medio,nenhuma,nao,102254.82844631058
 55,masculino,outros,nenhuma,nao,102153.66083968502
 63,feminino,outros,nenhuma,nao,100915.49805245802
-17,masculino,fundamental,nenhuma,nao,99118.75610416237
+17,masculino,fundamental,nenhuma,nao,99118.75610416236
 73,feminino,fundamental,alguma,nao,97636.41878219793
 36,masculino,outros,nenhuma,nao,97417.72128697352
 72,feminino,outros,nenhuma,nao,96748.55197459266
@@ -459,7 +459,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 32,feminino,superior,nenhuma,sim,72036.93605083122
 80,masculino,fundamental,alguma,nao,71806.06236514889
 74,masculino,outros,nenhuma,nao,71545.38810454875
-70,masculino,superior,nenhuma,nao,71439.03412348578
+70,masculino,superior,nenhuma,nao,71439.03412348576
 79,feminino,outros,nenhuma,nao,71310.8393709944
 51,feminino,outros,nenhuma,nao,71243.73947830175
 60,masculino,outros,nenhuma,nao,70796.69696063513
@@ -497,7 +497,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 71,masculino,superior,nenhuma,nao,58684.53490251176
 73,masculino,superior,nenhuma,nao,58476.361270213674
 68,masculino,outros,nenhuma,nao,57748.513717934846
-72,feminino,superior,nenhuma,nao,57500.791055982314
+72,feminino,superior,nenhuma,nao,57500.79105598231
 69,feminino,fundamental,alguma,nao,57107.96304372179
 76,feminino,medio,nenhuma,nao,56636.73075203036
 77,masculino,outros,nenhuma,nao,56377.9098472432
@@ -612,7 +612,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 37,feminino,superior,nenhuma,sim,32858.71642880838
 30,feminino,superior,nenhuma,sim,32820.36089068182
 68,feminino,fundamental,alguma,nao,32772.657149637234
-87,feminino,medio,nenhuma,nao,32515.492376851427
+87,feminino,medio,nenhuma,nao,32515.49237685143
 68,feminino,outros,alguma,nao,32392.51798338767
 35,masculino,fundamental,alguma,nao,32361.774802271382
 24,feminino,superior,nenhuma,sim,32358.57629771476
@@ -741,7 +741,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 77,masculino,medio,nenhuma,nao,20825.796507704465
 38,masculino,superior,nenhuma,sim,20808.925100270346
 77,feminino,outros,alguma,nao,20781.795180150108
-36,masculino,medio,alguma,nao,20618.320392293244
+36,masculino,medio,alguma,nao,20618.32039229324
 85,masculino,fundamental,grande,nao,20345.875962884573
 80,masculino,outros,alguma,nao,20149.969840826197
 52,masculino,medio,alguma,nao,20096.889655910843
@@ -820,7 +820,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 77,masculino,superior,nenhuma,nao,15238.22293393116
 51,feminino,medio,nenhuma,sim,15236.89598164264
 54,masculino,fundamental,nenhuma,sim,15236.703626375896
-82,masculino,fundamental,alguma,nao,15231.5747515585
+82,masculino,fundamental,alguma,nao,15231.574751558499
 43,feminino,medio,alguma,nao,15144.771049266112
 84,masculino,medio,nenhuma,nao,15143.430913189042
 47,masculino,superior,alguma,nao,15129.744170268048
@@ -1035,7 +1035,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 46,feminino,fundamental,alguma,nao,9384.844853190667
 86,masculino,outros,nenhuma,nao,9378.966440868928
 26,masculino,outros,nenhuma,sim,9377.799156767607
-67,masculino,medio,alguma,nao,9353.717680436512
+67,masculino,medio,alguma,nao,9353.717680436514
 23,feminino,superior,nenhuma,sim,9327.544679979668
 73,masculino,outros,grande,nao,9311.146283614124
 17,feminino,fundamental,alguma,nao,9292.857902833224
@@ -1303,7 +1303,7 @@ idade,sexo,instrucao,dif_ouvir,libras,case_weights
 56,feminino,outros,alguma,nao,5109.154242969238
 64,feminino,superior,alguma,nao,5088.080725223998
 46,feminino,outros,nenhuma,sim,5084.820739062936
-64,masculino,superior,alguma,nao,5082.077511256566
+64,masculino,superior,alguma,nao,5082.077511256567
 29,masculino,medio,nenhuma,sim,5079.327482574703
 42,feminino,superior,alguma,nao,5073.9225404100525
 48,masculino,outros,alguma,nao,5072.4502653293475

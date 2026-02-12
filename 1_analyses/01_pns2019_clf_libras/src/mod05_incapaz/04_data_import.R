@@ -4,7 +4,7 @@ libras <-
   read_csv(
     paste0(
       base_dir, 
-      'data/pns2019_03_modelmatrix.csv'
+      'data/pns2019_02_modelmatrix.csv'
       )
   ) |>
   filter(dif_ouvir == 'incapaz') |>
