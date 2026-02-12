@@ -19,7 +19,12 @@ microdados_svy <-
     g071,   # dificuldade de locomover
     g05801  # sabe libras
   ) |>
-  mutate(v0029=as.numeric(v0029)) |>
+  mutate(
+    across(
+      c(v0024,v0029,upa_pns,v00292,v00293), 
+      as.numeric
+    )
+  ) |>
   collect()
 
 ## Survey design (source: https://rdrr.io/cran/PNSIBGE/src/R/pns_design.R, accessed on September, 2nd 2022)
@@ -52,6 +57,7 @@ gc()
 
 ## matriz de modelo preditivo libras
 tic()
+message("selecionando os dados brutos com base no pacote survey (passo demorado)...")
 rawdata <-
   svytable(
     formula=~v0001+c006+c008+c009+d001+c011+d00901+g047+g071+g058+g05801,
@@ -67,6 +73,8 @@ toc()
 
 gc()
 
+tic()
+message("escrevendo em disco os dados brutos")
 rawdata |>
   write_csv(
     paste0(
@@ -74,3 +82,4 @@ rawdata |>
       'pns2019_01_rawdata.csv'
     )
   )
+toc()

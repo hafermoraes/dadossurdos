@@ -206,10 +206,11 @@ rawdata |>
       'pns2019_01_rawdata.csv'
     )
   )
-toc()
 
 rm(uf)
 rm(sum_weights, strata_weights)
+
+toc()
 
 gc()
 
