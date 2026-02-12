@@ -10,7 +10,7 @@ wflow_set <-
     models = list(
       model_null = model_null,
       model_dt = model_dt,
-      model_lgb = model_lgb,
+      # model_lgb = model_lgb,
       model_logres = model_logres,
       model_mars = model_mars,
       model_mlp = model_mlp,
