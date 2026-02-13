@@ -6,8 +6,7 @@ if(KFOLD){
     rsample::vfold_cv(
       data = libras_train,
       strata = libras,
-      v = KFOLD_NR,
-      repeats = KFOLD_REPEATS
+      v = KFOLD_NR
     )
   
 } else {

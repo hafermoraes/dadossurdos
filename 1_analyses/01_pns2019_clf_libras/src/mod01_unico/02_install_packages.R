@@ -1,5 +1,6 @@
 packs <- c(
-  'pak'
+  'pak',
+  'embed'
 )
 install.packages(packs)
 
