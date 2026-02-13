@@ -4,17 +4,16 @@ message("tratando os microdados para fins de AED...")
 niveis_instrucao <- c('outros','fundamental','medio','superior')
 niveis_dificuldade <- c('nenhuma','alguma','grande','incapaz')
 
-microdados <-
-  microdados_dt |>
+pre_modelmatrix <-
+  microdados |>
   mutate(
-    instrucao = factor(instrucao, levels=niveis_instrucao),
+    instrucao = factor(instrucao, levels=niveis_instrucao, ordered=TRUE),
     across(
       c(dif_ouvir, dif_enxergar, dif_locomover),
-      \(x) factor(x, levels=niveis_dificuldade)
+      \(x) factor(x, levels=niveis_dificuldade, ordered=TRUE)
     ),
     across(where(is.character), as.factor),
     libras_01 = if_else(libras=='sim',1,0),
-    idade = as.numeric(idade),
     faixa_idade = cut(
       idade, 
       breaks = c(0,4,40,140), 
@@ -23,6 +22,9 @@ microdados <-
                  "40+"
                  ),
       include.lowest = TRUE)
+  ) |>
+  filter(
+    !is.na(libras)
   )
 toc()
 
@@ -38,15 +40,15 @@ pns2019_prior <-
   survey::svydesign(
     ids = ~upa_pns, 
     strata = ~v0024, 
-    data = subset(microdados, !is.na(v0028)), 
+    data = subset(pre_modelmatrix, v0028 != 0), 
     weights = ~v0028, 
     nest = TRUE
   )
 # Post-stratification
 popc.types <-
   data.frame( 
-    v00283=as.character(unique(microdados_dt$v00283)), 
-    Freq=as.numeric(unique(microdados_dt$v00282))
+    v00283=as.character(unique(pre_modelmatrix$v00283)), 
+    Freq=as.numeric(unique(pre_modelmatrix$v00282))
   )
 popc.types <- popc.types[order(popc.types$v00283),]
 pns2019_posterior <-
@@ -63,7 +65,7 @@ tic()
 message("determinando a quantidade de pessoas que usam libras no país...")
 svytotal(
   ~libras,
-  design=pns2019_posterior
+  design=pns2019_posterior,
 )
 toc()
 
@@ -72,7 +74,7 @@ tic()
 message("reproduzindo Tabela 8, p. 40, de 'Pesquisa Nacional de Saúde 2019: Ciclos de Vida'...")
 pns2019_posterior |>
   as_survey() |>
-  filter(idade >=5 , idade <= 40) |>
+  filter(idade >= 5 , idade <= 40) |>
   group_by(dif_ouvir) |>
   summarise(
     n = survey_mean(libras_01, na.rm = TRUE, vartype=c('se','ci'))
@@ -91,8 +93,12 @@ pns2019_usuarios_libras <-
   ) |>
   mutate(
     across(
-      everything(),
+      starts_with("n"),
       label_number(accuracy = 1, big.mark = ".", decimal.mark = ",")
+    ),
+    across(
+      starts_with("pct"),
+      label_percent(accuracy = 0.01, big.mark = ".", decimal.mark = ",")
     )
   )
 # pns2019_usuarios_libras
