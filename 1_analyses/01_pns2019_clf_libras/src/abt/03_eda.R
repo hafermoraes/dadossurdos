@@ -1,30 +1,34 @@
 
+tic()
+message("tratando os microdados para fins de AED...")
+niveis_instrucao <- c('outros','fundamental','medio','superior')
+niveis_dificuldade <- c('nenhuma','alguma','grande','incapaz')
+
 microdados <-
   microdados_dt |>
   mutate(
+    instrucao = factor(instrucao, levels=niveis_instrucao),
+    across(
+      c(dif_ouvir, dif_enxergar, dif_locomover),
+      \(x) factor(x, levels=niveis_dificuldade)
+    ),
     across(where(is.character), as.factor),
-    instrucao = factor(instrucao, levels=c('outros','fundamental','medio','superior')),
-    dif_ouvir = factor(dif_ouvir, levels=c('nenhuma','alguma','grande','incapaz')),
-    dif_enxergar = factor(dif_enxergar, levels=c('nenhuma','alguma','grande','incapaz')),
-    dif_locomover = factor(dif_locomover, levels=c('nenhuma','alguma','grande','incapaz')),
-    libras_01 = ifelse(libras=='sim',1,0),
+    libras_01 = if_else(libras=='sim',1,0),
+    idade = as.numeric(idade),
     faixa_idade = cut(
       idade, 
-      breaks = c(0,4,10,20,30,40,50,60,70,80,120), 
-      labels = c("0 a 4 anos", 
-                 "5 a 10 anos", 
-                 "11 a 20 anos",
-                 "21 a 30 anos",
-                 "31 a 40 anos",
-                 "41 a 50 anos",
-                 "51 a 60 anos",
-                 "61 a 70 anos",
-                 "71 a 80 anos",
-                 "81 anos ou mais"
+      breaks = c(0,4,40,140), 
+      labels = c("0-4", 
+                 "5-40", 
+                 "40+"
                  ),
       include.lowest = TRUE)
   )
+toc()
 
+
+tic()
+message("expandindo probabilicamente a amostra nos microdados...")
 
 ## Survey design (source: https://rdrr.io/cran/PNSIBGE/src/R/pns_design.R, accessed on September, 2nd 2022)
 options(survey.lonely.psu="adjust")
@@ -34,39 +38,56 @@ pns2019_prior <-
   survey::svydesign(
     ids = ~upa_pns, 
     strata = ~v0024, 
-    data = microdados, 
-    weights = ~v0029, 
+    data = subset(microdados, !is.na(v0028)), 
+    weights = ~v0028, 
     nest = TRUE
   )
 # Post-stratification
 popc.types <-
   data.frame( 
-    v00293=as.character(unique(microdados$v00293)), 
-    Freq=as.numeric(unique(microdados$v00292))
+    v00283=as.character(unique(microdados_dt$v00283)), 
+    Freq=as.numeric(unique(microdados_dt$v00282))
   )
-popc.types <- popc.types[order(popc.types$v00293),]
+popc.types <- popc.types[order(popc.types$v00283),]
 pns2019_posterior <-
   survey::postStratify(
     design=pns2019_prior, 
-    strata=~v00293, 
+    strata=~v00283, 
     population=popc.types
   )
+toc()
 
 
 
+tic()
+message("determinando a quantidade de pessoas que usam libras no país...")
+svytotal(
+  ~libras,
+  design=pns2019_posterior
+)
+toc()
 
-# quantidade de pessoas
-# svytotal(
-#   ~libras,
-#   design=pns2019_posterior
-# )
 
-# número de pessoas segundo a PNS 2019 que sabem libras no brasil  
-pns2019_n_libras <-
+tic()
+message("reproduzindo Tabela 8, p. 40, de 'Pesquisa Nacional de Saúde 2019: Ciclos de Vida'...")
+pns2019_posterior |>
+  as_survey() |>
+  filter(idade >=5 , idade <= 40) |>
+  group_by(dif_ouvir) |>
+  summarise(
+    n = survey_mean(libras_01, na.rm = TRUE, vartype=c('se','ci'))
+  )
+toc()
+
+
+tic()
+message("mesma análise, agora exportando para tabelas e arquivos LaTeX para uso posterior na tese...")
+pns2019_usuarios_libras <-
   pns2019_posterior |>
   as_survey() |>
   summarise(
-    n = survey_total(libras_01, na.rm = TRUE, vartype=c('se','ci'))
+    n = survey_total(libras_01, na.rm = TRUE, vartype=c('se','ci')),
+    pct = survey_mean(libras_01, na.rm = TRUE, vartype=c('se','ci'))
   ) |>
   mutate(
     across(
@@ -74,41 +95,28 @@ pns2019_n_libras <-
       label_number(accuracy = 1, big.mark = ".", decimal.mark = ",")
     )
   )
-pns2019_n_libras
-paste0("(erro padrão: ", pns2019_n_libras$n_se, ", IC 95%: [", pns2019_n_libras$n_low, "; ", pns2019_n_libras$n_upp, "])")
-
-# percentual de pessoas segundo a PNS 2019 que sabem libras no brasil  
-pns2019_pct_libras <-
-  pns2019_posterior |>
-  as_survey() |>
-  summarise(
-    pct = survey_mean(libras_01, na.rm = TRUE, vartype=c('se','ci'))
-  ) 
-
-# pns2019_pct_libras |>
-#   mutate(
-#     across(
-#       everything(),
-#       label_percent(accuracy = 0.01, big.mark = ".", decimal.mark = ",")
-#     )
-#   )
-# paste0("(erro padrão: ", pns2019_pct_libras$pct_se, ", IC 95%: [", pns2019_pct_libras$pct_low, "; ", pns2019_pct_libras$pct_upp, "])")
+# pns2019_usuarios_libras
+# paste0("(erro padrão: ", pns2019_usuarios_libras$n_se, ", IC 95%: [", pns2019_usuarios_libras$n_low, "; ", pns2019_usuarios_libras$n_upp, "])")
+# paste0("(erro padrão: ", pns2019_usuarios_libras$pct_se, ", IC 95%: [", pns2019_usuarios_libras$pct_low, "; ", pns2019_usuarios_libras$pct_upp, "])")
+toc()
 
 
-# svyby(
-#   formula=~libras,
-#   by=~dif_ouvir,
-#   FUN=svymean,
-#   design=pns2019_posterior
-# )
+# message("Class imbalance for response variable libras (g05801): ")
+# # TODO exportar para LaTeX
+# microdados |>
+#   group_by(libras) |>
+#   summarise( n =sum(case_weights)) |>
+#   mutate( pct = n/sum(n)) |>
+#   print()
 
-# svytable(
-#   formula=~dif_ouvir+libras,
-#   design=pns2019_posterior
-# )
 
+
+
+tic()
+message("produzindo as análises exploratórias para a tese...")
 
 eda_stats_by_variable <- function(column) {
+
   # tabela de cálculo da quantidade de pessoas, número e percentual de usuários de libras
   # bem como intervalos de confiança de 95%
   base_table <- 
@@ -184,8 +192,11 @@ eda_export_latex <- function(eda_summary, to_file = "eda_summary.tex", append_fl
       to_file
     )
   )
-  
 }
+toc()
+
+
+
 
 
 
@@ -303,13 +314,5 @@ message("exportando EDA gráfica (facet) em disco...")
   )
 toc()
 
-
-message("Class imbalance for response variable libras (g05801): ")
-# TODO exportar para LaTeX
-microdados |>
-  group_by(libras) |>
-  summarise( n =sum(case_weights)) |>
-  mutate( pct = n/sum(n)) |>
-  print()
 
 

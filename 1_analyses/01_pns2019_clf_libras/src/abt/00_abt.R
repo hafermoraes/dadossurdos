@@ -27,9 +27,7 @@ eda_dir <-
 
 source(paste0(src_dir, '01_load_packages.R'))
   
-#source(paste0(src_dir, '02_rawdata_survey.R'))
-
-source(paste0(src_dir, '02_rawdata_datatable.R'))
+source(paste0(src_dir, '02_rawdata.R'))
 
 source(paste0(src_dir, '03_eda.R'))
 

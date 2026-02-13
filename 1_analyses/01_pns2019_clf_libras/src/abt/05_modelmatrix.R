@@ -1,38 +1,17 @@
 
-
-
 modelmatrix <-
-  microdados |> 
-  group_by(
-    idade,
-    sexo,
-    instrucao,
-    dif_ouvir,
-    libras
-    ) |>
-  summarise(
-    case_weights = sum(case_weights)
-  )
+  svytable(
+    formula=~idade+sexo+instrucao+dif_ouvir+libras,
+    design=pns2019_posterior
+  ) |>
+  as_tibble() |>
+  filter(n>0) |>
+  group_by(across(-n)) |>
+  summarise(n=sum(n)) |>
+  arrange(desc(n)) |>
+  ungroup() |>
+  rename(case_weights=n)
 
-message("validações pontuais...")
-
-message(
-  paste0(
-    "sum(microdados$case_weights) = ", 
-    sum(microdados$case_weights))
-  )
-message(
-  paste0(
-    "sum(modelmatrix$case_weights) = ", 
-    sum(modelmatrix$case_weights)
-    )
-  )
-message(
-  paste0(
-    "sum(microdados$case_weights) == sum(modelmatrix$case_weights) = ", 
-    sum(microdados$case_weights) == sum(modelmatrix$case_weights)
-    )
-  )
 
 tic()
 message("exportando a base de modelagem em disco...")
@@ -45,3 +24,4 @@ modelmatrix |>
     )
   )
 toc()
+
