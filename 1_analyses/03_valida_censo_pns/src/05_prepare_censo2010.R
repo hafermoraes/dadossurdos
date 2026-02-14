@@ -1,5 +1,6 @@
 
-
+tic()
+message("preparando dados do censo2010 para a comparação...")
 censo2010_num <-
   censo2010 |>
   mutate(
@@ -43,6 +44,6 @@ censo2010_dist <-
     pct=num/den
   ) |>
   arrange(src,key,value)
-
+toc()
 
 

@@ -65,7 +65,8 @@ RUN Rscript -e "install.packages(\
     'brulee', \
     'solitude', \
     'tailor', \
-    'embed'\
+    'embed', \
+    'tidytext' \
     )\
     )"
 

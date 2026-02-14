@@ -1,4 +1,6 @@
 
+tic()
+message("preparando dados da pns2019 para a comparação...")
 pns2019_num <-
   pns2019 |>
   mutate(
@@ -41,4 +43,4 @@ pns2019_dist <-
     pct=num/den
   ) |>
   arrange(src,key,value)
-
+toc()

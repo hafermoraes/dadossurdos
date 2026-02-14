@@ -1,4 +1,6 @@
 
+tic()
+message("preparando dataframe de comparação...")
 dist_summary <-
   bind_rows(
     censo2000_dist,
@@ -11,12 +13,19 @@ dist_summary <-
       TRUE ~ as.character(value)
     )
   )
+toc()
 
+
+tic()
+message("exportando dataframe de comparação em disco...")
 dist_summary |>
   write_csv(
     file = paste0(data_dir, "dist_summary.csv")
   )
+toc()
 
+tic()
+message("preparando tabela de comparação...")
 tbl_comparison <- 
   dist_summary |>
   pivot_wider(
@@ -25,7 +34,10 @@ tbl_comparison <-
     values_from = 'pct',
     values_fill = 0
   )
-  
+toc()
+
+tic()
+message("exportando tabela de comparação no formato LaTeX em disco...")
 tbl_reordered <-
   tbl_comparison |> 
   mutate(
@@ -61,7 +73,7 @@ tbl_reordered <-
   ) |>
   select(-rank)
 
-# TODO Exportar para LaTeX
+
 print(
   xtable(
     tbl_reordered, 
@@ -85,7 +97,10 @@ print(
     "tbl_comparison.tex"
   )
 )
+toc()
 
+tic()
+message("preparando gráfico de comparação...")
 plot_comparison <-
   dist_summary |> 
   mutate(
@@ -132,10 +147,14 @@ plot_comparison <-
   theme(
     legend.position = "top"
   )
+toc()
 
+tic()
+message("exportando gráfico de comparação no formato pdf em disco...")
 plot_comparison |>
   ggsave(
     filename = paste0(results_dir, "plt_comparison.pdf"),
     width = 10,
     height = 8
   )
+toc()
