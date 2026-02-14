@@ -22,14 +22,14 @@ pns2019_num <-
     n = case_weights
   ) |>
   group_by(src, key, value) |>
-  summarise(num = sum(n)) |> 
+  summarise(num = sum(n, na.rm=TRUE)) |> 
   ungroup() |>
   collect() 
 
 pns2019_den <- 
   pns2019_num |>
   group_by(src,key) |>
-  summarise(den = sum(num)) |>
+  summarise(den = sum(num, na.rm=TRUE)) |>
   ungroup() |>
   collect()
 

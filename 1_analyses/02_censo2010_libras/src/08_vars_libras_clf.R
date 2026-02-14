@@ -45,19 +45,6 @@ dif_ouvir_grande <-
   censo2010_oos |>
   filter(
     dif_ouvir == 'grande'
-  ) |>
-  collect() |>
-  mutate(
-    dif_ouvir = factor(
-      dif_ouvir,
-      levels = c("nenhuma", "alguma", "grande", "incapaz"),
-      ordered = TRUE
-    ),
-    instrucao = factor( 
-      instrucao, 
-      levels = c("outros", "fundamental", "medio", "superior"),
-      ordered=TRUE
-    )
   )
 
 dif_ouvir_incapaz <-

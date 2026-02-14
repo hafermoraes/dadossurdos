@@ -3,7 +3,8 @@ message("importando dicionário de variáveis ...")
 dvar_censo2010 <-
   read_delim(
     '/tmp/etl/br_ibge_censo_2010/variables_dictionary.txt',
-    delim = '|'
+    delim = '|',
+    show_col_types = FALSE
   ) |>
   filter(
     base=='pess'

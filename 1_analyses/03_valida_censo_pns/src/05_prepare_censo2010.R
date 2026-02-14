@@ -24,14 +24,14 @@ censo2010_num <-
     n = peso_amostral
   ) |> 
   group_by(src, key, value) |>
-  summarise(num = sum(n)) |> 
+  summarise(num = sum(n, na.rm=TRUE)) |> 
   ungroup() |>
   collect() 
 
 censo2010_den <- 
   censo2010_num |>
   group_by(src,key) |>
-  summarise(den = sum(num)) |>
+  summarise(den = sum(num, na.rm=TRUE)) |>
   ungroup() |>
   collect()
 

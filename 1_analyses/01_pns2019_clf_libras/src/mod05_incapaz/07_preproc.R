@@ -1,8 +1,19 @@
 
 recipe_basic <-
   recipe(libras ~ ., data = libras_train) |>
-  step_impute_knn(all_predictors(), neighbors = 3) |>
-  step_novel(all_nominal_predictors()) |>  
+  step_mutate(
+    instrucao = factor(
+      instrucao, 
+      levels = c('outros', 'fundamental', 'medio', 'superior'), 
+      ordered = TRUE
+    ),
+    sexo = factor(
+      sexo,
+      levels = c('feminino', 'masculino')
+    )
+  ) |>
+  step_novel(all_nominal_predictors()) |> 
+  step_unknown(all_nominal_predictors(), new_level = "nao_informado") |>
   step_ordinalscore(instrucao) |>
   step_lencode_mixed(sexo, outcome = vars(libras)) |>  
   step_dummy(all_nominal_predictors()) |>

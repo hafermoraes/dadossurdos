@@ -14,16 +14,6 @@ libras <-
     libras = factor(
       libras,
       levels = c('nao', 'sim')
-    ),
-    dif_ouvir = factor(
-      dif_ouvir,
-      levels = c('nenhuma', 'alguma', 'grande', 'incapaz'),
-      ordered=TRUE
-    ),
-    instrucao = factor(
-      instrucao,
-      levels = c('outros', 'fundamental', 'medio', 'superior'),
-      ordered=TRUE
     )
   ) |>
   filter(dif_ouvir == 'alguma', idade <= 40) |>

@@ -13,6 +13,21 @@ src_dir <-
     'src/'
   )
 
+data_dir <-
+  paste0(
+    base_dir,
+    '03_valida_censo_pns/',
+    'data/'
+  )
+
+results_dir <-
+  paste0(
+    base_dir,
+    '03_valida_censo_pns/',
+    'results/'
+  )
+
+
 pns2019_csv <-
   paste0(
     base_dir,
