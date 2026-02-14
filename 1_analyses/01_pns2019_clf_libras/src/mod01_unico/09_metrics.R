@@ -1,4 +1,6 @@
 
+tic()
+message("definindo o conjunto de métricas sob as quais os modelos serão avaliados (tidymodels/yardstick)...")
 metrics_set <-
   metric_set(
     ## 'class' type
@@ -18,3 +20,5 @@ metrics_set <-
     mn_log_loss,
     pr_auc
   )
+
+toc()

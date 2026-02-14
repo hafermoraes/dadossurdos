@@ -1,4 +1,6 @@
 
+tic()
+message("configurando os classificadores (tidymodels/parsnip)...")
 
 ## classificadores
 # https://parsnip.tidymodels.org/articles/Examples.html
@@ -112,3 +114,5 @@ model_nb <-
 #   ) |>
 #     set_engine("rpart", times = NR_TIMES) |>
 #     set_mode("classification")
+
+toc()

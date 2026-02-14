@@ -1,3 +1,5 @@
+tic()
+message("finalizando os modelos (métricas, parâmetros, matrizes de confusão)...")
 
 classifiers <-
   fitted_models |>
@@ -496,5 +498,5 @@ for(CLF in classifiers$wflow_id) {
   
 }
 
-
+toc()
 

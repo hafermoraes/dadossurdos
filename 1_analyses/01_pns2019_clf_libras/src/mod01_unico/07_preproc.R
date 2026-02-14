@@ -1,4 +1,6 @@
 
+tic()
+message("definindo o pipeline de tratamento de dados para a modelagem (tidymodels/recipe)...")
 recipe_basic <-
   recipe(libras ~ ., data = libras_train) |>
   step_mutate(
@@ -28,3 +30,4 @@ recipe_basic <-
 
 # recipe2 <- prep(recipe_basic, training = libras_train)
 # imputed <- bake(recipe2, libras_train)
+toc()

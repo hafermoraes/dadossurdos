@@ -1,7 +1,8 @@
 
-
+tic()
+message("configurando a validação cruzada (tidymodels/rsample)...")
 if(KFOLD){
-  
+  message("usando K-Fold Cross Validation...")
   libras_folds <-
     rsample::vfold_cv(
       data = libras_train,
@@ -11,6 +12,7 @@ if(KFOLD){
   
 } else {
   
+  message("usando Bootstraping...")
   libras_folds <-
     rsample::bootstraps(
       data = libras_train,
@@ -20,5 +22,5 @@ if(KFOLD){
   
 }
 
-
+toc()
 

@@ -1,6 +1,8 @@
 
 if(FALSE){
-
+  tic()
+  message("calibrando o modelo (tidymodels/probably)...")
+  
   WIDTH <- 7
   HEIGHT <- 7
   
@@ -215,5 +217,6 @@ if(FALSE){
       width=WIDTH,
       height=HEIGHT
     )
-
+  
+  toc()
 }

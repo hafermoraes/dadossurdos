@@ -1,4 +1,6 @@
 
+tic()
+message("dividindo a matriz de modelo em bases de treino e teste (tidymodels/rsample)...")
 set.seed(1)
 libras_splits <-
   rsample::initial_split(
@@ -16,3 +18,4 @@ libras_test <-
     libras_splits
   )
 
+toc()

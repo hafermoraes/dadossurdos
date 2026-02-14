@@ -1,6 +1,8 @@
 
 
 if(FALSE){
+  tic()
+  message("ajustando os modelos preditivos com racing (tidymodels/finetune)...")
   # ## https://finetune.tidymodels.org/reference/tune_race_anova.html
   # cores <- parallel::detectCores(logical = FALSE)
   # cl <- makePSOCKcluster(cores)
@@ -67,5 +69,5 @@ if(FALSE){
       height=8
     )
 
- 
+toc() 
 }

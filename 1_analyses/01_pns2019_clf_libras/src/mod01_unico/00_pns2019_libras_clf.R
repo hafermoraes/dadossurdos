@@ -1,4 +1,6 @@
 
+message("definindo as variáveis globais")
+
 PARALLEL <- FALSE
 
 KFOLD <- TRUE

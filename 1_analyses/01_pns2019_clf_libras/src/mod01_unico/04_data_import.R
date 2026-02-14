@@ -1,5 +1,6 @@
 
-
+tic()
+message("importando a matriz de modelo da PNS2019 (readr)...")
 libras <-
   read_csv(
     paste0(
@@ -17,13 +18,17 @@ libras <-
     )
   ) |>
   filter(idade <=40)
+toc()
   
 # passo 1.1: redução do dataset para prototipagem de tidymodels
 if(FALSE){
+  tic()
+  message("trabalhando com uma fração dos dados na fase de protótipo...")
   libras <-
     bind_rows(
       libras |> filter(libras == 'nao') |> head(100),
       libras |> filter(libras == 'sim') |> head(100)
     )
+  toc()
 }
 

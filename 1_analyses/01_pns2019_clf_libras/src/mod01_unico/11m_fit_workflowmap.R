@@ -1,6 +1,9 @@
 
+tic()
+message("ajuste dos modelos preditivos (tidymodels/workflowsets)...")
 
 if(PARALLEL){
+  message("ativando o paralelismo...")
   cores <- parallel::detectCores(logical = FALSE) - 2
   cl <- makePSOCKcluster(cores)
   registerDoParallel(cl)
@@ -59,3 +62,5 @@ fitted_models |>
     width=12,
     height=8
     )
+
+toc()
