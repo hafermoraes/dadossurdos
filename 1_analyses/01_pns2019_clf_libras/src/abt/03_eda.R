@@ -7,10 +7,10 @@ niveis_dificuldade <- c('nenhuma','alguma','grande','incapaz')
 pre_modelmatrix <-
   microdados |>
   mutate(
-    instrucao = factor(instrucao, levels=niveis_instrucao, ordered=TRUE),
+    instrucao = factor(instrucao, levels=niveis_instrucao),
     across(
       c(dif_ouvir, dif_enxergar, dif_locomover),
-      \(x) factor(x, levels=niveis_dificuldade, ordered=TRUE)
+      \(x) factor(x, levels=niveis_dificuldade)
     ),
     across(where(is.character), as.factor),
     libras_01 = if_else(libras=='sim',1,0),
@@ -84,13 +84,17 @@ toc()
 
 tic()
 message("mesma análise, agora exportando para tabelas e arquivos LaTeX para uso posterior na tese...")
-pns2019_usuarios_libras <-
+pns2019_pct_libras <-
+  pns2019_usuarios_libras <-
   pns2019_posterior |>
   as_survey() |>
   summarise(
     n = survey_total(libras_01, na.rm = TRUE, vartype=c('se','ci')),
     pct = survey_mean(libras_01, na.rm = TRUE, vartype=c('se','ci'))
-  ) |>
+  )
+
+pns2019_usuarios_libras <-
+  pns2019_pct_libras |>
   mutate(
     across(
       starts_with("n"),
@@ -253,63 +257,69 @@ for(arg_column in COLUMNS){
 # adaptado de https://towardsdatascience.com/bank-customer-churn-with-tidymodels-part-1-model-development-cdec4eeb131c/
 tic()
 message("exportando EDA gráfica (facet) em disco...")
-(
+
+eda_plot <-
   eda_base |>
-    mutate(
-      key = factor(
-        key, 
-        levels = c(
-          "alfabetizado", 
-          "instrucao", 
-          "sexo",
-          "faixa_idade",
-          "cor_raca",
-          "estado_civil",
-          "dif_ouvir",
-          "dif_enxergar",
-          "dif_locomover",
-          "uf"
-          )
-        )
-      ) |> 
-    select(p, p_low, p_upp, !where(is.numeric)) |>
-    ggplot(aes(x=value, y=p, color=p)) +
-    geom_point() +
-    geom_errorbar(aes(ymin = p_low, ymax = p_upp), width = 0.1) +
-    annotate(
-      "rect", 
-      ymin = pns2019_pct_libras$pct_low, 
-      ymax = pns2019_pct_libras$pct_upp, 
-      xmin = -Inf, xmax = Inf, 
-      fill = "red", alpha = 0.1
-    ) +
-    geom_hline(
-      yintercept = pns2019_pct_libras$pct, 
-      linetype='dashed', 
-      linewidth=0.5, 
-      color='red'
-      ) +
-    theme(legend.position = "none") + 
-    facet_wrap(
-      ~key, 
-      nrow = 5, 
-      scales = 'free'
-    ) +
-    scale_y_continuous(
-      labels = scales::percent_format(accuracy = 0.1)
-      ) +
-    coord_flip() + 
-    theme(
-      axis.text.y = element_text(size = 6),
-      axis.text.x = element_text(size = 6)
-    )+
-    labs(
-      title = 'Análise exploratória de dados', 
-      subtitle = 'Etapa prévia à Modelagem Preditiva',
-      y = 'percentual de usuários de libras',
-      x = ''
-      ) 
-) |>
+  mutate(
+    value = case_when(
+      is.na(value) ~ "nao_informado",
+      TRUE ~ as.character(value)
+    ),
+    key = factor(
+      key, 
+      levels = c(
+        "alfabetizado", 
+        "instrucao", 
+        "sexo",
+        "faixa_idade",
+        "cor_raca",
+        "estado_civil",
+        "dif_ouvir",
+        "dif_enxergar",
+        "dif_locomover",
+        "uf"
+      )
+    )
+  ) |> 
+  select(p, p_low, p_upp, !where(is.numeric)) |> 
+  ggplot(aes(x=value, y=p, color=p)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = p_low, ymax = p_upp), width = 0.1) +
+  annotate(
+    "rect", 
+    ymin = pns2019_pct_libras$pct_low, 
+    ymax = pns2019_pct_libras$pct_upp, 
+    xmin = -Inf, xmax = Inf, 
+    fill = "red", alpha = 0.1
+  ) +
+  geom_hline(
+    yintercept = pns2019_pct_libras$pct, 
+    linetype='dashed', 
+    linewidth=0.5, 
+    color='red'
+  ) +
+  theme(legend.position = "none") + 
+  facet_wrap(
+    ~key, 
+    nrow = 5, 
+    scales = 'free'
+  ) +
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = 0.1)
+  ) +
+  coord_flip() + 
+  theme(
+    axis.text.y = element_text(size = 6),
+    axis.text.x = element_text(size = 6)
+  )+
+  labs(
+    # title = 'Análise exploratória de dados', 
+    # subtitle = 'Etapa prévia à Modelagem Preditiva',
+    y = 'percentual de usuários de libras',
+    x = ''
+  ) 
+
+ eda_plot |>
   ggsave(
     filename = paste0(
       eda_dir,

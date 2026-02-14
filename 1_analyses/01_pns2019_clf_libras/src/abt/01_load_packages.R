@@ -1,3 +1,5 @@
+
+tic()
 message("carregando pacotes necessários para as análises...")
 
 library(dplyr)   # |>, mutate, glimpse
@@ -16,3 +18,5 @@ library(data.table)
 library(xtable)
 library(scales)
 library(tibble)
+
+toc()
