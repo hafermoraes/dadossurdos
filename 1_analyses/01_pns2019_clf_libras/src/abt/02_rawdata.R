@@ -82,8 +82,8 @@ microdados <-
     instrucao = case_when(
       d00901 == '01' ~ 'outros',      # Creche
       d00901 == '02' ~ 'outros',      # Pré-escola
-      d00901 == '03' ~ 'fundamental', # Classe de alfabetização – CA
-      d00901 == '04' ~ 'fundamental', # Alfabetização de jovens e adultos
+      d00901 == '03' ~ 'outros',      # Classe de alfabetização – CA
+      d00901 == '04' ~ 'outros',      # Alfabetização de jovens e adultos
       d00901 == '05' ~ 'fundamental', # Antigo primário (elementar)
       d00901 == '06' ~ 'fundamental', # Antigo ginasial (médio 1º ciclo)
       d00901 == '07' ~ 'fundamental', # Regular do ensino fundamental ou do 1º grau

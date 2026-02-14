@@ -13,6 +13,7 @@ censo2010_oos <-
     idade, sexo, instrucao, dif_ouvir
   ) 
 
+
 pns2019_clf_base_dir <-
   paste0(
     '/home/rstudio/',
@@ -33,6 +34,7 @@ dif_ouvir_nenhuma <-
     dif_ouvir == 'nenhuma'
   )
 
+
 dif_ouvir_alguma <-
   censo2010_oos |>
   filter(
@@ -43,6 +45,19 @@ dif_ouvir_grande <-
   censo2010_oos |>
   filter(
     dif_ouvir == 'grande'
+  ) |>
+  collect() |>
+  mutate(
+    dif_ouvir = factor(
+      dif_ouvir,
+      levels = c("nenhuma", "alguma", "grande", "incapaz"),
+      ordered = TRUE
+    ),
+    instrucao = factor( 
+      instrucao, 
+      levels = c("outros", "fundamental", "medio", "superior"),
+      ordered=TRUE
+    )
   )
 
 dif_ouvir_incapaz <-
@@ -183,7 +198,8 @@ if(PREDICT_GRANDE){
 
   dif_ouvir_grande <-
     dif_ouvir_grande |>
-    collect()
+    collect() 
+    
     
   predict_probs <-
     predict(

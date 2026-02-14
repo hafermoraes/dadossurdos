@@ -48,15 +48,15 @@ censo2000_common <-
       TRUE ~ NA
     ),
     instrucao = case_when( # curso mais elevado que freqüentou, concluindo pelo menos uma série
-      v0432 == '01' ~ 'outros',      # alfabetização de jovens e adultos
-      v0432 == '02' ~ 'fundamental', # antigo primário
-      v0432 == '03' ~ 'fundamental', # antigo ginásio
-      v0432 == '04' ~ 'medio',       # antigo clássico, científico, etc.
-      v0432 == '05' ~ 'fundamental', # ensino fundamental ou 1º grau
-      v0432 == '06' ~ 'medio',       # ensino médio ou 2º grau
-      v0432 == '07' ~ 'superior',    # superior - graduação
-      v0432 == '08' ~ 'superior',    # mestrado ou doutorado
-      v0432 == '09' ~ 'outros',      # nenhum
+      v0432 == '1' ~ 'outros',      # alfabetização de jovens e adultos
+      v0432 == '2' ~ 'fundamental', # antigo primário
+      v0432 == '3' ~ 'fundamental', # antigo ginásio
+      v0432 == '4' ~ 'medio',       # antigo clássico, científico, etc.
+      v0432 == '5' ~ 'fundamental', # ensino fundamental ou 1º grau
+      v0432 == '6' ~ 'medio',       # ensino médio ou 2º grau
+      v0432 == '7' ~ 'superior',    # superior - graduação
+      v0432 == '8' ~ 'superior',    # mestrado ou doutorado
+      v0432 == '9' ~ 'outros',      # nenhum
       TRUE ~ NA
     ),
     cor_raca = case_when(
