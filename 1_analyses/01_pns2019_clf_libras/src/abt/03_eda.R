@@ -237,8 +237,43 @@ for(arg_column in COLUMNS){
   
   eda_base <- bind_rows(eda_base, eda_stats$base_table)
   
+  eda_summary_table <-
+    eda_stats$summary_table |>
+    mutate(
+      value = case_when(
+        is.na(value) ~ 'nao_informado',
+        TRUE ~ as.character(value)
+      ),
+      rank = case_when(
+        # reordenamento para 'instrucao'
+        value == "outros"        ~ 1,
+        value == "fundamental"   ~ 2,
+        value == "medio"         ~ 3,
+        value == "superior"      ~ 5,
+        value == "nao_informado" ~ 6,
+        # reordenamento para 'dif_ouvir'
+        value == "nenhuma"  ~ 1,
+        value == "alguma"   ~ 2,
+        value == "grande"   ~ 3,
+        value == "incapaz"  ~ 4,
+        value == "ignorado" ~ 5,
+        # reordenamento para 'faixa_idade'
+        value == "0-4"      ~ 1,
+        value == "5-9"      ~ 2,
+        value == "10-19"    ~ 3,
+        value == "20-39"    ~ 4,
+        value == "40+"      ~ 5,
+        TRUE                ~ 6
+      )
+    ) |> 
+    arrange(key, rank) |>
+    mutate(
+      value = gsub("___.*", "", as.character(value))
+    ) |>
+    select(-rank)
+  
   eda_export_latex(
-    eda_summary = eda_stats$summary_table |> as.data.frame(), 
+    eda_summary = eda_summary_table |> as.data.frame(), 
     to_file = "eda_summary.tex", 
     append_flag=APPEND
   )
@@ -259,17 +294,13 @@ tic()
 message("exportando EDA gráfica (facet) em disco...")
 
 eda_plot <-
-  eda_base |>
+  eda_base |> 
   mutate(
-    value = case_when(
-      is.na(value) ~ "nao_informado",
-      TRUE ~ as.character(value)
-    ),
     key = factor(
-      key, 
+      key,
       levels = c(
-        "alfabetizado", 
-        "instrucao", 
+        "alfabetizado",
+        "instrucao",
         "sexo",
         "faixa_idade",
         "cor_raca",
@@ -279,8 +310,37 @@ eda_plot <-
         "dif_locomover",
         "uf"
       )
+    ),
+    value = case_when(
+      is.na(value) ~ "nao_informado",
+      TRUE ~ as.character(value)
     )
   ) |> 
+  mutate(
+    rank = case_when(
+      # reordenamento para 'instrucao'
+      value == "outros"        ~ 1,
+      value == "fundamental"   ~ 2,
+      value == "medio"         ~ 3,
+      value == "superior"      ~ 4,
+      value == "nao_informado" ~ 5,
+      # reordenamento para 'dif_ouvir'
+      value == "nenhuma"  ~ 1,
+      value == "alguma"   ~ 2,
+      value == "grande"   ~ 3,
+      value == "incapaz"  ~ 4,
+      value == "ignorado" ~ 5,
+      # reordenamento para 'faixa_idade'
+      value == "0-4"      ~ 1,
+      value == "5-9"      ~ 2,
+      value == "10-19"    ~ 3,
+      value == "20-39"    ~ 4,
+      value == "40+"      ~ 5,
+      TRUE                ~ 6
+    ),
+    value = reorder_within(value, rank, key)
+  ) |> 
+  select(-rank) |>
   select(p, p_low, p_upp, !where(is.numeric)) |> 
   ggplot(aes(x=value, y=p, color=p)) +
   geom_point() +
@@ -298,7 +358,6 @@ eda_plot <-
     linewidth=0.5, 
     color='red'
   ) +
-  theme(legend.position = "none") + 
   facet_wrap(
     ~key, 
     nrow = 5, 
@@ -307,11 +366,13 @@ eda_plot <-
   scale_y_continuous(
     labels = scales::percent_format(accuracy = 0.1)
   ) +
+  scale_x_reordered() + 
   coord_flip() + 
   theme(
+    legend.position = "none",
     axis.text.y = element_text(size = 6),
     axis.text.x = element_text(size = 6)
-  )+
+  ) +
   labs(
     # title = 'Análise exploratória de dados', 
     # subtitle = 'Etapa prévia à Modelagem Preditiva',
