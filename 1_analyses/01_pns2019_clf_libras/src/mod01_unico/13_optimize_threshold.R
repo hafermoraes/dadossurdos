@@ -1,3 +1,35 @@
+#' Análise de Sensibilidade e Grid Search de Thresholds (Não Calibrados)
+#'
+#' @description
+#' Este módulo realiza uma varredura exaustiva (grid search) de pontos de corte 
+#' (thresholds) para cada classificador finalizado. O objetivo é gerar um mapeamento 
+#' detalhado de como métricas conflitantes (ex: Sensibilidade vs Especificidade) 
+#' se comportam em diferentes níveis de probabilidade, exportando dados tabulares 
+#' e visualizações gráficas para suporte à decisão.
+#'
+#' @section Detalhes da Execução:
+#' \itemize{
+#'   \item \bold{Grid de Busca:} Varre thresholds de 0.01 a 0.95 com incrementos de 0.01.
+#'   \item \bold{Métricas Avaliadas:} \code{accuracy}, \code{sens}, \code{spec}, 
+#'   \code{precision} e \code{recall}.
+#'   \item \bold{Saídas por Modelo:}
+#'   \itemize{
+#'     \item \code{threshold_grid_uncalibrated.csv}: Tabela bruta com todas as estimativas.
+#'     \item \code{plot_threshold_grid_uncalibrated.pdf}: Gráfico de linhas comparativo 
+#'     entre as métricas ao longo do eixo de probabilidade.
+#'   }
+#' }
+#'
+#' @note 
+#' Este bloco está em \code{if(FALSE)} por ser uma etapa de diagnóstico visual 
+#' que precede a calibração final do modelo. Ele utiliza o \code{last_fit} para 
+#' avaliar a performance real na base de teste.
+#'
+#' @return Gera arquivos de diagnóstico no subdiretório de cada modelo em \code{results_dir}.
+#'
+#' @author Rafael Rodrigues de Moraes
+#' @keywords thresholds sensitivity-analysis yardstick ggplot2
+NULL
 
 if(FALSE){
   tic()
@@ -67,5 +99,4 @@ if(FALSE){
     
   }
   toc()
-
 }

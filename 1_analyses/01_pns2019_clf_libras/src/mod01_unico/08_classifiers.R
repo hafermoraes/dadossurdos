@@ -1,3 +1,33 @@
+#' Configuração dos Algoritmos de Classificação (Model Specs)
+#'
+#' @description
+#' Este módulo define as especificações de diversos algoritmos de aprendizado de máquina
+#' utilizando a interface unificada do pacote \code{parsnip}. Cada modelo é configurado
+#' com hiperparâmetros marcados para otimização via \code{tune()}.
+#'
+#' @section Modelos Disponíveis:
+#' \itemize{
+#'   \item \bold{Linha de Base:} \code{null_model} (Modelo Nulo) para benchmark de performance.
+#'   \item \bold{Lineares e Splines:} Regressão Logística Regularizada (\code{glmnet}) e MARS (\code{earth}).
+#'   \item \bold{Baseados em Árvores:} Decision Tree (\code{rpart}), Random Forest (\code{ranger}) e Gradient Boosting (\code{xgboost} e \code{lightgbm}).
+#'   \item \bold{Redes Neurais e Kernel:} Multi-Layer Perceptron (\code{nnet}) e SVM Linear (\code{kernlab}).
+#'   \item \bold{Probabilísticos:} Naive Bayes (\code{naivebayes}).
+#' }
+#'
+#' @details 
+#' Para modelos de floresta e boosting, as árvores foram fixadas em 1000 para garantir convergência, 
+#' enquanto parâmetros de complexidade, taxa de aprendizado e amostragem foram deixados para 
+#' o processo de busca de hiperparâmetros.
+#'
+#' @note 
+#' A Random Forest utiliza \code{importance = "impurity"} no motor \code{ranger} para 
+#' permitir a extração posterior de importância das variáveis.
+#'
+#' @return Define múltiplos objetos de classe \code{model_spec} no Global Environment.
+#'
+#' @author Rafael Rodrigues de Moraes
+#' @keywords parsnip classification tuning tidymodels
+NULL
 
 tic()
 message("configurando os classificadores (tidymodels/parsnip)...")

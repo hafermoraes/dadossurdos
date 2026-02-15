@@ -1,3 +1,35 @@
+#' Detecção de Anomalias e Engenharia de Atributos de Outliers
+#'
+#' @description
+#' Este módulo aplica algoritmos de detecção de anomalias para gerar escores 
+#' de outlier que serão utilizados como preditores adicionais nos modelos. 
+#' Suporta Isolation Forest, Local Outlier Factor (LOF) e One-Class SVM.
+#'
+#' @section Algoritmos Implementados:
+#' \itemize{
+#'   \item \bold{Isolation Forest:} Gera escores baseados no pacote \code{solitude}. 
+#'   Configurado com 100 árvores e profundidade máxima de 8.
+#'   \item \bold{LOF (Local Outlier Factor):} Calcula a densidade local via \code{dbscan} 
+#'   para identificar amostras isoladas em relação aos vizinhos (\code{minPts=10}).
+#'   \item \bold{One-Class SVM:} Utiliza kernel radial via \code{e1071} para delimitar 
+#'   a fronteira de "normalidade" dos dados com parâmetro \eqn{\nu=0.025}.
+#' }
+#'
+#' @section Fluxo de Pré-processamento:
+#' Para os métodos OCSVM e LOF, o script executa um pipeline interno:
+#' \enumerate{
+#'   \item Imputação KNN para valores ausentes.
+#'   \item Normalização de preditores numéricos.
+#'   \item Conversão de nominais para inteiros e limpeza de nomes.
+#' }
+#'
+#' @note 
+#' As flags globais \code{ANOMALY_DETECTION_ISOLATION_FOREST} e 
+#' \code{ANOMALY_DETECTION_LOG_OCSVM} controlam a ativação desses blocos.
+#'
+#' @author Rafael Rodrigues de Moraes
+#' @keywords anomaly-detection isolation-forest ocsvm lof
+NULL
 
 if(ANOMALY_DETECTION_ISOLATION_FOREST){
   # isolation forest

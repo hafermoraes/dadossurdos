@@ -1,4 +1,37 @@
-
+#' Otimização de Modelos via Racing (ANOVA Race)
+#'
+#' @description
+#' Este módulo realiza a triagem eficiente de hiperparâmetros utilizando o método 
+#' de "racing" (\code{tune_race_anova}). Diferente do \code{tune_grid} convencional, 
+#' o racing avalia os modelos em subconjuntos das dobras (folds) e interrompe o 
+#' ajuste daqueles que demonstram performance significativamente inferior aos demais.
+#'
+#' @section Configurações de Racing:
+#' \itemize{
+#'   \item \bold{Mecanismo:} Utiliza ANOVA para comparar os modelos após as primeiras 
+#'   dobras e eliminar candidatos não competitivos.
+#'   \item \bold{Controle:} \code{control_race} está configurado para salvar predições 
+#'   e workflows, permitindo diagnósticos posteriores e calibração.
+#'   \item \bold{Paralelismo:} Configurado para rodar sobre "everything" (modelos e dobras), 
+#'   maximizando o uso do cluster registrado.
+#' }
+#'
+#' @section Saídas e Diagnósticos:
+#' \itemize{
+#'   \item \bold{Métricas:} Registra o desempenho consolidado em \code{controlrace_metrics.csv}.
+#'   \item \bold{Gráfico de Eficiência:} Gera um PDF comparativo dos modelos remanescentes 
+#'   na competição (os que "venceram a corrida").
+#' }
+#'
+#' @note 
+#' Este bloco está envolto em \code{if(FALSE)} por ser um processo computacionalmente 
+#' intensivo, destinado a fases de refinamento final da arquitetura de modelos.
+#'
+#' @return Cria o objeto \code{fitted_models_racing} (workflow_set otimizado).
+#'
+#' @author Rafael Rodrigues de Moraes
+#' @keywords finetune racing anova-race model-selection tidymodels
+NULL
 
 if(FALSE){
   tic()

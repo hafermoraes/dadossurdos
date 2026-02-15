@@ -1,3 +1,35 @@
+#' Finalização, Otimização de Threshold e Exportação de Resultados
+#'
+#' @description
+#' Este módulo itera sobre todos os classificadores treinados no \code{workflow_set}, 
+#' seleciona os melhores hiperparâmetros, ajusta o modelo final contra a base de teste 
+#' e realiza a busca pelo ponto de corte (threshold) que otimiza o \code{j_index}. 
+#' Adicionalmente, exporta tabelas LaTeX, gráficos de importância de variáveis 
+#' e matrizes de confusão (ponderadas e não ponderadas).
+#'
+#' @section Fluxo de Finalização por Modelo:
+#' \itemize{
+#'   \item \bold{Extração e Ajuste:} Recupera os melhores parâmetros segundo a métrica global 
+#'   e realiza o \code{last_fit} na base de teste.
+#'   \item \bold{Otimização de Threshold:} Varre valores de 0 a 0.9 para encontrar o ponto 
+#'   que maximiza a performance do classificador.
+#'   \item \bold{Ponderação Amostral:} Gera predições ponderadas expandindo as observações 
+#'   pelos pesos da PNS (\code{uncount}) para garantir representatividade populacional.
+#'   \item \bold{Exportação LaTeX:} Gera arquivos \code{.tex} para parâmetros, métricas e 
+#'   matrizes de confusão usando \code{xtable}.
+#'   \item \bold{Visualização:} Produz histogramas de probabilidade, gráficos de importância 
+#'   (\code{vip}) e matrizes de confusão (Mosaic e Heatmap).
+#' }
+#'
+#' @note 
+#' O modelo final e o threshold ótimo são salvos em um único objeto \code{.rds} dentro 
+#' da pasta específica de cada classificador no \code{results_dir}.
+#'
+#' @author Rafael Rodrigues de Moraes
+#' @keywords finalize threshold-optimization confusion-matrix xtable tidymodels
+NULL
+
+
 tic()
 message("finalizando os modelos (métricas, parâmetros, matrizes de confusão)...")
 
