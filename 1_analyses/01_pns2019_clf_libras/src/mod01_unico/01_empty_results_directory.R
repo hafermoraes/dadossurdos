@@ -31,3 +31,9 @@ for( f in FILES) {
   file.remove(f)
 }
 
+file.remove(
+  paste0(
+      results_dir,
+      "vars_unico.tex"
+    )
+)

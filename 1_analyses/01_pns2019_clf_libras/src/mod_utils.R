@@ -431,82 +431,82 @@ export_subconfmat_to_latex <-
 
 
 
-
-
-metrics <- data.frame(
-  metric = c('a', 'b', 'c'),
-  value = rnorm(3)
-)
-
-export_specs_to_latex(
-  input_table=metrics,
-  model="mod01_unico/",
-  classifier="logres",
-  specification="metrics",
-  output_file = paste0(
-    results_dir,
-    "vars_unico.tex"
-  )
-)
-
-params <- data.frame(
-  metric = c('epoch', 'n_trees', 'max_depth'),
-  value = c(1000, 50, 75)
-)
-
-export_specs_to_latex(
-  input_table=params,
-  model="mod01_unico/",
-  classifier="logres",
-  specification="params",
-  output_file = paste0(
-    results_dir,
-    "vars_unico.tex"
-  )
-)
-
-
-optimum_threshold <- 0.17653
-
-export_threshold_to_latex(
-  threshold=optimum_threshold,
-  model="mod01_unico/",
-  classifier="logres",
-  specification="threshold",
-  output_file = paste0(
-    results_dir,
-    "vars_unico.tex"
-  )
-)
-
-
-confmat <- data.frame(
-  nao = c(1300.87, 50.98798),
-  sim = c(60.223, 1400.3123142)
-) |>
-  transmute(
-    predito = c('nao','sim'),
-    nao, sim
+if(FALSE){
+  metrics <- data.frame(
+    metric = c('a', 'b', 'c'),
+    value = rnorm(3)
   )
 
-export_confmat_to_latex(
-  input_table = confmat,
-  model="mod01_unico/",
-  classifier="logres",
-  output_file = paste0(
-    results_dir,
-    "vars_unico.tex"
+  export_specs_to_latex(
+    input_table=metrics,
+    model="mod01_unico/",
+    classifier="logres",
+    specification="metrics",
+    output_file = paste0(
+      results_dir,
+      "vars_unico.tex"
+    )
   )
-)
 
-export_subconfmat_to_latex(
-  input_table = confmat,
-  model="mod01_unico/",
-  classifier="logres",
-  dif_ouvir="nenhuma",
-  output_file = paste0(
-    results_dir,
-    "vars_unico.tex"
+  params <- data.frame(
+    metric = c('epoch', 'n_trees', 'max_depth'),
+    value = c(1000, 50, 75)
   )
-)
 
+  export_specs_to_latex(
+    input_table=params,
+    model="mod01_unico/",
+    classifier="logres",
+    specification="params",
+    output_file = paste0(
+      results_dir,
+      "vars_unico.tex"
+    )
+  )
+
+
+  optimum_threshold <- 0.17653
+
+  export_threshold_to_latex(
+    threshold=optimum_threshold,
+    model="mod01_unico/",
+    classifier="logres",
+    specification="threshold",
+    output_file = paste0(
+      results_dir,
+      "vars_unico.tex"
+    )
+  )
+
+
+  confmat <- data.frame(
+    nao = c(1300.87, 50.98798),
+    sim = c(60.223, 1400.3123142)
+  ) |>
+    transmute(
+      predito = c('nao','sim'),
+      nao, sim
+    )
+
+  export_confmat_to_latex(
+    input_table = confmat,
+    model="mod01_unico/",
+    classifier="logres",
+    output_file = paste0(
+      results_dir,
+      "vars_unico.tex"
+    )
+  )
+
+  export_subconfmat_to_latex(
+    input_table = confmat,
+    model="mod01_unico/",
+    classifier="logres",
+    dif_ouvir="nenhuma",
+    output_file = paste0(
+      results_dir,
+      "vars_unico.tex"
+    )
+  )
+
+}
