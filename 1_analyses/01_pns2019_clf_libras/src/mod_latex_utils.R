@@ -13,6 +13,7 @@
 #' @name mod_export_latex
 NULL
 
+message("carregando as funções de apoio para o latex...")
 
 
 #' Exporta Tabelas de Especificações para LaTeX
@@ -226,13 +227,18 @@ export_confmat_to_latex <-
     CNT_DIGITS <- 0
     
     # cálculos
-    PCTs <- input_table |>
+    PCTs <-
+      input_table$table |>
+      as.data.frame() |>
       adorn_totals(where = c("row", "col")) |>
       adorn_percentages(denominator = "all") |>
       adorn_pct_formatting(digits = PCT_DIGITS) |>
       mutate(across(-1, \(x) str_remove(x, "%")))
 
-    CNTs <- confmat |>
+    CNTs <-
+      input_table$table |>
+      as.data.frame() |>
+      pivot_wider(names_from = Truth, values_from = Freq) |>
       adorn_totals(where = c("row", "col")) |>
       mutate(
         across(
@@ -358,13 +364,18 @@ export_subconfmat_to_latex <-
     CNT_DIGITS <- 0
     
     # cálculos
-    PCTs <- input_table |>
+    PCTs <-
+      input_table$table |>
+      as.data.frame() |>
       adorn_totals(where = c("row", "col")) |>
       adorn_percentages(denominator = "all") |>
       adorn_pct_formatting(digits = PCT_DIGITS) |>
       mutate(across(-1, \(x) str_remove(x, "%")))
 
-    CNTs <- confmat |>
+    CNTs <-
+      input_table$table |>
+      as.data.frame() |>
+      pivot_wider(names_from = Truth, values_from = Freq) |>
       adorn_totals(where = c("row", "col")) |>
       mutate(
         across(

@@ -87,6 +87,19 @@ for(CLF in classifiers$wflow_id) {
 
   optimum_threshold <- opt_threshold$.threshold
 
+  message("exportando threshold (ponto de corte) em disco para latex...")
+  export_threshold_to_latex(
+    threshold=optimum_threshold,
+    model=model,
+    classifier=str_remove_all(CLF, "basic_model_"),
+    specification="threshold",
+    output_file = paste0(
+      results_dir,
+      "vars_unico.tex"
+    )
+  )
+
+
   preds_with_optimum_threshold <-
     preds |>
     mutate(
@@ -144,7 +157,7 @@ for(CLF in classifiers$wflow_id) {
   export_specs_to_latex(
     input_table=export_params,
     model=model,
-    classifier=CLF,
+    classifier=str_remove_all(CLF, "basic_model_"),
     specification="params",
     output_file = paste0(
       results_dir,
@@ -165,7 +178,7 @@ for(CLF in classifiers$wflow_id) {
   export_specs_to_latex(
     input_table=export_metrics,
     model=model,
-    classifier=CLF,
+    classifier=str_remove_all(CLF, "basic_model_"),
     specification="metrics",
     output_file = paste0(
       results_dir,
@@ -181,7 +194,7 @@ for(CLF in classifiers$wflow_id) {
     message("exportando gráfico de importância de variáveis para o melhor modelo '", CLF, "' em disco...")
     export_graph_variable_importance(
       input_table = best_clf,
-      classifier = CLF,
+      classifier = str_remove_all(CLF, "basic_model_"),
       plot_width = 5,
       plot_height = 5,
       output_file = paste0(save_path, "plot_feature_importance.pdf")
@@ -218,6 +231,18 @@ for(CLF in classifiers$wflow_id) {
           .pred_class
         )
     )
+
+  message("exportando matrizes de confusão em disco para latex...")
+  export_confmat_to_latex(
+    input_table = clf_confmat[[ "weighted" ]],
+    model=model,
+    classifier=str_remove_all(CLF, "basic_model_"),
+    output_file = paste0(
+      results_dir,
+      "vars_unico.tex"
+    )
+  )
+
   
   # >>> Diagnóstico Gráfico: Matriz de Confusão >>>
   for(data_type in names(clf_confmat)){
@@ -249,7 +274,6 @@ for(CLF in classifiers$wflow_id) {
           # Dados ponderados
           weighted = weighted_preds_with_optimum_threshold |>
             filter(dif_ouvir == dif) |>
-            weighted_preds_sub |>
             conf_mat(
               truth=libras,
               .pred_class
@@ -257,25 +281,24 @@ for(CLF in classifiers$wflow_id) {
           # Dados não ponderados
           unweighted = unweighted_preds_with_optimum_threshold |>
             filter(dif_ouvir == dif) |>
-            unweighted_preds_sub |>
             conf_mat(
               truth=libras,
               .pred_class
             )
         )
 
-      for(data_type in names(clf_confmat_sub)){
-
-        export_subconfmat_to_latex(
-          input_table = clf_confmat_sub[[ data_type ]],
-          model = model,
-          classifier = CLF,
-          dif_ouvir = dif,
-          output_file = paste0(
-            results_dir,
-            "vars_unico.tex"
-          )
+      export_subconfmat_to_latex(
+        input_table = clf_confmat_sub[[ data_type ]],
+        model = model,
+        classifier = str_remove_all(CLF, "basic_model_"),
+        dif_ouvir = dif,
+        output_file = paste0(
+          results_dir,
+          "vars_unico.tex"
         )
+      )
+      
+      for(data_type in names(clf_confmat_sub)){
 
         for(plot_type in c("mosaic", "heatmap")) {
           # >>> Diagnóstico Gráfico: Matriz de Confusão >>>

@@ -19,6 +19,7 @@
 #' @keywords cleanup utility
 NULL
 
+message("removendo quaisquer arquivos previamente existentes em ", results_dir)
 FILES <- 
   list.files(
     path = results_dir,
@@ -31,9 +32,3 @@ for( f in FILES) {
   file.remove(f)
 }
 
-file.remove(
-  paste0(
-      results_dir,
-      "vars_unico.tex"
-    )
-)

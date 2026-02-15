@@ -13,7 +13,7 @@
 #' @name mod_export_graphs
 NULL
 
-
+message("carregando as funções de apoio para os diagnósticos gráficos...")
 
 #' Exportar Gráfico de Importância de Variáveis (Variable Importance Plot)
 #'
