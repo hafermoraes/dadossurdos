@@ -120,9 +120,9 @@ for(CLF in classifiers$wflow_id) {
     optimum_threshold = opt_threshold$.threshold
   )
   write_rds(
-      all_objects,
-      paste0(save_path, 'model.rds')
-    )
+    all_objects,
+    paste0(save_path, 'model.rds')
+  )
   # mod <- read_rds(paste0(save_path, 'model.rds'))
   # mod$clf_model |> predict(libras_test, type = "prob")
   # mod$optimum_threshold
@@ -138,7 +138,7 @@ for(CLF in classifiers$wflow_id) {
       -.config,
       names_to = "hyperparameter",
       values_to = "value",
-    ) |>
+      ) |>
     select(-.config)
 
   export_specs_to_latex(
@@ -234,7 +234,6 @@ for(CLF in classifiers$wflow_id) {
   }
   # <<< Diagnóstico Gráfico: Matriz de Confusão <<<
   
-  
 
   # Matrizes de confusão por nível de dif_ouvir
   if(CONF_MAT_SUB){
@@ -245,149 +244,68 @@ for(CLF in classifiers$wflow_id) {
 
     for(dif in DIF_OUVIR){
 
-      # Dados ponderados
-      weighted_preds_sub <-
-        weighted_preds_with_optimum_threshold |>
-        filter(dif_ouvir == dif)
-
-      clf_confmat_weighted_sub <-
-        weighted_preds_sub |>
-        conf_mat(
-          truth=libras,
-          .pred_class
+      clf_confmat_sub <-
+        list(
+          # Dados ponderados
+          weighted = weighted_preds_with_optimum_threshold |>
+            filter(dif_ouvir == dif) |>
+            weighted_preds_sub |>
+            conf_mat(
+              truth=libras,
+              .pred_class
+            ),
+          # Dados não ponderados
+          unweighted = unweighted_preds_with_optimum_threshold |>
+            filter(dif_ouvir == dif) |>
+            unweighted_preds_sub |>
+            conf_mat(
+              truth=libras,
+              .pred_class
+            )
         )
 
+      for(data_type in names(clf_confmat_sub)){
 
-      # Matriz de Confusão
-      # Mosaic
-      (
-        clf_confmat_weighted_sub |>
-          autoplot(type = "mosaic") +
-          labs(
-            title = paste0(
-              "Matriz de confusão (dif_ouvir=",
-              dif,
-              ")"
-            ),
-            subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-            x = "Sabe Libras (Real)",
-            y = "Sabe Libras (Predito)"
+        export_subconfmat_to_latex(
+          input_table = clf_confmat_sub[[ data_type ]],
+          model = model,
+          classifier = CLF,
+          dif_ouvir = dif,
+          output_file = paste0(
+            results_dir,
+            "vars_unico.tex"
           )
-      ) |>
-        ggsave(
-          filename = paste0(
-            save_path,
-            "plot_confusion_matrix_mosaic_weighted_",
-            dif,
-            ".pdf"),
-          width=5,
-          height=5
         )
 
-      # Heamap
-      (
-        clf_confmat_weighted_sub |>
-          autoplot(type = "heatmap") +
-          labs(
-            title = paste0(
-              "Matriz de confusão (dif_ouvir=",
+        for(plot_type in c("mosaic", "heatmap")) {
+          # >>> Diagnóstico Gráfico: Matriz de Confusão >>>
+          message(
+            "exportando matriz de confusão (", plot_type , ") para dif_ouvir '", dif, "'..."
+          )
+          export_graph_confusion_matrix(
+            input_table = clf_confmat_sub[[ data_type ]],
+            threshold = opt_threshold$.threshold,
+            plot_type = plot_type,
+            plot_width = 5,
+            plot_height = 5,
+            output_file = paste0(
+              save_path,
+              "plot_confusion_matrix_mosaic_",
+              data_type,
+              "_",
               dif,
-              ")"
-            ),
-            subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-            x = "Sabe Libras (Real)",
-            y = "Sabe Libras (Predito)"
-          )  ) |>
-        ggsave(
-          filename = paste0(
-            save_path,
-            "plot_confusion_matrix_heatmap_weighted_",
-            dif,
-            ".pdf"),
-          width=5,
-          height=5
-        )
-
-      # Dados não ponderados
-      unweighted_preds_sub <-
-        unweighted_preds_with_optimum_threshold |>
-        filter(dif_ouvir == dif)
-
-      clf_confmat_unweighted_sub <-
-        unweighted_preds_sub |>
-        conf_mat(
-          truth=libras,
-          .pred_class
-        )
-
-      print(
-        xtable(
-          clf_confmat_unweighted_sub$table,
-          digits = c(0, 0, 0)
-        ),
-        sanitize.text.function = identity,
-        only.contents=TRUE,
-        include.rownames=FALSE,
-        include.colnames=TRUE,
-        hline.after=NULL,
-        comment=FALSE,
-        format.args = list(big.mark = ".", decimal.mark = ","),
-        file=paste0(save_path, "conf_mat_unweighted_",dif,".tex")
-      )
-
-
-      # Matriz de Confusão
-      # Mosaic
-      (
-        clf_confmat_unweighted_sub |>
-          autoplot(type = "mosaic") +
-          labs(
-            title = paste0(
-              "Matriz de confusão (dif_ouvir=",
-              dif,
-              ")"
-            ),
-            subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-            x = "Sabe Libras (Real)",
-            y = "Sabe Libras (Predito)"
-          )  ) |>
-        ggsave(
-          filename = paste0(
-            save_path,
-            "plot_confusion_matrix_mosaic_unweighted_",
-            dif,
-            ".pdf"),
-          width=5,
-          height=5
-        )
-
-      # Heatmap
-      (
-        clf_confmat_unweighted_sub |>
-          autoplot(type = "heatmap") +
-          labs(
-            title = paste0(
-              "Matriz de confusão (dif_ouvir=",
-              dif,
-              ")"
-            ),
-            subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-            x = "Sabe Libras (Real)",
-            y = "Sabe Libras (Predito)"
-          )  ) |>
-        ggsave(
-          filename = paste0(
-            save_path,
-            "plot_confusion_matrix_heatmap_unweighted_",
-            dif,
-            ".pdf"),
-          width=5,
-          height=5
-        )
-
-    }
-  }
-
+              ".pdf"
+            )
+          )
+          # <<< Diagnóstico Gráfico: Matriz de Confusão <<<
+          
+        } # closing... for(plot_type in c("mosaic", "heatmap"))
+        
+      } # closing... for(data_type in names(clf_confmat_sub))
+      
+    } # closing... for(dif in DIF_OUVIR)
+    
+  } # closing... if(CONF_MAT_SUB)
 
 }
 

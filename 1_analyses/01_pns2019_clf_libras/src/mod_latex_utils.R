@@ -1,8 +1,18 @@
+#' Módulo de Exportação para LaTeX
+#'
+#' @description
+#' Este módulo contém funções para converter resultados de modelos (tabelas de métricas, 
+#' thresholds e matrizes de confusão) em comandos personalizados do LaTeX (\code{\\newcommand}).
+#' Facilita a automação de relatórios dinâmicos garantindo a formatação numérica no padrão brasileiro.
+#'
+#' @details
+#' As funções utilizam o pacote \code{xtable} para conversão de tabelas e \code{stringr} 
+#' para manipulação de strings. Os comandos gerados são apensados (\code{append = TRUE}) 
+#' ao arquivo de destino.
+#'
+#' @name mod_export_latex
+NULL
 
-library(janitor)
-library(stringr)
-library(xtable)
-library(dplyr)
 
 
 #' Exporta Tabelas de Especificações para LaTeX
@@ -99,7 +109,7 @@ export_specs_to_latex <-
         file = output_file,
         append = TRUE
     )
-}
+} # closing... export_specs_to_latex
 
 
 
@@ -154,7 +164,7 @@ export_threshold_to_latex <-
       file = output_file,
       append = TRUE
     )
-}
+} # closing... export_threshold_to_latex
 
 
 
@@ -291,7 +301,7 @@ export_confmat_to_latex <-
       file = output_file,
       append = TRUE
     )
-}
+} # closing... export_confmat_to_latex
 
 
 
@@ -423,7 +433,7 @@ export_subconfmat_to_latex <-
       file = output_file,
       append = TRUE
     )
-}
+} # closing... export_subconfmat_to_latex
 
 
 
@@ -509,4 +519,4 @@ if(FALSE){
     )
   )
 
-}
+} # closing... if(FALSE)
