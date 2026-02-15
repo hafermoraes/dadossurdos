@@ -123,14 +123,12 @@ for(CLF in classifiers$wflow_id) {
       all_objects,
       paste0(save_path, 'model.rds')
     )
-  # mod <-
-  #   read_rds(paste0(save_path, 'model.rds'))
-  #
-  # mod$clf_model |>
-  #   predict(libras_test, type = "prob")
-  #
+  # mod <- read_rds(paste0(save_path, 'model.rds'))
+  # mod$clf_model |> predict(libras_test, type = "prob")
   # mod$optimum_threshold
   # <<< salva modelo final (com a melhor métrica) em disco <<<
+
+
 
   # >>> Exporta hiperparâmetros em disco para LaTeX >>>
   message("exportando lista de hiperparâmetros do melhor modelo '", CLF, "' para o LaTeX...")
@@ -155,6 +153,8 @@ for(CLF in classifiers$wflow_id) {
   )
   # <<< Exporta hiperparâmetros em disco para LaTeX <<<
 
+
+  
   # >>> Exporta métricas em disco para LaTeX >>>
   message("exportando lista de métricas do melhor modelo '", CLF, "' para o LaTeX...")
   export_metrics <-
@@ -172,158 +172,69 @@ for(CLF in classifiers$wflow_id) {
       "vars_unico.tex"
     )
   )
-
   # <<< Exporta métricas em disco para LaTeX <<<
 
+  
+  
   # >>> Diagnóstico Gráfico: Variable Importance (vip) >>>
   if(VARIABLE_IMPORTANCE){
-    if (! str_remove_all(CLF, "basic_model_") %in% c('svm', 'nb', 'bc5', 'bart', 'bagrpart')){
-
-      tryCatch({
-        message("exportando gráfico de importância de variáveis para o melhor modelo '", CLF, "' em disco...")
-        (
-          best_clf |>
-            extract_fit_parsnip() |>
-            vip(geom="point")
-        ) |>
-          ggsave(
-            filename = paste0(save_path, "plot_feature_importance.pdf"),
-            width=5,
-            height=5
-          )
-      },
-      error = function(e) {
-        message("Erro: ", e$message)
-      },
-      warning = function(w) {
-        message("Warning: ", w$message)
-      },
-      finally = {
-        message("Sem erros")
-      }
-      )
-    }
+    message("exportando gráfico de importância de variáveis para o melhor modelo '", CLF, "' em disco...")
+    export_graph_variable_importance(
+      input_table = best_clf,
+      classifier = CLF,
+      plot_width = 5,
+      plot_height = 5,
+      output_file = paste0(save_path, "plot_feature_importance.pdf")
+    )
   }
   # <<< Diagnóstico Gráfico: Variable Importance (vip) <<<
 
+
   # >>> Diagnóstico Gráfico: Histograma das probabilidades por classe de 'sabe_libras' >>>
   message("exportando histograma de probabilidades por classe de 'sabe_libras' para o melhor modelo '", CLF, "' em disco...")
-  (
-    collect_predictions(best_clf) |>
-      ggplot(aes(.pred_sim)) +
-      geom_histogram(col = "white", bins = 40) +
-      facet_wrap(~ libras, ncol = 1) +
-      geom_vline(
-        xintercept = opt_threshold$.threshold,
-        color = "red",
-        linetype = "dashed",
-        linewidth = 0.5
-      ) +
-      geom_rug(col = "blue", alpha = 1 / 2) +
-      labs(
-        # title = "Distribuição dos escores (probabilidade de saber Libras) por classe de predição",
-        # subtitle = paste0(
-        #   "Nota: A linha vermelha refere-se ao ponto de corte (threshold) ",
-        #   optimum_threshold,
-        #   " que otimiza a performance do modelo segundo a métrica ",
-        #   METRIC
-        # ),
-        x = "Estimativa da probabilidade de saber Libras",
-        y = "Quantidade de casos"
-        )
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "plot_probability_histogram.pdf"),
-      width=12,
-      height=8
-    )
+  export_graph_probability_histogram(
+    input_table = collect_predictions(best_clf),
+    threshold = opt_threshold$.threshold,
+    plot_width = 12,
+    plot_height = 8,
+    output_file = paste0(save_path, "plot_probability_histogram.pdf")
+  )
   # <<< Diagnóstico Gráfico: Histograma das probabilidades por classe de 'sabe_libras' <<<
 
-  # matriz de confusão (dados não ponderados)
-  clf_confmat_unweighted <-
-    unweighted_preds_with_optimum_threshold |>
-    conf_mat(
-      truth=libras,
-      .pred_class
-      )
-
-  # >>> Diagnóstico Gráfico: Matriz de Confusão (Mosaic) para dados não ponderados >>>
-  (
-     clf_confmat_unweighted |>
-      autoplot(type = "mosaic") +
-      labs(
-        title = "Matriz de confusão",
-        caption = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-        x = "Sabe Libras (Real)",
-        y = "Sabe Libras (Predito)"
-      )
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "plot_confusion_matrix_mosaic_unweighted.pdf"),
-      width=5,
-      height=5
-    )
-  # <<< Diagnóstico Gráfico: Matriz de Confusão (Mosaic) para dados não ponderados <<<
   
-  # >>> Diagnóstico Gráfico: Matriz de Confusão (Heatmap) para dados não ponderados >>>
-  (
-    clf_confmat_unweighted |>
-      autoplot(type = "heatmap") +
-      labs(
-        title = "Matriz de confusão",
-        subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-        x = "Sabe Libras (Real)",
-        y = "Sabe Libras (Predito)"
-      )  ) |>
-    ggsave(
-      filename = paste0(save_path, "plot_confusion_matrix_heatmap_unweighted.pdf"),
-      width=5,
-      height=5
+  # Matrizes de Confusão
+  clf_confmat <-
+    list(
+      # matriz de confusão (dados ponderados)
+      weighted = weighted_preds_with_optimum_threshold |>
+        conf_mat(
+          truth=libras,
+          .pred_class
+        ),
+      # matriz de confusão (dados não ponderados)
+      unweighted = unweighted_preds_with_optimum_threshold |>
+        conf_mat(
+          truth=libras,
+          .pred_class
+        )
     )
-  # <<< Diagnóstico Gráfico: Matriz de Confusão (Heatmap) para dados não ponderados <<<
   
-  # matriz de confusão (dados ponderados)
-  clf_confmat_weighted <-
-    weighted_preds_with_optimum_threshold |>
-    conf_mat(
-      truth=libras,
-      .pred_class
-    )
-
-  # >>> Diagnóstico Gráfico: Matriz de Confusão (Mosaic) para dados ponderados >>>
-  (
-    clf_confmat_weighted |>
-      autoplot(type = "mosaic") +
-      labs(
-        title = "Matriz de confusão",
-        subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-        x = "Sabe Libras (Real)",
-        y = "Sabe Libras (Predito)"
-      )  ) |>
-    ggsave(
-      filename = paste0(save_path, "plot_confusion_matrix_mosaic_weighted.pdf"),
-      width=5,
-      height=5
-    )
-  # <<< Diagnóstico Gráfico: Matriz de Confusão (Mosaic) para dados ponderados <<<
-
-  # >>> Diagnóstico Gráfico: Matriz de Confusão (Heatmap) para dados ponderados >>>
-  (
-    clf_confmat_weighted |>
-    autoplot(type = "heatmap") +
-      labs(
-        title = "Matriz de confusão",
-        subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-        x = "Sabe Libras (Real)",
-        y = "Sabe Libras (Predito)"
+  # >>> Diagnóstico Gráfico: Matriz de Confusão >>>
+  for(data_type in names(clf_confmat)){
+    for(graph_type in c("mosaic", "heatmap")){
+      export_graph_confusion_matrix(
+        input_table = clf_confmat[[data_type]],
+        threshold = opt_threshold$.threshold,
+        plot_type = graph_type,
+        plot_width = 5,
+        plot_height = 5,
+        output_file = paste0(save_path, "plot_confusion_matrix_", graph_type, "_", data_type, ".pdf")
       )
-    ) |>
-    ggsave(
-      filename = paste0(save_path, "plot_confusion_matrix_heatmap_weighted.pdf"),
-      width=5,
-      height=5
-    )
-  # <<< Diagnóstico Gráfico: Matriz de Confusão (Heatmap) para dados ponderados <<<
+    }
+  }
+  # <<< Diagnóstico Gráfico: Matriz de Confusão <<<
+  
+  
 
   # Matrizes de confusão por nível de dif_ouvir
   if(CONF_MAT_SUB){

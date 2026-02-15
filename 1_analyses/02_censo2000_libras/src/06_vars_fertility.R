@@ -8,6 +8,7 @@ censo2000_fertility <-
   transmute(
     row_id,
     # ......... Variáveis referentes à Fecundidade .........
+    # TODO incluir filhos nascidos ultimos 12 meses
     filhos_nascidos_vivos = ifelse(v4620=='', NA, as.numeric(v4620)),
     filhos_nascidos_vivos_vivos = ifelse(v0463=='', NA, as.numeric(v0463)),
     filhos_nascidos_mortos = ifelse(v4670=='', NA, as.numeric(v4670)),

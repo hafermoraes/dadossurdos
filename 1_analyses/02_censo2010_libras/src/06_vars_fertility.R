@@ -9,6 +9,7 @@ censo2010_fertility <-
   transmute(
     row_id,
     # ......... Variáveis referentes à Fecundidade .........
+    # TODO incluir filhos nascidos ultimos 12 meses
     filhos_nascidos_vivos = ifelse(v6633=='', NA, as.numeric(v6633)),
     filhos_nascidos_vivos_vivos = ifelse(v6643=='', NA, as.numeric(v6643)),
     filhos_nascidos_mortos = ifelse(v6633=='' && v6643=='', NA, filhos_nascidos_vivos - filhos_nascidos_vivos_vivos),
