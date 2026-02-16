@@ -97,7 +97,7 @@ for(CLF in classifiers$wflow_id) {
     output_file = paste0(
       results_dir,
       "vars_",
-      str_remove_all(CLF, "basic_model_"),
+      stringr::str_split_i(model, "[_/]", 2),
       ".tex"
     )
   )
@@ -164,7 +164,7 @@ for(CLF in classifiers$wflow_id) {
     output_file = paste0(
       results_dir,
       "vars_",
-      str_remove_all(CLF, "basic_model_"),
+      stringr::str_split_i(model, "[_/]", 2),
       ".tex"
     )
   )
@@ -201,7 +201,7 @@ for(CLF in classifiers$wflow_id) {
     output_file = paste0(
       results_dir,
       "vars_",
-      str_remove_all(CLF, "basic_model_"),
+      stringr::str_split_i(model, "[_/]", 2),
       ".tex"
     )
   )
@@ -260,7 +260,7 @@ for(CLF in classifiers$wflow_id) {
     output_file = paste0(
       results_dir,
       "vars_",
-      str_remove_all(CLF, "basic_model_"),
+      stringr::str_split_i(model, "[_/]", 2),
       ".tex"
     )
   )

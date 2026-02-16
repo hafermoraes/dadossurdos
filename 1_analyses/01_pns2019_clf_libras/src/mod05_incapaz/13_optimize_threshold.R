@@ -57,13 +57,13 @@ if(FALSE){
     best_params <-
       fitted_models |>
       extract_workflow_set_result(CLF) |>
-      select_best(metric=METRIC) 
+      select_best(metric=CLASS_INDEPENDENT_METRIC) 
     
     best_clf <- 
       fitted_models |>
       extract_workflow(CLF) |>
       finalize_workflow(best_params) |> 
-      last_fit(split = libras_splits, metrics = metrics_set)
+      last_fit(split = libras_splits, metrics = class_independent_metrics_set)
     
     thresholds <- seq(0.01, 0.95, by = 0.01)
     
@@ -73,7 +73,7 @@ if(FALSE){
         truth = libras, 
         estimate = .pred_sim, 
         thresholds = thresholds,
-        metric =   metric_set(
+        metric =   class_dependent_metrics_set(
           accuracy,
           sens,
           spec,

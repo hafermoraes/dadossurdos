@@ -51,7 +51,7 @@ fitted_models <-
     wflow_set, 
     fn = "tune_grid",
     seed = 1, 
-    metrics = metrics_set,
+    metrics = class_independent_metrics_set,
     resamples = libras_folds,
     verbose = TRUE
   )

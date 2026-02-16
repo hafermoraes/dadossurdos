@@ -34,24 +34,37 @@ NULL
 
 tic()
 message("definindo o conjunto de métricas sob as quais os modelos serão avaliados (tidymodels/yardstick)...")
-metrics_set <-
+
+class_independent_metrics_set <-
   metric_set(
     ## 'class' type
-    # accuracy,
-    # bal_accuracy,
-    # precision,
-    # recall,
-    # sens,
-    # spec,
-    # kap,
-    # mcc,
-    j_index,
+    ## accuracy,
+    ## bal_accuracy,
+    ## precision,
+    ## recall,
+    ## sens,
+    ## spec,
+    ## kap,
+    ## mcc,
+    ## j_index,
     ## 'class prob' type
     roc_auc,
-    average_precision,
-    brier_class,
-    mn_log_loss,
+    ## average_precision,
+    ## brier_class,
+    ## mn_log_loss,
     pr_auc
   )
+
+
+message("configurando métricas dependentes de classe para otimização do classificador otimizado...")
+f1_measure <- metric_tweak("f1", f_meas, beta = 1)
+f2_measure <- metric_tweak("f2", f_meas, beta = 2)
+
+class_dependent_metrics_set <- metric_set(
+  accuracy, 
+  j_index, 
+  f1_measure, 
+  f2_measure
+)
 
 toc()
