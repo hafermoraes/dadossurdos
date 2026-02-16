@@ -1,3 +1,31 @@
+#' @title Processamento de Variáveis de Fecundidade: Censo 2000
+#' 
+#' @description
+#' Este script extrai e trata as variáveis relacionadas ao histórico reprodutivo feminino 
+#' coletadas pelo Censo 2000. Realiza a conversão de campos de largura fixa para 
+#' valores numéricos, permitindo o cálculo de taxas de sobrevivência infantil e 
+#' análise de composição familiar.
+#'
+#' @section Variáveis de Fecundidade:
+#' \itemize{
+#'   \item \bold{Nascidos Vivos}: Total de filhos tidos que nasceram vivos (\code{v4620}).
+#'   \item \bold{Sobreviventes}: Total de filhos tidos que nasceram vivos e ainda estavam vivos na data de referência (\code{v0463}).
+#'   \item \bold{Nascidos Mortos}: Total de filhos que nasceram mortos (\code{v4670}).
+#'   \item \bold{Total de Gestações}: Soma total de filhos tidos (\code{v4690}).
+#'   \item \bold{Idade no Último Filho}: Idade da mulher por ocasião do nascimento do último filho tido (\code{v4654}).
+#' }
+#'
+#' @section Persistência:
+#' Os dados são processados via \code{duckdb}, coletados para o R e exportados como 
+#' \code{censo2000_fertility.csv} no diretório de dados.
+#'
+#' @note 
+#' Campos vazios (\code{''}) são convertidos sistematicamente para \code{NA} para garantir 
+#' a integridade dos cálculos estatísticos.
+#'
+#' @name 06_vars_fertility_censo
+NULL
+
 FILE <- "censo2000_fertility"
 
 tic()

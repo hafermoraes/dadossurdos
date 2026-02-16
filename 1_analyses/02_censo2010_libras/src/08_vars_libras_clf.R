@@ -1,3 +1,37 @@
+#' @title Imputação Preditiva de Libras (Censo 2010)
+#' 
+#' @description
+#' Este script aplica os modelos classificadores desenvolvidos a partir da PNS 2019 
+#' aos microdados harmonizados do Censo 2010. O processo utiliza uma estratégia de 
+#' "estratificação por dificuldade", onde modelos específicos (XGBoost, Naive Bayes, MARS) 
+#' são aplicados dependendo do grau de deficiência auditiva relatado (\code{dif_ouvir}).
+#'
+#' @section Estratégia de Predição:
+#' \itemize{
+#'   \item \bold{Modelagem por Estrato}: Carrega modelos \code{.rds} pré-treinados, 
+#'     cada um com seu próprio \code{optimum_threshold} calculado na validação da PNS.
+#'   \item \bold{Flags de Controle}: Utiliza variáveis booleanas (\code{PREDICT_}) 
+#'     para ativar ou desativar a predição em subgrupos específicos (ex: apenas 'grande' e 'incapaz').
+#'   \item \bold{Processamento Híbrido}: Filtra os dados via \code{duckdb}, mas realiza 
+#'     a predição em memória (\code{collect}) utilizando o motor do \code{tidymodels}.
+#' }
+#'
+#' @section Configuração de Modelos:
+#' \itemize{
+#'   \item \bold{Grande Dificuldade}: Classificador XGBoost (\code{mod04_grande}).
+#'   \item \bold{Incapaz}: Classificador Naive Bayes (\code{mod05_incapaz}).
+#'   \item \bold{Nenhuma/Alguma}: Atualmente configurados para retornar valores vazios, 
+#'     ajustáveis conforme a necessidade analítica.
+#' }
+#'
+#' @note 
+#' É fundamental que as categorias de \code{instrucao} e \code{dif_ouvir} no Censo 2010 
+#' estejam perfeitamente alinhadas aos fatores utilizados no treinamento dos modelos 
+#' originais para evitar erros de predição.
+#'
+#' @name 08_vars_libras_clf_censo2010
+NULL
+
 
 gc()
 

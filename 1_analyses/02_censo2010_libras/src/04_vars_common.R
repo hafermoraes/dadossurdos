@@ -1,4 +1,33 @@
 
+#' @title Processamento de Variáveis Demográficas Comuns: Censo 2010
+#' 
+#' @description
+#' Este script realiza a decodificação e a padronização das características sociodemográficas 
+#' básicas dos microdados do Censo 2010. O processo inclui o cruzamento com o dicionário 
+#' de variáveis para identificação geográfica e a recodificação de níveis para educação, 
+#' estado civil e deficiências sensoriais/motoras, visando compatibilidade com a PNS 2019.
+#'
+#' @section Regras de Harmonização:
+#' \itemize{
+#'   \item \bold{Geografia}: Integração via \code{left_join} com o dicionário (\code{v0001, v0002}) 
+#'     para atribuição de nomes de UF e Município.
+#'   \item \bold{Escolaridade}: Reagrupa os 14 níveis originais da variável \code{v0633} em quatro 
+#'     categorias principais: \emph{fundamental, médio, superior} e \emph{outros} (incluindo EJA e creche).
+#'   \item \bold{Estado Civil}: Consolida categorias de desquite, separação judicial e divórcio 
+#'     em um único grupo \emph{'separado'}.
+#'   \item \bold{Funcionalidade}: Mapeia as escalas de dificuldade (\code{v0614, v0615, v0616}) 
+#'     para a taxonomia padrão: \emph{incapaz, grande, alguma, nenhuma}.
+#' }
+#'
+#' @section Persistência:
+#' Os dados transformados são coletados do motor analítico \code{duckdb} e exportados para 
+#' o arquivo \code{censo2010_common.csv} no diretório de dados.
+#'
+#' @name 04_vars_common_censo2010
+NULL
+
+
+
 FILE <- "censo2010_common"
 
 tic()

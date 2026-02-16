@@ -1,3 +1,36 @@
+#' @title Importação e Harmonização de Microdados: Censo 2010
+#' 
+#' @description
+#' Este script realiza a extração e o tratamento inicial dos microdados do Censo 2010 
+#' (Registro de Pessoas). Ele seleciona variáveis críticas para demografia, fecundidade, 
+#' migração e deficiências, integrando-as ao dicionário de variáveis via \code{duckdb} 
+#' para otimização de performance em larga escala.
+#'
+#' @section Componentes do Processamento:
+#' \itemize{
+#'   \item \bold{Dicionário de Variáveis}: Carga dos metadados da base 'pess' (Pessoas) com normalização de descrições.
+#'   \item \bold{Seleção Temática}:
+#'     \itemize{
+#'       \item \emph{Amostragem}: \code{v0011} (área de ponderação) e \code{v0010} (peso).
+#'       \item \emph{Demografia}: Sexo, idade (\code{v6036}), raça, alfabetização e instrução.
+#'       \item \emph{Deficiência}: Variáveis de dificuldade sensorial e motora (\code{v0614} a \code{v0616}).
+#'       \item \emph{Fecundidade}: Filhos nascidos vivos, sobreviventes e idade no último parto.
+#'       \item \emph{Migração}: Histórico de residência anterior, naturalidade e tempo de moradia.
+#'     }
+#'   \item \bold{Engenharia de Atributos}: 
+#'     \itemize{
+#'       \item Concatenção de UF e Município (\code{v0001} + \code{v0002}) para criação do código IBGE completo.
+#'       \item Truncamento de códigos de UF (\code{str_sub}) para normalização geográfica.
+#'       \item Criação de \code{row_id} único para integridade referencial.
+#'     }
+#' }
+#'
+#' @note 
+#' O Censo 2010 não possui a variável direta de "filhos nascidos mortos", que deve ser 
+#' obtida por diferença entre o total de nascidos (\code{v6800}) e nascidos vivos (\code{v6633}).
+#'
+#' @name 02_import_microdata_censo2010
+NULL
 
 message("importando dicionário de variáveis ...")
 dvar_censo2010 <-

@@ -1,3 +1,29 @@
+#' @title Processamento de Variáveis Demográficas Comuns: Censo 2000
+#' 
+#' @description
+#' Este script realiza a decodificação e limpeza das variáveis sociodemográficas básicas 
+#' dos microdados do Censo 2000. Utiliza cruzamentos (\code{joins}) com o dicionário de 
+#' variáveis para obter nomes de municípios e UFs, além de recodificar categorias de 
+#' escolaridade, estado civil e deficiências sensoriais/motoras.
+#'
+#' @section Regras de Negócio e Recodificações:
+#' \itemize{
+#'   \item \bold{Geografia}: Realiza \code{left_join} com o dicionário para converter códigos 
+#'     (\code{v0102} e \code{v1103}) em nomes de UF e Município.
+#'   \item \bold{Educação}: Agrupa o curso mais elevado (\code{v0432}) em níveis padronizados: 
+#'     \emph{fundamental, médio, superior} e \emph{outros}.
+#'   \item \bold{Estado Civil}: Consolida categorias de separação judicial e divórcio 
+#'     em um único nível \emph{'separado'}.
+#'   \item \bold{Deficiências}: Inverte a escala original do IBGE para as variáveis \code{v0411, v0412, v0413} 
+#'     (enxergar, ouvir, locomover) para alinhar com a taxonomia: \emph{incapaz, grande, alguma, nenhuma}.
+#' }
+#'
+#' @section Persistência:
+#' O resultado é coletado do motor \code{duckdb} e salvo em \code{censo2000_common.csv} 
+#' no diretório de dados do projeto.
+#'
+#' @name 04_vars_common_censo
+NULL
 
 FILE <- "censo2000_common"
 

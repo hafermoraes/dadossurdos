@@ -1,3 +1,33 @@
+#' @title Visualização Exploratória e Matriz de Correlação
+#' 
+#' @description
+#' Este script automatiza a geração de diagnósticos visuais para a PNS 2019. 
+#' Inclui gráficos de mosaico para análise de associação entre variáveis categóricas 
+#' e a variável alvo (Libras), boxplots e densidades para variáveis contínuas, 
+#' e uma análise de correlação entre preditores dummyficados.
+#'
+#' @section Visualizações Geradas:
+#' \itemize{
+#'   \item \bold{Gráficos de Mosaico}: Proporções de usuários de Libras ponderadas pelo peso amostral (\code{case_weights}).
+#'   \item \bold{Análise de Idade}: Distribuição de idade por uso de Libras via Boxplot e Densidade (facetado por dificuldade auditiva).
+#'   \item \bold{Matriz de Correlação}: Visualização das relações lineares entre preditores após transformação em variáveis dummy.
+#' }
+#'
+#' @section Engenharia de Atributos (Correlação):
+#' A correlação utiliza o pacote \code{recipes} para:
+#' \enumerate{
+#'   \item Omitir NAs em preditores fatoriais.
+#'   \item Transformar variáveis nominais em dummies.
+#'   \item Remover pesos e variáveis de alta cardinalidade (\code{uf}).
+#' }
+#' 
+#' @note 
+#' Todos os gráficos são exportados em formato PDF para preservação de qualidade vetorial na tese.
+#'
+#' @name 04_eda_graphs
+NULL
+
+
 # mosaic plots
 
 eda_plot_mosaic <- function(column){

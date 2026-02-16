@@ -1,3 +1,34 @@
+#' @title Consolidação e Validação da ABT: Censo 2000
+#' 
+#' @description
+#' Este script orquestra a união de todos os módulos temáticos processados (Demografia, 
+#' Migração, Fecundidade, etc.) em uma base única e final. A estratégia de integração 
+#' é baseada em utilitários de linha de comando do Linux (\code{sort}, \code{sed}, \code{paste}) 
+#' para manipulação de arquivos em disco, minimizando o uso de memória RAM.
+#'
+#' @section Pipeline de Integração:
+#' \itemize{
+#'   \item \bold{Ordenação}: Cada arquivo CSV é ordenado pelo \code{row_id} via \code{sort} do sistema.
+#'   \item \bold{Limpeza de Colunas}: O \code{sed} remove o \code{row_id} redundante de todos os arquivos, 
+#'     exceto do primeiro, preparando-os para a concatenação lateral.
+#'   \item \bold{Concatenação}: O comando \code{paste} une os arquivos horizontalmente criando o \code{censo2000_abt.csv}.
+#'   \item \bold{Compressão}: Conversão do CSV final para \bold{Parquet}, otimizando o armazenamento 
+#'     e a velocidade de leitura para modelagem futura.
+#' }
+#'
+#' @section Protocolo de Validação:
+#' Após a consolidação, o script realiza um sorteio aleatório de um registro (\code{slice_sample}) 
+#' e compara os valores da ABT final contra cada módulo original. O log desta verificação 
+#' é salvo em \code{censo2000_abt.validation}.
+#'
+#' @note 
+#' Este script assume um ambiente Linux/Unix. A conversão para Parquet trata todos os campos 
+#' como \emph{string/character} inicialmente para evitar erros de cast em colunas mistas, 
+#' limpando strings de metadados como "NA" ou "NULL".
+#'
+#' @name 10_finalize_abt_censo
+NULL
+
 
 # comandos rodam via linux para não usar memória
 FILES <- paste0(

@@ -1,3 +1,30 @@
+#' @title Análise Exploratória e Amostragem Complexa (PNS 2019)
+#' 
+#' @description
+#' Este script prepara os microdados para análise estatística considerando o desenho 
+#' amostral complexo da PNS 2019. Realiza a pós-estratificação, calcula totais 
+#' populacionais de usuários de Libras e gera tabelas automáticas de resumo (EDA) 
+#' formatadas para inclusão direta em documentos LaTeX.
+#'
+#' @section Funcionalidades Principais:
+#' \itemize{
+#'   \item \bold{Design de Amostra}: Configuração de \code{svydesign} com ajuste de PSUs solitárias e pós-estratificação seguindo padrões do IBGE.
+#'   \item \bold{Função \code{eda_stats_by_variable}}: Automatiza o cálculo de totais (\code{n}), usuários de libras (\code{l}) e proporções (\code{p}), incluindo intervalos de confiança de 95%.
+#'   \item \bold{Exportação LaTeX}: Função dedicada para gerar fragmentos de tabelas \code{tabular} via \code{xtable}, com sanitização e formatação brasileira.
+#'   \item \bold{Loop de AED}: Itera sobre variáveis demográficas e de saúde para consolidar uma base de dados descritiva (\code{eda_base}).
+#' }
+#'
+#' @section Definições de Fatores:
+#' \itemize{
+#'   \item \bold{Instrução}: Ordenado como \emph{outros < fundamental < medio < superior}.
+#'   \item \bold{Dificuldade}: Ordenado como \emph{nenhuma < alguma < grande < incapaz}.
+#' }
+#' 
+#' @note 
+#' Requer os pacotes \code{survey}, \code{srvyr}, \code{xtable} e \code{scales}.
+#'
+#' @name 03_eda
+NULL
 
 tic()
 message("tratando os microdados para fins de AED...")
@@ -125,6 +152,45 @@ toc()
 tic()
 message("produzindo as análises exploratórias para a tese...")
 
+
+#' @title Calcular Estatísticas Descritivas com Pesos Amostrais
+#' 
+#' @description
+#' Esta função automatiza o cálculo de totais populacionais, contagem de usuários 
+#' de Libras e proporções de uso, segmentados por uma variável específica. Ela 
+#' utiliza o objeto de desenho amostral pós-estratificado para garantir a 
+#' validade estatística das estimativas.
+#'
+#' @param column String. O nome da coluna (variável preditora) pela qual os 
+#'   dados serão agrupados (ex: 'sexo', 'instrucao').
+#'
+#' @return Uma \code{list} contendo dois objetos:
+#' \itemize{
+#'   \item \code{base_table}: Tibble com os valores numéricos brutos e intervalos de confiança.
+#'   \item \code{summary_table}: Tibble formatada com strings prontas para publicação 
+#'   (ex: "1.234.567", "[0,1%; 0,3%]").
+#' }
+#' 
+#' @details 
+#' A função realiza três cálculos principais via \code{srvyr}:
+#' \enumerate{
+#'   \item \bold{n}: Total da população no nível da variável.
+#'   \item \bold{l}: Estimativa do total de pessoas que sabem Libras (\code{libras_01}).
+#'   \item \bold{p}: Proporção (média) de usuários de Libras na população.
+#' }
+#' Utiliza \code{suppressWarnings} para evitar mensagens de categorias vazias durante 
+#' o processamento de subgrupos pequenos.
+#'
+#' @note 
+#' Requer que o objeto \code{pns2019_posterior} esteja disponível no ambiente global 
+#' e que as funções \code{label_number} e \code{label_percent} (pacote \code{scales}) 
+#' estejam carregadas.
+#'
+#' @export
+#'
+#' @examples
+#' # stats <- eda_stats_by_variable("instrucao")
+#' # print(stats$summary_table)
 eda_stats_by_variable <- function(column) {
 
   # tabela de cálculo da quantidade de pessoas, número e percentual de usuários de libras
@@ -174,6 +240,41 @@ eda_stats_by_variable <- function(column) {
     )
 }
 
+#' @title Exportar Resumo da AED para Fragmento LaTeX
+#' 
+#' @description
+#' Esta função converte a tabela de resumo da Análise Exploratória de Dados (AED) 
+#' em um formato compatível com LaTeX utilizando o pacote \code{xtable}. O arquivo 
+#' gerado contém apenas o conteúdo das linhas (sem cabeçalho ou ambiente \code{table}), 
+#' facilitando a inclusão via \code{\input{}} em documentos mestres.
+#'
+#' @param eda_summary Um \code{data.frame} ou \code{tibble}. O resultado formatado 
+#'   da função \code{eda_stats_by_variable}.
+#' @param to_file String. O nome do arquivo de saída (padrão: "eda_summary.tex").
+#' @param append_flag Lógico. Se \code{TRUE}, anexa o conteúdo ao final do arquivo; 
+#'   se \code{FALSE}, sobrescreve o arquivo existente.
+#'
+#' @return A função não retorna um objeto no R, agindo apenas sobre o sistema de 
+#'   arquivos ao gravar o conteúdo no diretório definido em \code{eda_dir}.
+#' 
+#' @details 
+#' A função configura o \code{xtable} para:
+#' \itemize{
+#'   \item Remover nomes de linhas e cabeçalhos de colunas (\code{only.contents = TRUE}).
+#'   \item Desativar linhas horizontais (\code{hline.after = NULL}) para permitir 
+#'     customização manual no arquivo mestre.
+#'   \item Manter a sanitização padrão desativada (\code{sanitize.text.function = NULL}) 
+#'     para preservar formatações especiais de texto.
+#' }
+#' 
+#' @note 
+#' O caminho final do arquivo é composto pela variável global \code{eda_dir} 
+#' concatenada com o parâmetro \code{to_file}.
+#'
+#' @export
+#'
+#' @examples
+#' # eda_export_latex(stats$summary_table, "tabela_sexo.tex", append_flag = FALSE)
 eda_export_latex <- function(eda_summary, to_file = "eda_summary.tex", append_flag) {
   print(
     xtable( 

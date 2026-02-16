@@ -1,4 +1,34 @@
 
+#' @title Processamento de Variáveis de Migração e Naturalidade: Censo 2000
+#' 
+#' @description
+#' Este script processa o histórico migratório dos indivíduos no Censo 2000. Ele 
+#' reconstrói trajetórias através da análise da unidade da federação (UF) ou país 
+#' de nascimento, residência anterior e residência em data fixa (31 de julho de 1995), 
+#' além de calcular o tempo de permanência no município e estado atuais.
+#'
+#' @section Lógica de Decodificação Geográfica:
+#' \itemize{
+#'   \item \bold{Separação UF vs. País}: O IBGE utiliza códigos numéricos comuns para 
+#'     localidades. O script separa códigos \eqn{\le 27} (UFs brasileiras) de 
+#'     códigos \eqn{\ge 30} (Países estrangeiros) antes de realizar os cruzamentos.
+#'   \item \bold{Data Fixa}: Analisa a posição do indivíduo exatamente 5 anos antes 
+#'     da data de referência do Censo (julho de 1995).
+#'   \item \bold{Naturalidade}: Identifica se o indivíduo é nato do município ou 
+#'     da UF onde reside (\code{v0417, v0418}).
+#' }
+#'
+#' @section Variáveis de Tempo e Nacionalidade:
+#' \itemize{
+#'   \item \bold{Tempo de Residência}: Converte campos de tempo (\code{v0416, v0422}) 
+#'     em valores numéricos de anos.
+#'   \item \bold{Imigração}: Captura o ano de fixação no Brasil (\code{v0420}) e o 
+#'     status de nacionalidade (\code{v0419}).
+#' }
+#'
+#' @name 07_vars_migration_censo
+NULL
+
 FILE <- "censo2000_migration"
 
 tic()

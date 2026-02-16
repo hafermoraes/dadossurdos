@@ -1,3 +1,36 @@
+#' @title Consolidação e Validação da ABT: Censo 2010
+#' 
+#' @description
+#' Este script orquestra a união final de todos os subconjuntos de dados processados 
+#' do Censo 2010 (Demografia, Migração, Fecundidade, Arranjos e Predições). 
+#' A estratégia de integração utiliza utilitários de baixo nível do sistema operacional 
+#' para manipular os arquivos diretamente no disco, preservando a memória RAM.
+#'
+#' @section Processamento via Sistema (Linux Coreutils):
+#' \itemize{
+#'   \item \bold{Ordenação}: Aplica \code{sort} em cada CSV para garantir o alinhamento pelo \code{row_id}.
+#'   \item \bold{Normalização}: Utiliza \code{sed} para remover colunas repetidas de ID, preparando a estrutura para junção.
+#'   \item \bold{Fusão Lateral}: Executa o comando \code{paste} para concatenar os arquivos horizontalmente de forma performática.
+#' }
+#'
+#' @section Otimização e Armazenamento:
+#' \itemize{
+#'   \item \bold{Conversão Parquet}: O CSV consolidado é convertido para o formato \code{parquet} via \code{arrow}. 
+#'   \item \bold{Sanitização de Tipos}: Todas as colunas são convertidas para \emph{character} e strings de valores ausentes (NA, NULL) são normalizadas para strings vazias para evitar corrupção de tipos.
+#' }
+#'
+#' @section Protocolo de Auditoria:
+#' O script realiza uma validação cruzada rigorosa:
+#' \enumerate{
+#'   \item Sorteia um registro aleatório (\code{set.seed(42)}).
+#'   \item Extrai os atributos desse registro em cada arquivo de módulo original.
+#'   \item Compara esses valores com os dados presentes na ABT final.
+#'   \item Gera um log detalhado de verificação em \code{censo2010_abt.validation}.
+#' }
+#'
+#' @name 10_finalize_abt_censo2010
+NULL
+
 
 # comandos rodam via linux para não usar memória
 FILES <- paste0(

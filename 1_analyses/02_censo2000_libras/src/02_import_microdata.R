@@ -1,4 +1,34 @@
 
+#' @title Importação e Harmonização de Microdados: Censo 2000
+#' 
+#' @description
+#' Este script realiza a carga inicial dos microdados do Censo 2000 (Registro de Pessoas), 
+#' faz a seleção de variáveis críticas para análises demográficas e preditivas, e integra 
+#' os dados com o dicionário de variáveis. A estratégia de processamento utiliza 
+#' \code{arrow} para leitura e \code{duckdb} para manipulação em memória/disco.
+#'
+#' @section Componentes do Processamento:
+#' \itemize{
+#'   \item \bold{Dicionário de Variáveis}: Importação do arquivo de metadados para suporte à decodificação posterior.
+#'   \item \bold{Seleção Temática}:
+#'     \itemize{
+#'       \item \emph{Amostragem}: \code{areap} (área de ponderação) e \code{p001} (peso).
+#'       \item \emph{Demografia}: Sexo, idade, raça, alfabetização e instrução.
+#'       \item \emph{Deficiência}: Variáveis de dificuldade sensorial e motora (\code{v0411} a \code{v0413}).
+#'       \item \emph{Fecundidade & Família}: Histórico reprodutivo e estrutura domiciliar.
+#'       \item \emph{Migração & Espacial}: Fluxos migratórios e naturalidade.
+#'     }
+#'   \item \bold{Otimização}: Uso de \code{to_duckdb()} para permitir operações complexas e criação de \code{row_id} único.
+#' }
+#'
+#' @note 
+#' A função \code{rename_with(tolower)} é aplicada logo no início para garantir compatibilidade 
+#' com os seletores Tidyverse, independentemente da caixa original no Parquet.
+#'
+#' @name 02_import_microdata_censo
+NULL
+
+
 message("importando dicionário de variáveis ...")
 dvar_censo2000 <-
   read_delim(

@@ -1,3 +1,32 @@
+#' @title Processamento de Microdados da PNS 2019
+#' 
+#' @description
+#' Este script realiza a extração dos microdados brutos em formato Parquet, 
+#' a decodificação das variáveis categóricas conforme o dicionário oficial do IBGE 
+#' e a exportação de um arquivo processado para modelagem.
+#'
+#' @section Etapas do Processamento:
+#' \itemize{
+#'   \item \bold{Extração}: Leitura de dataset via \code{arrow} e seleção de variáveis de interesse (demografia, saúde e deficiência).
+#'   \item \bold{Dicionário}: Importação e parse do arquivo de variáveis para mapeamento das Unidades da Federação (UF).
+#'   \item \bold{Transformação}: 
+#'     \itemize{
+#'       \item Recodificação de níveis (Instrução, Estado Civil, Cor/Raça).
+#'       \item Consolidação de graus de dificuldade (Enxergar, Ouvir, Locomover).
+#'       \item Tratamento de missing values (NAs) para categorias padrão (ex: 'nenhuma' ou 'outros').
+#'     }
+#'   \item \bold{Carga}: Exportação dos dados limpos para \code{pns2019_01_rawdata.csv}.
+#' }
+#'
+#' @section Variáveis Alvo:
+#' \itemize{
+#'   \item \code{libras}: Variável dependente (Sabe usar Libras).
+#'   \item \code{v0024...v00283}: Pesos e variáveis de amostragem complexa.
+#' }
+#' 
+#' @name 02_rawdata
+NULL
+
 tic()
 message("importando microdados da PNS2019...")
 rawdata <- open_dataset(

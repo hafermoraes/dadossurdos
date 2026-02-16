@@ -1,3 +1,29 @@
+#' @title Processamento de Variáveis de Fecundidade: Censo 2010
+#' 
+#' @description
+#' Este script realiza o tratamento das variáveis de histórico reprodutivo feminino para o Censo 2010. 
+#' Assim como nos módulos anteriores, converte campos de largura fixa em métricas numéricas e 
+#' calcula variáveis derivadas, como a mortalidade de filhos nascidos vivos.
+#'
+#' @section Variáveis e Regras de Cálculo:
+#' \itemize{
+#'   \item \bold{Nascidos Vivos}: Total de filhos tidos que nasceram vivos (\code{v6633}).
+#'   \item \bold{Sobreviventes}: Total de filhos nascidos vivos que permanecem vivos (\code{v6643}).
+#'   \item \bold{Nascidos Mortos (Cálculo Indireto)}: Calculado pela diferença entre 
+#'     \code{filhos_nascidos_vivos} e \code{filhos_nascidos_vivos_vivos}, visto que a 
+#'     variável direta é ausente no layout simplificado de 2010.
+#'   \item \bold{Total de Gestações}: Soma total de filhos tidos (\code{v6800}).
+#'   \item \bold{Idade no Último Filho}: Idade da mãe no nascimento do último filho (\code{v6660}).
+#' }
+#'
+#' @section Persistência:
+#' O processamento ocorre via \code{duckdb}, com coleta e exportação para 
+#' \code{censo2010_fertility.csv} no diretório de dados.
+#'
+#' @name 06_vars_fertility_censo2010
+NULL
+
+
 FILE <- "censo2010_fertility"
 
 tic()

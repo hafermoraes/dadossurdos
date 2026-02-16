@@ -1,3 +1,31 @@
+#' @title Pipeline de Preparação da ABT (Analytical Base Table)
+#' 
+#' @description
+#' Este módulo orquestra o fluxo de processamento de dados para o projeto PNS 2019. 
+#' Ele define a estrutura de diretórios base e carrega sequencialmente os scripts de 
+#' dependências, extração de dados brutos e análise exploratória.
+#'
+#' @section Estrutura de Diretórios:
+#' \itemize{
+#'   \item \code{base_dir}: Raiz do projeto no ambiente RStudio.
+#'   \item \code{src_dir}: Scripts fonte localizados em \code{src/abt/}.
+#'   \item \code{data_dir}: Armazenamento de datasets processados e brutos.
+#'   \item \code{eda_dir}: Saídas da Análise Exploratória de Dados.
+#' }
+#'
+#' @section Fluxo de Execução:
+#' \enumerate{
+#'   \item \code{01_load_packages.R}: Carregamento de bibliotecas (tidyverse, tidymodels, etc).
+#'   \item \code{02_rawdata.R}: Leitura e limpeza dos dados brutos da PNS.
+#'   \item \code{03_eda.R}: Execução de estatísticas descritivas.
+#'   \item \code{05_modelmatrix.R}: Preparação da matriz de design para modelagem.
+#' }
+#'
+#' @note 
+#' O script \code{04_eda_graphs.R} está atualmente desativado (comentado).
+#'
+#' @name abt_orchestrator
+NULL
 
 base_dir <-
   paste0(

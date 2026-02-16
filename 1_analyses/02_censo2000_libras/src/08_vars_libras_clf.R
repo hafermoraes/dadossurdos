@@ -1,3 +1,34 @@
+#' @title Predição de Uso de Libras (Censo 2000) via Modelos PNS 2019
+#' 
+#' @description
+#' Este script aplica classificadores treinados no projeto PNS 2019 aos microdados do 
+#' Censo 2000. O processo é segmentado pelo nível de deficiência auditiva (\code{dif_ouvir}), 
+#' utilizando modelos específicos (XGBoost, Naive Bayes, MARS) para cada estrato, 
+#' visando imputar a variável \code{sabe_libras} em uma base histórica.
+#'
+#' @section Estratégia de Classificação:
+#' \itemize{
+#'   \item \bold{Segmentação}: A base é dividida em 5 subgrupos: \emph{nenhuma, alguma, grande, incapaz} e \emph{ignorado}.
+#'   \item \bold{Modelos Carregados}: 
+#'     \itemize{
+#'       \item \code{grande}: Utiliza XGBoost (\code{xgb}).
+#'       \item \code{incapaz}: Utiliza Naive Bayes (\code{nb}).
+#'       \item \code{nenhuma/alguma}: Configuráveis via flags (atualmente desativadas).
+#'     }
+#'   \item \bold{Threshold Ótimo}: Aplica o ponto de corte específico de cada modelo 
+#'     (\code{optimum_threshold}) para binarizar a predição de probabilidade em "sim/nao".
+#' }
+#'
+#' @section Fluxo de Dados:
+#' \enumerate{
+#'   \item Coleta os dados do \code{duckdb} para memória (\code{collect}).
+#'   \item Realiza a predição via \code{predict()} do ecossistema \code{tidymodels}.
+#'   \item Consolida os resultados (\code{bind_rows}) e exporta para CSV.
+#' }
+#'
+#' @name 08_vars_libras_clf_censo
+NULL
+
 
 gc()
 

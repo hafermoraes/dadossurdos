@@ -1,4 +1,34 @@
-
+#' @title Calibração Amostral e Estimativa de Prevalência de Libras
+#' 
+#' @description
+#' Este script realiza o processamento avançado dos microdados da PNS 2019 via \code{arrow} 
+#' e \code{data.table}, configurando o design amostral complexo. O foco principal é a 
+#' aplicação da técnica de pós-estratificação para corrigir os pesos amostrais e 
+#' calcular estatísticas robustas de prevalência (Libras) segmentadas por idade e 
+#' funcionalidade auditiva.
+#'
+#' @section Detalhes Amostrais:
+#' \itemize{
+#'   \item \bold{Variáveis de Peso}: Utiliza o conjunto \code{v0028} (Peso do morador selecionado) 
+#'   e \code{v00282/v00283} para calibração populacional.
+#'   \item \bold{Pós-estratificação}: Ajusta as estimativas da amostra para que os totais 
+#'   por estratos coincidam com as projeções populacionais oficiais.
+#' }
+#'
+#' @section Transformações em Tempo Real:
+#' \itemize{
+#'   \item \bold{Recodificação}: Consolida as variáveis de dificuldade auditiva (\code{g057/g058}) 
+#'   e binariza o uso de Libras.
+#'   \item \bold{Faixa Etária}: Aplica o corte demográfico (\code{0-4}, \code{4-40}, \code{40+}) 
+#'   diretamente no objeto de survey.
+#' }
+#'
+#' @section Métricas de Saída:
+#' Calcula a média ponderada (\code{survey_mean}) com erro padrão (\code{se}) e 
+#' intervalo de confiança (\code{ci}) de 95%.
+#'
+#' @name 02_survey_calibration
+NULL
 
 microdados_dt <- open_dataset(
   "/tmp/etl/br_ibge_pns_2019/parquet"
@@ -31,34 +61,6 @@ microdados_dt <- open_dataset(
   ) |>
   collect() |>
   as.data.table()
-
-
-
-# popc.types <- microdados_dt[, .(Freq = unique(v00292)), by = v00293]
-# sum_weights <- microdados_dt[, .(sumw = sum(v0029)), by = v00293]
-# strata_weights <- merge(popc.types, sum_weights, by = "v00293")
-# strata_weights[, scale := as.numeric(Freq) / as.numeric(sumw)]
-# microdados_dt <- merge(microdados_dt, strata_weights[, .(v00293, scale)], by = "v00293", all.x = TRUE)
-# microdados_dt[, weight := v0029 * scale]
-
-
-
-
-
-
-
-
-
-
-
-
-# popc.types <- microdados_dt[, .(Freq = unique(v00282)), by = v00283]
-# sum_weights <- microdados_dt[, .(sumw = sum(v0028)), by = v00283]
-# strata_weights <- merge(popc.types, sum_weights, by = "v00283")
-# strata_weights[, scale := as.numeric(Freq) / as.numeric(sumw)]
-# microdados_dt <- merge(microdados_dt, strata_weights[, .(v00283, scale)], by = "v00283", all.x = TRUE)
-# microdados_dt[, weight := v0028 * scale]
-
 
 
 pns2019_prior <-

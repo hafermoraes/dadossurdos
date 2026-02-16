@@ -1,4 +1,37 @@
 
+#' @title Processamento de Variáveis de Migração e Naturalidade: Censo 2010
+#' 
+#' @description
+#' Este script reconstrói a trajetória migratória dos indivíduos no Censo 2010. Ele 
+#' processa informações de naturalidade, nacionalidade e residência em três momentos 
+#' distintos: nascimento, residência anterior e residência em data fixa (31 de julho de 2005).
+#'
+#' @section Lógica de Decodificação e Joins:
+#' \itemize{
+#'   \item \bold{Múltiplos Joins}: Realiza cruzamentos exaustivos com o \code{dvar_censo2010} 
+#'     para obter nomes de municípios e UFs para residência atual, anterior e de data fixa.
+#'   \item \bold{Naturalidade}: Consolida a variável \code{v0618} para identificar se o 
+#'     indivíduo nasceu no município de residência, diferenciando quem sempre morou de 
+#'     quem retornou.
+#'   \item \bold{Data Fixa (2005)}: Diferente do Censo 2000 (que usava 1995), este script 
+#'     captura a posição do indivíduo exatos 5 anos antes do Censo de 2010.
+#' }
+#'
+#' @section Regras de Negócio:
+#' \itemize{
+#'   \item \bold{Nacionalidade}: Classifica entre brasileiro nato, naturalizado e estrangeiro (\code{v0620}).
+#'   \item \bold{Tempo de Residência}: Converte variáveis de tempo (\code{v0624, v0623}) para formato numérico.
+#'   \item \bold{Naturalidade da UF}: Harmoniza a variável \code{v0619} para identificar natos da unidade da federação.
+#' }
+#'
+#' @section Persistência:
+#' O resultado é processado no motor \code{duckdb}, coletado e exportado como 
+#' \code{censo2010_migration.csv} para compor a ABT final.
+#'
+#' @name 07_vars_migration_censo2010
+NULL
+
+
 FILE <- "censo2010_migration"
 
 tic()
