@@ -1,4 +1,3 @@
-
 FILE <- "censo2010_fertility"
 
 tic()
@@ -13,7 +12,8 @@ censo2010_fertility <-
     filhos_nascidos_vivos = ifelse(v6633=='', NA, as.numeric(v6633)),
     filhos_nascidos_vivos_vivos = ifelse(v6643=='', NA, as.numeric(v6643)),
     filhos_nascidos_mortos = ifelse(v6633=='' && v6643=='', NA, filhos_nascidos_vivos - filhos_nascidos_vivos_vivos),
-    filhos_nascidos = ifelse(v6800=='', NA, as.numeric(v6800))    
+    filhos_nascidos = ifelse(v6800=='', NA, as.numeric(v6800)),
+    idade_ultimo_filho = ifelse(v6660=='', NA, as.numeric(v6660))
   )
 toc()
 
@@ -28,4 +28,3 @@ censo2010_fertility |>
 toc()
 
 gc()
-

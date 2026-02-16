@@ -48,6 +48,7 @@ subset_censo2000 <-
     v0463, # filhos_nascidos_vivos_vivos
     v4670, # filhos_nascidos_mortos
     v4690, # filhos_nascidos
+    v4654, # idade_ultimo_filho
     
     # variáveis de migração
     v4230, # uf-país de residência anterior (qual é a unidade da federação ou país estrangeiro de residência anterior?)

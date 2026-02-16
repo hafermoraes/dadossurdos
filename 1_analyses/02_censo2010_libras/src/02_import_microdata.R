@@ -49,6 +49,7 @@ subset_censo2010 <-
     v6643, # filhos_nascidos_vivos_vivos
     # filhos_nascidos_mortos indisponível em 2010, mas sai por diferença
     v6800, # filhos_nascidos
+    v6660, # idade_ultimo_filho
     
     # variáveis de migração
     v6252, # uf de residência anterior

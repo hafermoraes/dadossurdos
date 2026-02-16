@@ -200,7 +200,7 @@ cat(msg, file = OUTPUT_VALIDATION, sep='\n', append = TRUE)
 
 censo2000_abt |> 
   filter( row_id == as.numeric(sorteio$row_id))  |>
-  select( row_id, filhos_nascidos_vivos, filhos_nascidos_vivos_vivos, filhos_nascidos_mortos, filhos_nascidos) |>
+  select( row_id, filhos_nascidos_vivos, filhos_nascidos_vivos_vivos, filhos_nascidos_mortos, filhos_nascidos, idade_ultimo_filho) |>
   collect() |>
   glimpse() |> 
   capture.output() |> 

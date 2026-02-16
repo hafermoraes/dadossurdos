@@ -12,7 +12,8 @@ censo2000_fertility <-
     filhos_nascidos_vivos = ifelse(v4620=='', NA, as.numeric(v4620)),
     filhos_nascidos_vivos_vivos = ifelse(v0463=='', NA, as.numeric(v0463)),
     filhos_nascidos_mortos = ifelse(v4670=='', NA, as.numeric(v4670)),
-    filhos_nascidos = ifelse(v4690=='', NA, as.numeric(v4690))
+    filhos_nascidos = ifelse(v4690=='', NA, as.numeric(v4690)),
+    idade_ultimo_filho = ifelse(v4654=='', NA, as.numeric(v4654))
   )
 toc()
 
