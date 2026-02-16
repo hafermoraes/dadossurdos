@@ -57,7 +57,7 @@ if(FALSE){
       seed = 1503,
       resamples = libras_folds,
       grid = 25,
-      metrics = metrics_set,
+      metrics = class_independent_metrics_set,
       control = race_ctrl,
       verbose = TRUE
     )

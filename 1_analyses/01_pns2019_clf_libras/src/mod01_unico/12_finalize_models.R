@@ -52,21 +52,21 @@ for(CLF in classifiers$wflow_id) {
       '/'
     )
 
-  message("obtendo lista de hiperparâmetros do modelo ", CLF, " com melhor desempenho na métrica '", METRIC, "'...")
+  message("obtendo lista de hiperparâmetros do modelo ", CLF, " com melhor desempenho na métrica '", CLASS_INDEPENDENT_METRIC, "'...")
   best_params <-
     fitted_models |>
     extract_workflow_set_result(CLF) |>
-    select_best(metric=METRIC)
+    select_best(metric=CLASS_INDEPENDENT_METRIC)
 
   message("modelo ", CLF, "final ajustado com os hiperparâmetros otimizados...")
   best_clf <-
     fitted_models |>
     extract_workflow(CLF) |>
     finalize_workflow(best_params) |>
-    last_fit(split = libras_splits, metrics = metrics_set)
+    last_fit(split = libras_splits, metrics = class_independent_metrics_set)
 
   # >>> Encontra threshold que otimiza o modelo >>>
-  message("encontrando o threshold que otimiza a métrica '", METRIC, "' do modelo '", CLF, "'...")
+  message("encontrando o threshold que otimiza a métrica '", CLASS_DEPENDENT_METRIC, "' do modelo '", CLF, "'...")
   preds <-
     best_clf |>
     collect_predictions()
@@ -76,12 +76,13 @@ for(CLF in classifiers$wflow_id) {
     threshold_perf(
       libras,
       .pred_sim,
-      thresholds = seq(0, 0.9, by = 0.01)
+      thresholds = seq(0, 0.9, by = 0.01),
+      metrics=class_dependent_metrics_set
     )
 
   opt_threshold <-
     thresholds |>
-    filter(.metric == "j_index") |>
+    filter(.metric == CLASS_DEPENDENT_METRIC) |>
     arrange(desc(.estimate)) |>
     head(1)
 
@@ -95,7 +96,9 @@ for(CLF in classifiers$wflow_id) {
     specification="threshold",
     output_file = paste0(
       results_dir,
-      "vars_unico.tex"
+      "vars_",
+      stringr::str_split_i(model, "[_/]", 2),
+      ".tex"
     )
   )
 
@@ -161,7 +164,9 @@ for(CLF in classifiers$wflow_id) {
     specification="params",
     output_file = paste0(
       results_dir,
-      "vars_unico.tex"
+      "vars_",
+      stringr::str_split_i(model, "[_/]", 2),
+      ".tex"
     )
   )
   # <<< Exporta hiperparâmetros em disco para LaTeX <<<
@@ -170,10 +175,24 @@ for(CLF in classifiers$wflow_id) {
   
   # >>> Exporta métricas em disco para LaTeX >>>
   message("exportando lista de métricas do melhor modelo '", CLF, "' para o LaTeX...")
-  export_metrics <-
+  export_class_independent_metrics <-
     best_clf |>
     collect_metrics() |>
     select(.metric, .estimate)
+
+  export_class_dependent_metrics <-
+    preds_with_optimum_threshold |>
+    class_dependent_metrics_set(
+      truth = libras,
+      estimate = .pred_class
+    ) |> 
+    select(.metric, .estimate)
+   
+  export_metrics <- 
+    bind_rows(
+      export_class_independent_metrics,
+      export_class_dependent_metrics
+    )
 
   export_specs_to_latex(
     input_table=export_metrics,
@@ -182,7 +201,9 @@ for(CLF in classifiers$wflow_id) {
     specification="metrics",
     output_file = paste0(
       results_dir,
-      "vars_unico.tex"
+      "vars_",
+      stringr::str_split_i(model, "[_/]", 2),
+      ".tex"
     )
   )
   # <<< Exporta métricas em disco para LaTeX <<<
@@ -239,7 +260,9 @@ for(CLF in classifiers$wflow_id) {
     classifier=str_remove_all(CLF, "basic_model_"),
     output_file = paste0(
       results_dir,
-      "vars_unico.tex"
+      "vars_",
+      stringr::str_split_i(model, "[_/]", 2),
+      ".tex"
     )
   )
 
@@ -294,7 +317,9 @@ for(CLF in classifiers$wflow_id) {
         dif_ouvir = dif,
         output_file = paste0(
           results_dir,
-          "vars_unico.tex"
+          "vars_",
+          stringr::str_split_i(model, "[_/]", 2),
+          ".tex"
         )
       )
       
