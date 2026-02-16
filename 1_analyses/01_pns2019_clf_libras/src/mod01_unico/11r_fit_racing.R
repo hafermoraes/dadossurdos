@@ -102,5 +102,5 @@ if(FALSE){
       height=8
     )
 
-toc() 
+  toc() 
 }

@@ -1,5 +1,42 @@
+#' Calibração de Probabilidades e Otimização de Threshold Pós-Calibração
+#'
+#' @description
+#' Este módulo aplica técnicas de calibração para ajustar as probabilidades geradas 
+#' pelo melhor classificador selecionado. Utiliza o pacote \code{probably} para 
+#' diagnosticar e corrigir desvios sistemáticos nas predições, comparando três 
+#' métodos: Beta, Logístico (Platt Scaling) e Isotônico.
+#'
+#' @section Diagnósticos de Calibração:
+#' \itemize{
+#'   \item \bold{Breaks Plot:} Avalia a calibração em bins fixos de probabilidade.
+#'   \item \bold{Windowed Plot:} Utiliza janelas móveis para uma visão contínua da calibração.
+#'   \item \bold{Logistic Plot:} Compara as probabilidades contra um ajuste logístico ideal.
+#' }
+#'
+#' @section Métodos de Calibração:
+#' \itemize{
+#'   \item \bold{Calibração Beta:} Ajuste flexível baseado na distribuição Beta, ideal para probabilidades limitadas entre 0 e 1.
+#'   \item \bold{Calibração Logística:} Ajuste clássico via Regressão Logística.
+#'   \item \bold{Calibração Isotônica:} Método não paramétrico (\code{step-function}) que preserva a monotonicidade, eficaz com grandes volumes de dados.
+#' }
+#'
+#' @details 
+#' Após a calibração, o script reavalia o desempenho do modelo através de um novo 
+#' grid search de thresholds (\code{threshold_perf}), permitindo uma escolha de 
+#' ponto de corte muito mais confiável e precisa.
+#'
+#' @note 
+#' Este bloco está em \code{if(FALSE)} e foca apenas no \bold{melhor modelo} 
+#' identificado pela métrica \code{METRIC} no workflow set.
+#'
+#' @author Rafael Rodrigues de Moraes
+#' @keywords probably calibration beta-calibration isotonic-regression tidymodels
+NULL
+
 
 if(FALSE){
+  tic()
+  message("calibrando o modelo (tidymodels/probably)...")
 
   WIDTH <- 7
   HEIGHT <- 7
@@ -215,5 +252,6 @@ if(FALSE){
       width=WIDTH,
       height=HEIGHT
     )
-
+  
+  toc()
 }

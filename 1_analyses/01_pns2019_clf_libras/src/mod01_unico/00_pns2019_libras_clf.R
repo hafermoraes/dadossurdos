@@ -98,7 +98,7 @@ source(paste0(src_dir, '11r_fit_racing.R'))
 
 source(paste0(src_dir, '12_finalize_models.R'))
 
-# source(paste0(src_dir, '13_optimize_threshold.R'))
+source(paste0(src_dir, '13_optimize_threshold.R'))
 
 source(paste0(src_dir, '14_calibrate_model.R'))
 

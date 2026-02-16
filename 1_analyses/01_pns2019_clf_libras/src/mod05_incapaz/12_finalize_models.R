@@ -1,56 +1,108 @@
+#' Finalização, Otimização de Threshold e Exportação de Resultados
+#'
+#' @description
+#' Este módulo itera sobre todos os classificadores treinados no \code{workflow_set},
+#' seleciona os melhores hiperparâmetros, ajusta o modelo final contra a base de teste
+#' e realiza a busca pelo ponto de corte (threshold) que otimiza o \code{j_index}.
+#' Adicionalmente, exporta tabelas LaTeX, gráficos de importância de variáveis
+#' e matrizes de confusão (ponderadas e não ponderadas).
+#'
+#' @section Fluxo de Finalização por Modelo:
+#' \itemize{
+#'   \item \bold{Extração e Ajuste:} Recupera os melhores parâmetros segundo a métrica global
+#'   e realiza o \code{last_fit} na base de teste.
+#'   \item \bold{Otimização de Threshold:} Varre valores de 0 a 0.9 para encontrar o ponto
+#'   que maximiza a performance do classificador.
+#'   \item \bold{Ponderação Amostral:} Gera predições ponderadas expandindo as observações
+#'   pelos pesos da PNS (\code{uncount}) para garantir representatividade populacional.
+#'   \item \bold{Exportação LaTeX:} Gera arquivos \code{.tex} para parâmetros, métricas e
+#'   matrizes de confusão usando \code{xtable}.
+#'   \item \bold{Visualização:} Produz histogramas de probabilidade, gráficos de importância
+#'   (\code{vip}) e matrizes de confusão (Mosaic e Heatmap).
+#' }
+#'
+#' @note
+#' O modelo final e o threshold ótimo são salvos em um único objeto \code{.rds} dentro
+#' da pasta específica de cada classificador no \code{results_dir}.
+#'
+#' @author Rafael Rodrigues de Moraes
+#' @keywords finalize threshold-optimization confusion-matrix xtable tidymodels
+NULL
 
+
+tic()
+message("finalizando os modelos (métricas, parâmetros, matrizes de confusão)...")
+
+message("obtendo lista de classificadores ajustados em 'classifers'...")
 classifiers <-
   fitted_models |>
   select(wflow_id) |>
-  filter(wflow_id != 'basic_model_null') 
+  filter(wflow_id != 'basic_model_null')
 
+message("iniciando o loop de finalização para cada classificador ajustado...")
 for(CLF in classifiers$wflow_id) {
 
+  message("executando garbage collection -- gc() -- para aliviar o consumo de memória...")
   gc()
-  
-  print(paste0("Exportando métricas, parâmetros e modelo para ", CLF))
 
-  save_path <- 
+  save_path <-
     paste0(
       results_dir,
       str_remove_all(CLF, "basic_model_"),
       '/'
     )
-  
-  # hiperparametros do modelo com melhor desempenho na métrica METRIC
+
+  message("obtendo lista de hiperparâmetros do modelo ", CLF, " com melhor desempenho na métrica '", CLASS_INDEPENDENT_METRIC, "'...")
   best_params <-
     fitted_models |>
     extract_workflow_set_result(CLF) |>
-    select_best(metric=METRIC) 
-  
-  # modelo final ajustado com os hiperparametros otimizados
-  best_clf <- 
+    select_best(metric=CLASS_INDEPENDENT_METRIC)
+
+  message("modelo ", CLF, "final ajustado com os hiperparâmetros otimizados...")
+  best_clf <-
     fitted_models |>
     extract_workflow(CLF) |>
-    finalize_workflow(best_params) |> 
-    last_fit(split = libras_splits, metrics = metrics_set)
-  
+    finalize_workflow(best_params) |>
+    last_fit(split = libras_splits, metrics = class_independent_metrics_set)
+
   # >>> Encontra threshold que otimiza o modelo >>>
+  message("encontrando o threshold que otimiza a métrica '", CLASS_DEPENDENT_METRIC, "' do modelo '", CLF, "'...")
   preds <-
     best_clf |>
     collect_predictions()
-  
-  thresholds <- 
+
+  thresholds <-
     preds |>
     threshold_perf(
-      libras, 
-      .pred_sim, 
-      thresholds = seq(0, 0.9, by = 0.01)
+      libras,
+      .pred_sim,
+      thresholds = seq(0, 0.9, by = 0.01),
+      metrics=class_dependent_metrics_set
     )
-  
+
   opt_threshold <-
-    thresholds |> 
-    filter(.metric == "j_index") |>
+    thresholds |>
+    filter(.metric == CLASS_DEPENDENT_METRIC) |>
     arrange(desc(.estimate)) |>
     head(1)
-  
+
   optimum_threshold <- opt_threshold$.threshold
-  
+
+  message("exportando threshold (ponto de corte) em disco para latex...")
+  export_threshold_to_latex(
+    threshold=optimum_threshold,
+    model=model,
+    classifier=str_remove_all(CLF, "basic_model_"),
+    specification="threshold",
+    output_file = paste0(
+      results_dir,
+      "vars_",
+      str_remove_all(CLF, "basic_model_"),
+      ".tex"
+    )
+  )
+
+
   preds_with_optimum_threshold <-
     preds |>
     mutate(
@@ -62,438 +114,173 @@ for(CLF in classifiers$wflow_id) {
     )
 
   unweighted_preds_with_optimum_threshold <-
-    preds_with_optimum_threshold |> 
-    select( libras, .pred_class) |> 
+    preds_with_optimum_threshold |>
+    select( libras, .pred_class) |>
     bind_cols(
-      libras_test |> 
+      libras_test |>
         transmute(
           case_weights = round(as.numeric(case_weights),0)
         )
     )
-  
+
   weighted_preds_with_optimum_threshold <-
-    unweighted_preds_with_optimum_threshold |> 
+    unweighted_preds_with_optimum_threshold |>
     uncount(case_weights)
   # <<< Encontra threshold que otimiza o modelo <<<
-  
+
   # >>> salva modelo final (com a melhor métrica) em disco >>>
+  message("salvando em disco (formato RDS) o melhor modelo '", CLF,"'...")
   all_objects <- list(
     clf_model = best_clf |> extract_workflow(),
     optimum_threshold = opt_threshold$.threshold
-  )    
+  )
   write_rds(
-      all_objects,
-      paste0(save_path, 'model.rds')
-    )    
-  
-  # mod <-
-  #   read_rds(paste0(save_path, 'model.rds'))
-  # 
-  # mod$clf_model |>
-  #   predict(libras_test, type = "prob")
-  # 
+    all_objects,
+    paste0(save_path, 'model.rds')
+  )
+  # mod <- read_rds(paste0(save_path, 'model.rds'))
+  # mod$clf_model |> predict(libras_test, type = "prob")
   # mod$optimum_threshold
   # <<< salva modelo final (com a melhor métrica) em disco <<<
-    
-  # >>> Exporta parâmetros em disco para LaTeX >>>
+
+
+
+  # >>> Exporta hiperparâmetros em disco para LaTeX >>>
+  message("exportando lista de hiperparâmetros do melhor modelo '", CLF, "' para o LaTeX...")
   export_params <-
     best_params |>
     pivot_longer(
       -.config,
       names_to = "hyperparameter",
       values_to = "value",
-    ) |>
-    select(-.config) 
-  
-  print(
-    xtable( 
-      export_params, 
-      digits = c(
-        0, # row name
-        0, # hyperparameter
-        6 # value
-      )
-    ),
-    sanitize.text.function = identity,
-    only.contents=TRUE,
-    include.rownames=FALSE,
-    include.colnames=TRUE,
-    hline.after=NULL,
-    comment=FALSE,
-    format.args = list(big.mark = ".", decimal.mark = ","),
-    file=paste0(save_path, "params.tex")
+      ) |>
+    select(-.config)
+
+  export_specs_to_latex(
+    input_table=export_params,
+    model=model,
+    classifier=str_remove_all(CLF, "basic_model_"),
+    specification="params",
+    output_file = paste0(
+      results_dir,
+      "vars_",
+      str_remove_all(CLF, "basic_model_"),
+      ".tex"
+    )
   )
-  # <<< Exporta parâmetros em disco para LaTeX <<<
+  # <<< Exporta hiperparâmetros em disco para LaTeX <<<
+
+
   
   # >>> Exporta métricas em disco para LaTeX >>>
-  export_metrics <-
+  message("exportando lista de métricas do melhor modelo '", CLF, "' para o LaTeX...")
+  export_class_independent_metrics <-
     best_clf |>
-    collect_metrics() |> 
-    select(.metric, .estimate) 
-  
-  print(
-    xtable( 
-      export_metrics, 
-      digits = c(
-        0, # row name
-        0, # .metric
-        6  # .estimate
-      )
-    ),
-    sanitize.text.function = identity,
-    only.contents=TRUE,
-    include.rownames=FALSE,
-    include.colnames=TRUE,
-    hline.after=NULL,
-    comment=FALSE,
-    format.args = list(big.mark = ".", decimal.mark = ","),
-    file=paste0(save_path, "metrics.tex")
+    collect_metrics() |>
+    select(.metric, .estimate)
+
+  export_class_dependent_metrics <-
+    preds_with_optimum_threshold |>
+    class_dependent_metrics_set(
+      truth = libras,
+      estimate = .pred_class
+    ) |> 
+    select(.metric, .estimate)
+   
+  export_metrics <- 
+    bind_rows(
+      export_class_independent_metrics,
+      export_class_dependent_metrics
+    )
+
+  export_specs_to_latex(
+    input_table=export_metrics,
+    model=model,
+    classifier=str_remove_all(CLF, "basic_model_"),
+    specification="metrics",
+    output_file = paste0(
+      results_dir,
+      "vars_",
+      str_remove_all(CLF, "basic_model_"),
+      ".tex"
+    )
   )
   # <<< Exporta métricas em disco para LaTeX <<<
+
   
-  # variable importance (vip)
+  
+  # >>> Diagnóstico Gráfico: Variable Importance (vip) >>>
   if(VARIABLE_IMPORTANCE){
-    if (! str_remove_all(CLF, "basic_model_") %in% c('svm', 'nb', 'bc5', 'bart', 'bagrpart')){
-
-      tryCatch({
-        (
-          best_clf |>
-            extract_fit_parsnip() |>
-            vip(geom="point")
-        ) |>
-          ggsave(
-            filename = paste0(save_path, "plot_feature_importance.pdf"),
-            width=5,
-            height=5
-          )
-      },
-      error = function(e) {
-        message("Erro: ", e$message)
-      },
-      warning = function(w) {
-        message("Warning: ", w$message)
-      },
-      finally = {
-        message("Sem erros")
-      }
-      )
-    }    
+    message("exportando gráfico de importância de variáveis para o melhor modelo '", CLF, "' em disco...")
+    export_graph_variable_importance(
+      input_table = best_clf,
+      classifier = str_remove_all(CLF, "basic_model_"),
+      plot_width = 5,
+      plot_height = 5,
+      output_file = paste0(save_path, "plot_feature_importance.pdf")
+    )
   }
-  
-  
-  # histograma das probabilidades
-  (
-    collect_predictions(best_clf) |>
-      ggplot(aes(.pred_sim)) +
-      geom_histogram(col = "white", bins = 40) +
-      facet_wrap(~ libras, ncol = 1) +
-      geom_vline(
-        xintercept = opt_threshold$.threshold, 
-        color = "red", 
-        linetype = "dashed", 
-        linewidth = 0.5
-      ) +
-      geom_rug(col = "blue", alpha = 1 / 2) + 
-      labs(
-        x = "Estimativa da probabilidade de saber Libras",
-        y = "Quantidade de casos",
-        title = "Distribuição dos escores (probabilidade de saber Libras) por classe de predição",
-        subtitle = paste0(
-          "Nota: A linha vermelha refere-se ao ponto de corte (threshold) ", 
-          optimum_threshold,
-          " que otimiza a performance do modelo segundo a métrica ",
-          METRIC
-          )
-        )
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "plot_probability_histogram.pdf"),
-      width=12,
-      height=8
-    )
-  
+  # <<< Diagnóstico Gráfico: Variable Importance (vip) <<<
 
-  # matriz de confusão (dados não ponderados)
-  clf_confmat_unweighted <-
-    unweighted_preds_with_optimum_threshold |> 
-    conf_mat(
-      truth=libras, 
-      .pred_class
-      )
-  
-  # https://stackoverflow.com/questions/63449602/merge-several-confusion-matrix-with-xtable
-  print(
-    xtable( 
-      clf_confmat_unweighted$table, 
-      digits = c(0, 0, 0)
-    ),
-    sanitize.text.function = identity,
-    only.contents=TRUE,
-    include.rownames=FALSE,
-    include.colnames=TRUE,
-    hline.after=NULL,
-    comment=FALSE,
-    format.args = list(big.mark = ".", decimal.mark = ","),
-    file=paste0(save_path, "conf_mat_unweighted.tex")
+
+  # >>> Diagnóstico Gráfico: Histograma das probabilidades por classe de 'sabe_libras' >>>
+  message("exportando histograma de probabilidades por classe de 'sabe_libras' para o melhor modelo '", CLF, "' em disco...")
+  export_graph_probability_histogram(
+    input_table = collect_predictions(best_clf),
+    threshold = opt_threshold$.threshold,
+    plot_width = 12,
+    plot_height = 8,
+    output_file = paste0(save_path, "plot_probability_histogram.pdf")
   )
+  # <<< Diagnóstico Gráfico: Histograma das probabilidades por classe de 'sabe_libras' <<<
 
-  # Mosaic  
-  (
-     clf_confmat_unweighted |> 
-      autoplot(type = "mosaic") +
-      labs(
-        title = "Matriz de confusão",
-        subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-        x = "Sabe Libras (Real)",
-        y = "Sabe Libras (Predito)"
-      )
-  ) |>
-    ggsave(
-      filename = paste0(save_path, "plot_confusion_matrix_mosaic_unweighted.pdf"),
-      width=5,
-      height=5
-    )
   
-  # Heatmap
-  (
-    clf_confmat_unweighted |>
-      autoplot(type = "heatmap") + 
-      labs(
-        title = "Matriz de confusão",
-        subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-        x = "Sabe Libras (Real)",
-        y = "Sabe Libras (Predito)"
-      )  ) |>
-    ggsave(
-      filename = paste0(save_path, "plot_confusion_matrix_heatmap_unweighted.pdf"),
-      width=5,
-      height=5
-    )
-  
-  # matriz de confusão (dados ponderados)
-  clf_confmat_weighted <-
-    weighted_preds_with_optimum_threshold |> 
-    conf_mat(
-      truth=libras, 
-      .pred_class
-    )
-
-  print(
-    xtable( 
-      clf_confmat_weighted$table, 
-      digits = c(0, 0, 0)
-    ),
-    sanitize.text.function = identity,
-    only.contents=TRUE,
-    include.rownames=FALSE,
-    include.colnames=TRUE,
-    hline.after=NULL,
-    comment=FALSE,
-    format.args = list(big.mark = ".", decimal.mark = ","),
-    file=paste0(save_path, "conf_mat_weighted.tex")
-  )
-  
-  # Mosaic  
-  (
-    clf_confmat_weighted |> 
-      autoplot(type = "mosaic") +
-      labs(
-        title = "Matriz de confusão",
-        subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-        x = "Sabe Libras (Real)",
-        y = "Sabe Libras (Predito)"
-      )  ) |>
-    ggsave(
-      filename = paste0(save_path, "plot_confusion_matrix_mosaic_weighted.pdf"),
-      width=5,
-      height=5
-    )
-  
-  # Heatmap
-  (
-    clf_confmat_weighted |>
-    autoplot(type = "heatmap") + 
-      labs(
-        title = "Matriz de confusão",
-        subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-        x = "Sabe Libras (Real)",
-        y = "Sabe Libras (Predito)"
-      )
-    ) |>
-    ggsave(
-      filename = paste0(save_path, "plot_confusion_matrix_heatmap_weighted.pdf"),
-      width=5,
-      height=5
-    )
-    
-  # Matrizes de confusão por nível de dif_ouvir
-  if(CONF_MAT_SUB){    
-    DIF_OUVIR <- 
-      libras_test$dif_ouvir |>
-      as.character() |>
-      unique()
-    
-    for(dif in DIF_OUVIR){
-      
-      # Dados ponderados
-      weighted_preds_sub <-
-        weighted_preds_with_optimum_threshold |>
-        filter(dif_ouvir == dif)
-      
-      clf_confmat_weighted_sub <-
-        weighted_preds_sub |>
+  # Matrizes de Confusão
+  clf_confmat <-
+    list(
+      # matriz de confusão (dados ponderados)
+      weighted = weighted_preds_with_optimum_threshold |>
         conf_mat(
-          truth=libras, 
+          truth=libras,
+          .pred_class
+        ),
+      # matriz de confusão (dados não ponderados)
+      unweighted = unweighted_preds_with_optimum_threshold |>
+        conf_mat(
+          truth=libras,
           .pred_class
         )
+    )
 
-      print(
-        xtable( 
-          clf_confmat_weighted_sub$table, 
-          digits = c(0, 0, 0)
-        ),
-        sanitize.text.function = identity,
-        only.contents=TRUE,
-        include.rownames=FALSE,
-        include.colnames=TRUE,
-        hline.after=NULL,
-        comment=FALSE,
-        format.args = list(big.mark = ".", decimal.mark = ","),
-        file=paste0(save_path, "conf_mat_weighted_",dif,".tex")
-      )
-      
-      # Matriz de Confusão
-      # Mosaic  
-      (
-        clf_confmat_weighted_sub |>
-          autoplot(type = "mosaic") +
-          labs(
-            title = paste0(
-              "Matriz de confusão (dif_ouvir=",
-              dif,
-              ")"
-            ),
-            subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-            x = "Sabe Libras (Real)",
-            y = "Sabe Libras (Predito)"
-          )  
-      ) |>
-        ggsave(
-          filename = paste0(
-            save_path, 
-            "plot_confusion_matrix_mosaic_weighted_",
-            dif,
-            ".pdf"),
-          width=5,
-          height=5
-        )
-      
-      # Heamap
-      (
-        clf_confmat_weighted_sub |>
-          autoplot(type = "heatmap") +
-          labs(
-            title = paste0(
-              "Matriz de confusão (dif_ouvir=",
-              dif,
-              ")"
-            ),
-            subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-            x = "Sabe Libras (Real)",
-            y = "Sabe Libras (Predito)"
-          )  ) |>
-        ggsave(
-          filename = paste0(
-            save_path, 
-            "plot_confusion_matrix_heatmap_weighted_",
-            dif,
-            ".pdf"),
-          width=5,
-          height=5
-        )
-      
-      # Dados não ponderados
-      unweighted_preds_sub <-
-        unweighted_preds_with_optimum_threshold |>
-        filter(dif_ouvir == dif)
+  message("exportando matrizes de confusão em disco para latex...")
+  export_confmat_to_latex(
+    input_table = clf_confmat[[ "weighted" ]],
+    model=model,
+    classifier=str_remove_all(CLF, "basic_model_"),
+    output_file = paste0(
+      results_dir,
+      "vars_",
+      str_remove_all(CLF, "basic_model_"),
+      ".tex"
+    )
+  )
 
-      clf_confmat_unweighted_sub <-
-        unweighted_preds_sub |>
-        conf_mat(
-          truth=libras, 
-          .pred_class
-        )
-      
-      print(
-        xtable( 
-          clf_confmat_unweighted_sub$table, 
-          digits = c(0, 0, 0)
-        ),
-        sanitize.text.function = identity,
-        only.contents=TRUE,
-        include.rownames=FALSE,
-        include.colnames=TRUE,
-        hline.after=NULL,
-        comment=FALSE,
-        format.args = list(big.mark = ".", decimal.mark = ","),
-        file=paste0(save_path, "conf_mat_unweighted_",dif,".tex")
+  
+  # >>> Diagnóstico Gráfico: Matriz de Confusão >>>
+  for(data_type in names(clf_confmat)){
+    for(graph_type in c("mosaic", "heatmap")){
+      export_graph_confusion_matrix(
+        input_table = clf_confmat[[data_type]],
+        threshold = opt_threshold$.threshold,
+        plot_type = graph_type,
+        plot_width = 5,
+        plot_height = 5,
+        output_file = paste0(save_path, "plot_confusion_matrix_", graph_type, "_", data_type, ".pdf")
       )
-      
-      
-      # Matriz de Confusão
-      # Mosaic  
-      (
-        clf_confmat_unweighted_sub |>
-          autoplot(type = "mosaic") +
-          labs(
-            title = paste0(
-              "Matriz de confusão (dif_ouvir=",
-              dif,
-              ")"
-            ),
-            subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-            x = "Sabe Libras (Real)",
-            y = "Sabe Libras (Predito)"
-          )  ) |>
-        ggsave(
-          filename = paste0(
-            save_path, 
-            "plot_confusion_matrix_mosaic_unweighted_",
-            dif,
-            ".pdf"),
-          width=5,
-          height=5
-        )
-      
-      # Heatmap
-      (
-        clf_confmat_unweighted_sub |>
-          autoplot(type = "heatmap") +
-          labs(
-            title = paste0(
-              "Matriz de confusão (dif_ouvir=",
-              dif,
-              ")"
-            ),
-            subtitle = paste0("Ponto de corte (Threshold): ", opt_threshold$.threshold),
-            x = "Sabe Libras (Real)",
-            y = "Sabe Libras (Predito)"
-          )  ) |>
-        ggsave(
-          filename = paste0(
-            save_path, 
-            "plot_confusion_matrix_heatmap_unweighted_",
-            dif,
-            ".pdf"),
-          width=5,
-          height=5
-        )    
-      
     }
   }
-  
-  
+  # <<< Diagnóstico Gráfico: Matriz de Confusão <<<
+
 }
 
-
-
+toc()

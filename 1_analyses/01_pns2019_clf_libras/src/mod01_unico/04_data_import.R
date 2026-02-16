@@ -46,7 +46,6 @@ libras <-
   filter(idade <=40)
 toc()
   
-# passo 1.1: redução do dataset para prototipagem de tidymodels
 if(FALSE){
   tic()
   message("trabalhando com uma fração dos dados na fase de protótipo...")
