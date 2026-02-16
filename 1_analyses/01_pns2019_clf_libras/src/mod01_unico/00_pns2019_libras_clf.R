@@ -74,7 +74,7 @@ source(paste0(base_dir, 'src/', 'mod_latex_utils.R'))
 
 source(paste0(src_dir, '01_empty_results_directory.R'))
 
-#source(paste0(src_dir, '02_install_packages.R'))
+# source(paste0(src_dir, '02_install_packages.R'))
 
 source(paste0(src_dir, '03_load_packages.R'))
 
