@@ -1,0 +1,647 @@
+
+
+\newcommand{\MODalgumaCLFdtSPECthreshold}{0}
+
+
+
+\newcommand{\MODalgumaCLFdtSPECparams}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ cost\_complexity &  0 \\ 
+  tree\_depth &  4 \\ 
+  min\_n & 37 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFdtSPECmetrics}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ roc\_auc & 0,5 \\ 
+  pr\_auc & 0,873 \\ 
+  accuracy & 0,746 \\ 
+  j\_index & 0 \\ 
+  f1 & 0,855 \\ 
+  f2 & 0,936 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFdtCONFMATminimal}{
+  \begingroup
+  \tiny
+  \begin{tabular}{m{0.1cm}ccc}
+    & & \multicolumn{2}{c}{Real} \\
+    & & Não & Sim \\
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{95.9\% \\ \textcolor{\cor}{(15.810)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
+
+  \end{tabular}
+  \endgroup
+}
+
+
+
+\newcommand{\MODalgumaCLFdtCONFMATwithmargins}{
+  \begin{tabular}{m{0.1cm}cccc}
+
+    & & \multicolumn{2}{c}{Real} & \\
+    \cmidrule(lr){3-4}
+    & & Não & Sim & \\    \midrule
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{95.9\% \\ \textcolor{\cor}{(15.810)}}
+    & \makecell{95.9\% \\ \textcolor{\cor}{(382.546)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
+
+    \midrule
+
+    & 
+    & \makecell{sim\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{4.1\% \\ \textcolor{\cor}{(15.810)}}
+    & \makecell{4.1\% \\ \textcolor{\cor}{(382.546)}} \\ 
+
+  \end{tabular}
+}
+
+
+
+\newcommand{\MODalgumaCLFlogresSPECthreshold}{0}
+
+
+
+\newcommand{\MODalgumaCLFlogresSPECparams}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ penalty & 0,979 \\ 
+  mixture & 0,942 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFlogresSPECmetrics}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ roc\_auc & 0,5 \\ 
+  pr\_auc & 0,873 \\ 
+  accuracy & 0,746 \\ 
+  j\_index & 0 \\ 
+  f1 & 0,855 \\ 
+  f2 & 0,936 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFlogresCONFMATminimal}{
+  \begingroup
+  \tiny
+  \begin{tabular}{m{0.1cm}ccc}
+    & & \multicolumn{2}{c}{Real} \\
+    & & Não & Sim \\
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{95.9\% \\ \textcolor{\cor}{(15.810)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
+
+  \end{tabular}
+  \endgroup
+}
+
+
+
+\newcommand{\MODalgumaCLFlogresCONFMATwithmargins}{
+  \begin{tabular}{m{0.1cm}cccc}
+
+    & & \multicolumn{2}{c}{Real} & \\
+    \cmidrule(lr){3-4}
+    & & Não & Sim & \\    \midrule
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{95.9\% \\ \textcolor{\cor}{(15.810)}}
+    & \makecell{95.9\% \\ \textcolor{\cor}{(382.546)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
+
+    \midrule
+
+    & 
+    & \makecell{sim\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{4.1\% \\ \textcolor{\cor}{(15.810)}}
+    & \makecell{4.1\% \\ \textcolor{\cor}{(382.546)}} \\ 
+
+  \end{tabular}
+}
+
+
+
+\newcommand{\MODalgumaCLFmarsSPECthreshold}{0.01}
+
+
+
+\newcommand{\MODalgumaCLFmarsSPECparams}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ num\_terms & 4 \\ 
+  prod\_degree & 2 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFmarsSPECmetrics}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ roc\_auc & 0,481 \\ 
+  pr\_auc & 0,865 \\ 
+  accuracy & 0,282 \\ 
+  j\_index & 0,038 \\ 
+  f1 & 0,073 \\ 
+  f2 & 0,047 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFmarsCONFMATminimal}{
+  \begingroup
+  \tiny
+  \begin{tabular}{m{0.1cm}ccc}
+    & & \multicolumn{2}{c}{Real} \\
+    & & Não & Sim \\
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(23.441)}}
+    & \makecell{6.1\% \\ \textcolor{\cor}{(0)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(343.295)}}
+    & \makecell{89.7\% \\ \textcolor{\cor}{(15.810)}} \\ 
+
+  \end{tabular}
+  \endgroup
+}
+
+
+
+\newcommand{\MODalgumaCLFmarsCONFMATwithmargins}{
+  \begin{tabular}{m{0.1cm}cccc}
+
+    & & \multicolumn{2}{c}{Real} & \\
+    \cmidrule(lr){3-4}
+    & & Não & Sim & \\    \midrule
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(23.441)}}
+    & \makecell{6.1\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{6.1\% \\ \textcolor{\cor}{(23.441)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(343.295)}}
+    & \makecell{89.7\% \\ \textcolor{\cor}{(15.810)}}
+    & \makecell{89.7\% \\ \textcolor{\cor}{(359.105)}} \\ 
+
+    \midrule
+
+    & 
+    & \makecell{sim\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(15.810)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(382.546)}} \\ 
+
+  \end{tabular}
+}
+
+
+
+\newcommand{\MODalgumaCLFmlpSPECthreshold}{0.34}
+
+
+
+\newcommand{\MODalgumaCLFmlpSPECparams}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ hidden\_units &   6 \\ 
+  penalty &   0 \\ 
+  epochs & 584 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFmlpSPECmetrics}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ roc\_auc & 0,36 \\ 
+  pr\_auc & 0,696 \\ 
+  accuracy & 0,676 \\ 
+  j\_index & 0,236 \\ 
+  f1 & 0,772 \\ 
+  f2 & 0,75 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFmlpCONFMATminimal}{
+  \begingroup
+  \tiny
+  \begin{tabular}{m{0.1cm}ccc}
+    & & \multicolumn{2}{c}{Real} \\
+    & & Não & Sim \\
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(253.452)}}
+    & \makecell{66.3\% \\ \textcolor{\cor}{(6.519)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(113.284)}}
+    & \makecell{29.6\% \\ \textcolor{\cor}{(9.291)}} \\ 
+
+  \end{tabular}
+  \endgroup
+}
+
+
+
+\newcommand{\MODalgumaCLFmlpCONFMATwithmargins}{
+  \begin{tabular}{m{0.1cm}cccc}
+
+    & & \multicolumn{2}{c}{Real} & \\
+    \cmidrule(lr){3-4}
+    & & Não & Sim & \\    \midrule
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(253.452)}}
+    & \makecell{66.3\% \\ \textcolor{\cor}{(6.519)}}
+    & \makecell{66.3\% \\ \textcolor{\cor}{(259.971)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(113.284)}}
+    & \makecell{29.6\% \\ \textcolor{\cor}{(9.291)}}
+    & \makecell{29.6\% \\ \textcolor{\cor}{(122.575)}} \\ 
+
+    \midrule
+
+    & 
+    & \makecell{sim\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{1.7\% \\ \textcolor{\cor}{(15.810)}}
+    & \makecell{1.7\% \\ \textcolor{\cor}{(382.546)}} \\ 
+
+  \end{tabular}
+}
+
+
+
+\newcommand{\MODalgumaCLFnbSPECthreshold}{0.06}
+
+
+
+\newcommand{\MODalgumaCLFnbSPECparams}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ smoothness & 0,52 \\ 
+  Laplace & 1,396 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFnbSPECmetrics}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ roc\_auc & 0,385 \\ 
+  pr\_auc & 0,703 \\ 
+  accuracy & 0,718 \\ 
+  j\_index & 0,256 \\ 
+  f1 & 0,811 \\ 
+  f2 & 0,811 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFnbCONFMATminimal}{
+  \begingroup
+  \tiny
+  \begin{tabular}{m{0.1cm}ccc}
+    & & \multicolumn{2}{c}{Real} \\
+    & & Não & Sim \\
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(276.083)}}
+    & \makecell{72.2\% \\ \textcolor{\cor}{(7.208)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(90.653)}}
+    & \makecell{23.7\% \\ \textcolor{\cor}{(8.602)}} \\ 
+
+  \end{tabular}
+  \endgroup
+}
+
+
+
+\newcommand{\MODalgumaCLFnbCONFMATwithmargins}{
+  \begin{tabular}{m{0.1cm}cccc}
+
+    & & \multicolumn{2}{c}{Real} & \\
+    \cmidrule(lr){3-4}
+    & & Não & Sim & \\    \midrule
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(276.083)}}
+    & \makecell{72.2\% \\ \textcolor{\cor}{(7.208)}}
+    & \makecell{72.2\% \\ \textcolor{\cor}{(283.291)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(90.653)}}
+    & \makecell{23.7\% \\ \textcolor{\cor}{(8.602)}}
+    & \makecell{23.7\% \\ \textcolor{\cor}{(99.255)}} \\ 
+
+    \midrule
+
+    & 
+    & \makecell{sim\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{1.9\% \\ \textcolor{\cor}{(15.810)}}
+    & \makecell{1.9\% \\ \textcolor{\cor}{(382.546)}} \\ 
+
+  \end{tabular}
+}
+
+
+
+\newcommand{\MODalgumaCLFrfSPECthreshold}{0.1}
+
+
+
+\newcommand{\MODalgumaCLFrfSPECparams}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ mtry &     5 \\ 
+  trees & 1.278 \\ 
+  min\_n &    36 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFrfSPECmetrics}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ roc\_auc & 0,493 \\ 
+  pr\_auc & 0,776 \\ 
+  accuracy & 0,451 \\ 
+  j\_index & 0,117 \\ 
+  f1 & 0,48 \\ 
+  f2 & 0,385 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFrfCONFMATminimal}{
+  \begingroup
+  \tiny
+  \begin{tabular}{m{0.1cm}ccc}
+    & & \multicolumn{2}{c}{Real} \\
+    & & Não & Sim \\
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(117.780)}}
+    & \makecell{30.8\% \\ \textcolor{\cor}{(4.705)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(248.956)}}
+    & \makecell{65.1\% \\ \textcolor{\cor}{(11.105)}} \\ 
+
+  \end{tabular}
+  \endgroup
+}
+
+
+
+\newcommand{\MODalgumaCLFrfCONFMATwithmargins}{
+  \begin{tabular}{m{0.1cm}cccc}
+
+    & & \multicolumn{2}{c}{Real} & \\
+    \cmidrule(lr){3-4}
+    & & Não & Sim & \\    \midrule
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(117.780)}}
+    & \makecell{30.8\% \\ \textcolor{\cor}{(4.705)}}
+    & \makecell{30.8\% \\ \textcolor{\cor}{(122.485)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(248.956)}}
+    & \makecell{65.1\% \\ \textcolor{\cor}{(11.105)}}
+    & \makecell{65.1\% \\ \textcolor{\cor}{(260.061)}} \\ 
+
+    \midrule
+
+    & 
+    & \makecell{sim\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{1.2\% \\ \textcolor{\cor}{(15.810)}}
+    & \makecell{1.2\% \\ \textcolor{\cor}{(382.546)}} \\ 
+
+  \end{tabular}
+}
+
+
+
+\newcommand{\MODalgumaCLFsvmSPECthreshold}{0}
+
+
+
+\newcommand{\MODalgumaCLFsvmSPECparams}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ cost & 0,017 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFsvmSPECmetrics}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ roc\_auc & 0,576 \\ 
+  pr\_auc & 0,812 \\ 
+  accuracy & 0,746 \\ 
+  j\_index & 0 \\ 
+  f1 & 0,855 \\ 
+  f2 & 0,936 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFsvmCONFMATminimal}{
+  \begingroup
+  \tiny
+  \begin{tabular}{m{0.1cm}ccc}
+    & & \multicolumn{2}{c}{Real} \\
+    & & Não & Sim \\
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{95.9\% \\ \textcolor{\cor}{(15.810)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
+
+  \end{tabular}
+  \endgroup
+}
+
+
+
+\newcommand{\MODalgumaCLFsvmCONFMATwithmargins}{
+  \begin{tabular}{m{0.1cm}cccc}
+
+    & & \multicolumn{2}{c}{Real} & \\
+    \cmidrule(lr){3-4}
+    & & Não & Sim & \\    \midrule
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{95.9\% \\ \textcolor{\cor}{(15.810)}}
+    & \makecell{95.9\% \\ \textcolor{\cor}{(382.546)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
+
+    \midrule
+
+    & 
+    & \makecell{sim\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{4.1\% \\ \textcolor{\cor}{(15.810)}}
+    & \makecell{4.1\% \\ \textcolor{\cor}{(382.546)}} \\ 
+
+  \end{tabular}
+}
+
+
+
+\newcommand{\MODalgumaCLFxgbSPECthreshold}{0.38}
+
+
+
+\newcommand{\MODalgumaCLFxgbSPECparams}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ mtry &  5 \\ 
+  min\_n & 13 \\ 
+  tree\_depth &  4 \\ 
+  learn\_rate &  0,003 \\ 
+  loss\_reduction &  0 \\ 
+  sample\_size &  0,107 \\ 
+  stop\_iter &  4 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFxgbSPECmetrics}{
+  \begingroup
+  \tiny
+  \begin{tabular}{ll}
+ roc\_auc & 0,54 \\ 
+  pr\_auc & 0,804 \\ 
+  accuracy & 0,451 \\ 
+  j\_index & 0,117 \\ 
+  f1 & 0,48 \\ 
+  f2 & 0,385 \\ 
+  \end{tabular}
+  \endgroup
+}
+
+\newcommand{\MODalgumaCLFxgbCONFMATminimal}{
+  \begingroup
+  \tiny
+  \begin{tabular}{m{0.1cm}ccc}
+    & & \multicolumn{2}{c}{Real} \\
+    & & Não & Sim \\
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(125.561)}}
+    & \makecell{32.8\% \\ \textcolor{\cor}{(4.705)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(241.175)}}
+    & \makecell{63.0\% \\ \textcolor{\cor}{(11.105)}} \\ 
+
+  \end{tabular}
+  \endgroup
+}
+
+
+
+\newcommand{\MODalgumaCLFxgbCONFMATwithmargins}{
+  \begin{tabular}{m{0.1cm}cccc}
+
+    & & \multicolumn{2}{c}{Real} & \\
+    \cmidrule(lr){3-4}
+    & & Não & Sim & \\    \midrule
+
+    \multirow{2}{*}{\rotatebox{90}{Predito}}
+    & Não
+    & \makecell{nao\% \\ \textcolor{\cor}{(125.561)}}
+    & \makecell{32.8\% \\ \textcolor{\cor}{(4.705)}}
+    & \makecell{32.8\% \\ \textcolor{\cor}{(130.266)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(241.175)}}
+    & \makecell{63.0\% \\ \textcolor{\cor}{(11.105)}}
+    & \makecell{63.0\% \\ \textcolor{\cor}{(252.280)}} \\ 
+
+    \midrule
+
+    & 
+    & \makecell{sim\% \\ \textcolor{\cor}{(366.736)}}
+    & \makecell{1.2\% \\ \textcolor{\cor}{(15.810)}}
+    & \makecell{1.2\% \\ \textcolor{\cor}{(382.546)}} \\ 
+
+  \end{tabular}
+}
+

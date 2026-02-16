@@ -8,9 +8,9 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- cost\_complexity &  0 \\ 
-  tree\_depth & 10 \\ 
-  min\_n & 36 \\ 
+ cost\_complexity &  0,03 \\ 
+  tree\_depth & 13 \\ 
+  min\_n &  6 \\ 
   \end{tabular}
   \endgroup
 }
@@ -19,12 +19,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- j\_index & 0,054 \\ 
-  roc\_auc & 0,525 \\ 
-  average\_precision & 0,646 \\ 
-  brier\_class & 0,33 \\ 
-  mn\_log\_loss & 1,247 \\ 
-  pr\_auc & 0,816 \\ 
+ roc\_auc & 0,5 \\ 
+  pr\_auc & 0,817 \\ 
+  accuracy & 0,634 \\ 
+  j\_index & 0 \\ 
+  f1 & 0,776 \\ 
+  f2 & 0,897 \\ 
   \end{tabular}
   \endgroup
 }
@@ -289,7 +289,7 @@
 
 
 
-\newcommand{\MODunicoCLFlgbSPECthreshold}{0.05}
+\newcommand{\MODunicoCLFlgbSPECthreshold}{0}
 
 
 
@@ -297,11 +297,11 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- mtry & 16 \\ 
-  min\_n & 28 \\ 
-  tree\_depth & 11 \\ 
-  learn\_rate &  0,001 \\ 
-  loss\_reduction &  0 \\ 
+ mtry &  1 \\ 
+  min\_n & 25 \\ 
+  tree\_depth &  3 \\ 
+  learn\_rate &  0 \\ 
+  loss\_reduction &  0,004 \\ 
   \end{tabular}
   \endgroup
 }
@@ -310,12 +310,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- j\_index & 0 \\ 
-  roc\_auc & 0,328 \\ 
-  average\_precision & 0,535 \\ 
-  brier\_class & 0,341 \\ 
-  mn\_log\_loss & 1,291 \\ 
-  pr\_auc & 0,53 \\ 
+ roc\_auc & 0,36 \\ 
+  pr\_auc & 0,561 \\ 
+  accuracy & 0,634 \\ 
+  j\_index & 0 \\ 
+  f1 & 0,776 \\ 
+  f2 & 0,897 \\ 
   \end{tabular}
   \endgroup
 }
@@ -329,12 +329,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(8.541.540)}}
-    & \makecell{31.6\% \\ \textcolor{\cor}{(76.614)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(26.181.629)}}
+    & \makecell{96.9\% \\ \textcolor{\cor}{(833.943)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(17.640.089)}}
-    & \makecell{65.3\% \\ \textcolor{\cor}{(757.329)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -351,21 +351,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(8.541.540)}}
-    & \makecell{31.6\% \\ \textcolor{\cor}{(76.614)}}
-    & \makecell{31.6\% \\ \textcolor{\cor}{(8.618.154)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(26.181.629)}}
+    & \makecell{96.9\% \\ \textcolor{\cor}{(833.943)}}
+    & \makecell{96.9\% \\ \textcolor{\cor}{(27.015.572)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(17.640.089)}}
-    & \makecell{65.3\% \\ \textcolor{\cor}{(757.329)}}
-    & \makecell{65.3\% \\ \textcolor{\cor}{(18.397.418)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(26.181.629)}}
-    & \makecell{0.3\% \\ \textcolor{\cor}{(833.943)}}
-    & \makecell{0.3\% \\ \textcolor{\cor}{(27.015.572)}} \\ 
+    & \makecell{3.1\% \\ \textcolor{\cor}{(833.943)}}
+    & \makecell{3.1\% \\ \textcolor{\cor}{(27.015.572)}} \\ 
 
   \end{tabular}
 }
@@ -381,12 +381,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(18)}}
-    & \makecell{15.4\% \\ \textcolor{\cor}{(3)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(60)}}
+    & \makecell{51.3\% \\ \textcolor{\cor}{(57)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(42)}}
-    & \makecell{35.9\% \\ \textcolor{\cor}{(54)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -403,21 +403,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(18)}}
-    & \makecell{15.4\% \\ \textcolor{\cor}{(3)}}
-    & \makecell{15.4\% \\ \textcolor{\cor}{(21)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(60)}}
+    & \makecell{51.3\% \\ \textcolor{\cor}{(57)}}
+    & \makecell{51.3\% \\ \textcolor{\cor}{(117)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(42)}}
-    & \makecell{35.9\% \\ \textcolor{\cor}{(54)}}
-    & \makecell{35.9\% \\ \textcolor{\cor}{(96)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(60)}}
-    & \makecell{2.6\% \\ \textcolor{\cor}{(57)}}
-    & \makecell{2.6\% \\ \textcolor{\cor}{(117)}} \\ 
+    & \makecell{48.7\% \\ \textcolor{\cor}{(57)}}
+    & \makecell{48.7\% \\ \textcolor{\cor}{(117)}} \\ 
 
   \end{tabular}
 }
@@ -433,12 +433,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(37)}}
-    & \makecell{48.7\% \\ \textcolor{\cor}{(7)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(58)}}
+    & \makecell{76.3\% \\ \textcolor{\cor}{(18)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(21)}}
-    & \makecell{27.6\% \\ \textcolor{\cor}{(11)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -455,21 +455,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(37)}}
-    & \makecell{48.7\% \\ \textcolor{\cor}{(7)}}
-    & \makecell{48.7\% \\ \textcolor{\cor}{(44)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(58)}}
+    & \makecell{76.3\% \\ \textcolor{\cor}{(18)}}
+    & \makecell{76.3\% \\ \textcolor{\cor}{(76)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(21)}}
-    & \makecell{27.6\% \\ \textcolor{\cor}{(11)}}
-    & \makecell{27.6\% \\ \textcolor{\cor}{(32)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(58)}}
-    & \makecell{9.2\% \\ \textcolor{\cor}{(18)}}
-    & \makecell{9.2\% \\ \textcolor{\cor}{(76)}} \\ 
+    & \makecell{23.7\% \\ \textcolor{\cor}{(18)}}
+    & \makecell{23.7\% \\ \textcolor{\cor}{(76)}} \\ 
 
   \end{tabular}
 }
@@ -485,12 +485,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(19)}}
-    & \makecell{40.4\% \\ \textcolor{\cor}{(7)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(37)}}
+    & \makecell{78.7\% \\ \textcolor{\cor}{(10)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(18)}}
-    & \makecell{38.3\% \\ \textcolor{\cor}{(3)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -507,21 +507,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(19)}}
-    & \makecell{40.4\% \\ \textcolor{\cor}{(7)}}
-    & \makecell{40.4\% \\ \textcolor{\cor}{(26)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(37)}}
+    & \makecell{78.7\% \\ \textcolor{\cor}{(10)}}
+    & \makecell{78.7\% \\ \textcolor{\cor}{(47)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(18)}}
-    & \makecell{38.3\% \\ \textcolor{\cor}{(3)}}
-    & \makecell{38.3\% \\ \textcolor{\cor}{(21)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(37)}}
-    & \makecell{14.9\% \\ \textcolor{\cor}{(10)}}
-    & \makecell{14.9\% \\ \textcolor{\cor}{(47)}} \\ 
+    & \makecell{21.3\% \\ \textcolor{\cor}{(10)}}
+    & \makecell{21.3\% \\ \textcolor{\cor}{(47)}} \\ 
 
   \end{tabular}
 }
@@ -537,12 +537,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(6)}}
-    & \makecell{35.3\% \\ \textcolor{\cor}{(4)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(8)}}
+    & \makecell{47.1\% \\ \textcolor{\cor}{(9)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(2)}}
-    & \makecell{11.8\% \\ \textcolor{\cor}{(5)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -559,28 +559,28 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(6)}}
-    & \makecell{35.3\% \\ \textcolor{\cor}{(4)}}
-    & \makecell{35.3\% \\ \textcolor{\cor}{(10)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(8)}}
+    & \makecell{47.1\% \\ \textcolor{\cor}{(9)}}
+    & \makecell{47.1\% \\ \textcolor{\cor}{(17)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(2)}}
-    & \makecell{11.8\% \\ \textcolor{\cor}{(5)}}
-    & \makecell{11.8\% \\ \textcolor{\cor}{(7)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(8)}}
-    & \makecell{23.5\% \\ \textcolor{\cor}{(9)}}
-    & \makecell{23.5\% \\ \textcolor{\cor}{(17)}} \\ 
+    & \makecell{52.9\% \\ \textcolor{\cor}{(9)}}
+    & \makecell{52.9\% \\ \textcolor{\cor}{(17)}} \\ 
 
   \end{tabular}
 }
 
 
 
-\newcommand{\MODunicoCLFlogresSPECthreshold}{0.05}
+\newcommand{\MODunicoCLFlogresSPECthreshold}{0}
 
 
 
@@ -588,8 +588,8 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- penalty & 0,001 \\ 
-  mixture & 0,572 \\ 
+ penalty & 0,068 \\ 
+  mixture & 0,402 \\ 
   \end{tabular}
   \endgroup
 }
@@ -598,12 +598,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- j\_index & 0,05 \\ 
-  roc\_auc & 0,417 \\ 
-  average\_precision & 0,587 \\ 
-  brier\_class & 0,321 \\ 
-  mn\_log\_loss & 1,203 \\ 
-  pr\_auc & 0,586 \\ 
+ roc\_auc & 0,5 \\ 
+  pr\_auc & 0,817 \\ 
+  accuracy & 0,634 \\ 
+  j\_index & 0 \\ 
+  f1 & 0,776 \\ 
+  f2 & 0,897 \\ 
   \end{tabular}
   \endgroup
 }
@@ -617,12 +617,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(1.871.102)}}
-    & \makecell{6.9\% \\ \textcolor{\cor}{(172.697)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(26.181.629)}}
+    & \makecell{96.9\% \\ \textcolor{\cor}{(833.943)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(24.310.527)}}
-    & \makecell{90.0\% \\ \textcolor{\cor}{(661.246)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -639,21 +639,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(1.871.102)}}
-    & \makecell{6.9\% \\ \textcolor{\cor}{(172.697)}}
-    & \makecell{6.9\% \\ \textcolor{\cor}{(2.043.799)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(26.181.629)}}
+    & \makecell{96.9\% \\ \textcolor{\cor}{(833.943)}}
+    & \makecell{96.9\% \\ \textcolor{\cor}{(27.015.572)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(24.310.527)}}
-    & \makecell{90.0\% \\ \textcolor{\cor}{(661.246)}}
-    & \makecell{90.0\% \\ \textcolor{\cor}{(24.971.773)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(26.181.629)}}
-    & \makecell{0.6\% \\ \textcolor{\cor}{(833.943)}}
-    & \makecell{0.6\% \\ \textcolor{\cor}{(27.015.572)}} \\ 
+    & \makecell{3.1\% \\ \textcolor{\cor}{(833.943)}}
+    & \makecell{3.1\% \\ \textcolor{\cor}{(27.015.572)}} \\ 
 
   \end{tabular}
 }
@@ -669,12 +669,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(6)}}
-    & \makecell{5.1\% \\ \textcolor{\cor}{(3)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(60)}}
+    & \makecell{51.3\% \\ \textcolor{\cor}{(57)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(54)}}
-    & \makecell{46.2\% \\ \textcolor{\cor}{(54)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -691,21 +691,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(6)}}
-    & \makecell{5.1\% \\ \textcolor{\cor}{(3)}}
-    & \makecell{5.1\% \\ \textcolor{\cor}{(9)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(60)}}
+    & \makecell{51.3\% \\ \textcolor{\cor}{(57)}}
+    & \makecell{51.3\% \\ \textcolor{\cor}{(117)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(54)}}
-    & \makecell{46.2\% \\ \textcolor{\cor}{(54)}}
-    & \makecell{46.2\% \\ \textcolor{\cor}{(108)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(60)}}
-    & \makecell{2.6\% \\ \textcolor{\cor}{(57)}}
-    & \makecell{2.6\% \\ \textcolor{\cor}{(117)}} \\ 
+    & \makecell{48.7\% \\ \textcolor{\cor}{(57)}}
+    & \makecell{48.7\% \\ \textcolor{\cor}{(117)}} \\ 
 
   \end{tabular}
 }
@@ -721,12 +721,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(28)}}
-    & \makecell{36.8\% \\ \textcolor{\cor}{(7)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(58)}}
+    & \makecell{76.3\% \\ \textcolor{\cor}{(18)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(30)}}
-    & \makecell{39.5\% \\ \textcolor{\cor}{(11)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -743,21 +743,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(28)}}
-    & \makecell{36.8\% \\ \textcolor{\cor}{(7)}}
-    & \makecell{36.8\% \\ \textcolor{\cor}{(35)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(58)}}
+    & \makecell{76.3\% \\ \textcolor{\cor}{(18)}}
+    & \makecell{76.3\% \\ \textcolor{\cor}{(76)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(30)}}
-    & \makecell{39.5\% \\ \textcolor{\cor}{(11)}}
-    & \makecell{39.5\% \\ \textcolor{\cor}{(41)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(58)}}
-    & \makecell{9.2\% \\ \textcolor{\cor}{(18)}}
-    & \makecell{9.2\% \\ \textcolor{\cor}{(76)}} \\ 
+    & \makecell{23.7\% \\ \textcolor{\cor}{(18)}}
+    & \makecell{23.7\% \\ \textcolor{\cor}{(76)}} \\ 
 
   \end{tabular}
 }
@@ -876,7 +876,7 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- num\_terms & 3 \\ 
+ num\_terms & 2 \\ 
   prod\_degree & 1 \\ 
   \end{tabular}
   \endgroup
@@ -886,12 +886,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- j\_index & 0,05 \\ 
-  roc\_auc & 0,529 \\ 
-  average\_precision & 0,648 \\ 
-  brier\_class & 0,331 \\ 
-  mn\_log\_loss & 1,278 \\ 
-  pr\_auc & 0,803 \\ 
+ roc\_auc & 0,524 \\ 
+  pr\_auc & 0,814 \\ 
+  accuracy & 0,634 \\ 
+  j\_index & 0 \\ 
+  f1 & 0,776 \\ 
+  f2 & 0,897 \\ 
   \end{tabular}
   \endgroup
 }
@@ -1164,9 +1164,9 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- hidden\_units &   4 \\ 
-  penalty &   0,895 \\ 
-  epochs & 653 \\ 
+ hidden\_units &   2 \\ 
+  penalty &   0 \\ 
+  epochs & 190 \\ 
   \end{tabular}
   \endgroup
 }
@@ -1175,12 +1175,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- j\_index & 0,146 \\ 
-  roc\_auc & 0,657 \\ 
-  average\_precision & 0,747 \\ 
-  brier\_class & 0,224 \\ 
-  mn\_log\_loss & 0,64 \\ 
-  pr\_auc & 0,745 \\ 
+ roc\_auc & 0,543 \\ 
+  pr\_auc & 0,682 \\ 
+  accuracy & 0,634 \\ 
+  j\_index & 0 \\ 
+  f1 & 0,776 \\ 
+  f2 & 0,897 \\ 
   \end{tabular}
   \endgroup
 }
@@ -1453,8 +1453,8 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- smoothness & 1,499 \\ 
-  Laplace & 2,816 \\ 
+ smoothness & 1,383 \\ 
+  Laplace & 1,11 \\ 
   \end{tabular}
   \endgroup
 }
@@ -1463,12 +1463,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- j\_index & 0,044 \\ 
-  roc\_auc & 0,658 \\ 
-  average\_precision & 0,769 \\ 
-  brier\_class & 0,241 \\ 
-  mn\_log\_loss & 0,832 \\ 
-  pr\_auc & 0,768 \\ 
+ roc\_auc & 0,656 \\ 
+  pr\_auc & 0,769 \\ 
+  accuracy & 0,634 \\ 
+  j\_index & 0 \\ 
+  f1 & 0,776 \\ 
+  f2 & 0,897 \\ 
   \end{tabular}
   \endgroup
 }
@@ -1741,9 +1741,9 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- mtry &     7 \\ 
-  trees & 1.990 \\ 
-  min\_n &    27 \\ 
+ mtry &   2 \\ 
+  trees & 528 \\ 
+  min\_n &  10 \\ 
   \end{tabular}
   \endgroup
 }
@@ -1752,12 +1752,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- j\_index & 0 \\ 
-  roc\_auc & 0,298 \\ 
-  average\_precision & 0,498 \\ 
-  brier\_class & 0,326 \\ 
-  mn\_log\_loss & 1,25 \\ 
-  pr\_auc & 0,495 \\ 
+ roc\_auc & 0,299 \\ 
+  pr\_auc & 0,496 \\ 
+  accuracy & 0,72 \\ 
+  j\_index & 0,369 \\ 
+  f1 & 0,787 \\ 
+  f2 & 0,804 \\ 
   \end{tabular}
   \endgroup
 }
@@ -1771,12 +1771,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(18.457.767)}}
-    & \makecell{68.3\% \\ \textcolor{\cor}{(169.886)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(17.146.719)}}
+    & \makecell{63.5\% \\ \textcolor{\cor}{(125.223)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(7.723.862)}}
-    & \makecell{28.6\% \\ \textcolor{\cor}{(664.057)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(9.034.910)}}
+    & \makecell{33.4\% \\ \textcolor{\cor}{(708.720)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -1793,21 +1793,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(18.457.767)}}
-    & \makecell{68.3\% \\ \textcolor{\cor}{(169.886)}}
-    & \makecell{68.3\% \\ \textcolor{\cor}{(18.627.653)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(17.146.719)}}
+    & \makecell{63.5\% \\ \textcolor{\cor}{(125.223)}}
+    & \makecell{63.5\% \\ \textcolor{\cor}{(17.271.942)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(7.723.862)}}
-    & \makecell{28.6\% \\ \textcolor{\cor}{(664.057)}}
-    & \makecell{28.6\% \\ \textcolor{\cor}{(8.387.919)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(9.034.910)}}
+    & \makecell{33.4\% \\ \textcolor{\cor}{(708.720)}}
+    & \makecell{33.4\% \\ \textcolor{\cor}{(9.743.630)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(26.181.629)}}
-    & \makecell{0.6\% \\ \textcolor{\cor}{(833.943)}}
-    & \makecell{0.6\% \\ \textcolor{\cor}{(27.015.572)}} \\ 
+    & \makecell{0.5\% \\ \textcolor{\cor}{(833.943)}}
+    & \makecell{0.5\% \\ \textcolor{\cor}{(27.015.572)}} \\ 
 
   \end{tabular}
 }
@@ -1823,12 +1823,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(40)}}
-    & \makecell{34.2\% \\ \textcolor{\cor}{(10)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(31)}}
+    & \makecell{26.5\% \\ \textcolor{\cor}{(5)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(20)}}
-    & \makecell{17.1\% \\ \textcolor{\cor}{(47)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(29)}}
+    & \makecell{24.8\% \\ \textcolor{\cor}{(52)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -1845,21 +1845,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(40)}}
-    & \makecell{34.2\% \\ \textcolor{\cor}{(10)}}
-    & \makecell{34.2\% \\ \textcolor{\cor}{(50)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(31)}}
+    & \makecell{26.5\% \\ \textcolor{\cor}{(5)}}
+    & \makecell{26.5\% \\ \textcolor{\cor}{(36)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(20)}}
-    & \makecell{17.1\% \\ \textcolor{\cor}{(47)}}
-    & \makecell{17.1\% \\ \textcolor{\cor}{(67)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(29)}}
+    & \makecell{24.8\% \\ \textcolor{\cor}{(52)}}
+    & \makecell{24.8\% \\ \textcolor{\cor}{(81)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(60)}}
-    & \makecell{8.5\% \\ \textcolor{\cor}{(57)}}
-    & \makecell{8.5\% \\ \textcolor{\cor}{(117)}} \\ 
+    & \makecell{4.3\% \\ \textcolor{\cor}{(57)}}
+    & \makecell{4.3\% \\ \textcolor{\cor}{(117)}} \\ 
 
   \end{tabular}
 }
@@ -1875,12 +1875,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(55)}}
-    & \makecell{72.4\% \\ \textcolor{\cor}{(16)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(57)}}
+    & \makecell{75.0\% \\ \textcolor{\cor}{(18)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(3)}}
-    & \makecell{3.9\% \\ \textcolor{\cor}{(2)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(1)}}
+    & \makecell{1.3\% \\ \textcolor{\cor}{(0)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -1897,21 +1897,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(55)}}
-    & \makecell{72.4\% \\ \textcolor{\cor}{(16)}}
-    & \makecell{72.4\% \\ \textcolor{\cor}{(71)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(57)}}
+    & \makecell{75.0\% \\ \textcolor{\cor}{(18)}}
+    & \makecell{75.0\% \\ \textcolor{\cor}{(75)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(3)}}
-    & \makecell{3.9\% \\ \textcolor{\cor}{(2)}}
-    & \makecell{3.9\% \\ \textcolor{\cor}{(5)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(1)}}
+    & \makecell{1.3\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{1.3\% \\ \textcolor{\cor}{(1)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(58)}}
-    & \makecell{21.1\% \\ \textcolor{\cor}{(18)}}
-    & \makecell{21.1\% \\ \textcolor{\cor}{(76)}} \\ 
+    & \makecell{23.7\% \\ \textcolor{\cor}{(18)}}
+    & \makecell{23.7\% \\ \textcolor{\cor}{(76)}} \\ 
 
   \end{tabular}
 }
@@ -2030,7 +2030,7 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- cost & 0,034 \\ 
+ cost & 0,003 \\ 
   \end{tabular}
   \endgroup
 }
@@ -2039,12 +2039,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- j\_index & 0,05 \\ 
-  roc\_auc & 0,6 \\ 
-  average\_precision & 0,701 \\ 
-  brier\_class & 0,228 \\ 
-  mn\_log\_loss & 0,647 \\ 
-  pr\_auc & 0,696 \\ 
+ roc\_auc & 0,687 \\ 
+  pr\_auc & 0,796 \\ 
+  accuracy & 0,634 \\ 
+  j\_index & 0 \\ 
+  f1 & 0,776 \\ 
+  f2 & 0,897 \\ 
   \end{tabular}
   \endgroup
 }
@@ -2309,7 +2309,7 @@
 
 
 
-\newcommand{\MODunicoCLFxgbSPECthreshold}{0.07}
+\newcommand{\MODunicoCLFxgbSPECthreshold}{0.44}
 
 
 
@@ -2317,13 +2317,13 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- mtry &  1 \\ 
-  min\_n & 32 \\ 
-  tree\_depth & 10 \\ 
-  learn\_rate &  0,016 \\ 
+ mtry & 11 \\ 
+  min\_n & 13 \\ 
+  tree\_depth &  4 \\ 
+  learn\_rate &  0,003 \\ 
   loss\_reduction &  0 \\ 
-  sample\_size &  0,46 \\ 
-  stop\_iter &  9 \\ 
+  sample\_size &  0,107 \\ 
+  stop\_iter &  4 \\ 
   \end{tabular}
   \endgroup
 }
@@ -2332,12 +2332,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- j\_index & 0,054 \\ 
-  roc\_auc & 0,299 \\ 
-  average\_precision & 0,505 \\ 
-  brier\_class & 0,306 \\ 
-  mn\_log\_loss & 0,987 \\ 
-  pr\_auc & 0,501 \\ 
+ roc\_auc & 0,532 \\ 
+  pr\_auc & 0,648 \\ 
+  accuracy & 0,405 \\ 
+  j\_index & 0,043 \\ 
+  f1 & 0,155 \\ 
+  f2 & 0,104 \\ 
   \end{tabular}
   \endgroup
 }
@@ -2351,12 +2351,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(20.882.660)}}
-    & \makecell{77.3\% \\ \textcolor{\cor}{(359.637)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(8.922.219)}}
+    & \makecell{33.0\% \\ \textcolor{\cor}{(79.085)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(5.298.969)}}
-    & \makecell{19.6\% \\ \textcolor{\cor}{(474.306)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(17.259.410)}}
+    & \makecell{63.9\% \\ \textcolor{\cor}{(754.858)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -2373,21 +2373,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(20.882.660)}}
-    & \makecell{77.3\% \\ \textcolor{\cor}{(359.637)}}
-    & \makecell{77.3\% \\ \textcolor{\cor}{(21.242.297)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(8.922.219)}}
+    & \makecell{33.0\% \\ \textcolor{\cor}{(79.085)}}
+    & \makecell{33.0\% \\ \textcolor{\cor}{(9.001.304)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(5.298.969)}}
-    & \makecell{19.6\% \\ \textcolor{\cor}{(474.306)}}
-    & \makecell{19.6\% \\ \textcolor{\cor}{(5.773.275)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(17.259.410)}}
+    & \makecell{63.9\% \\ \textcolor{\cor}{(754.858)}}
+    & \makecell{63.9\% \\ \textcolor{\cor}{(18.014.268)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(26.181.629)}}
-    & \makecell{1.3\% \\ \textcolor{\cor}{(833.943)}}
-    & \makecell{1.3\% \\ \textcolor{\cor}{(27.015.572)}} \\ 
+    & \makecell{0.3\% \\ \textcolor{\cor}{(833.943)}}
+    & \makecell{0.3\% \\ \textcolor{\cor}{(27.015.572)}} \\ 
 
   \end{tabular}
 }
@@ -2403,12 +2403,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(43)}}
-    & \makecell{36.8\% \\ \textcolor{\cor}{(16)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(12)}}
+    & \makecell{10.3\% \\ \textcolor{\cor}{(2)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(17)}}
-    & \makecell{14.5\% \\ \textcolor{\cor}{(41)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(48)}}
+    & \makecell{41.0\% \\ \textcolor{\cor}{(55)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -2425,21 +2425,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(43)}}
-    & \makecell{36.8\% \\ \textcolor{\cor}{(16)}}
-    & \makecell{36.8\% \\ \textcolor{\cor}{(59)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(12)}}
+    & \makecell{10.3\% \\ \textcolor{\cor}{(2)}}
+    & \makecell{10.3\% \\ \textcolor{\cor}{(14)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(17)}}
-    & \makecell{14.5\% \\ \textcolor{\cor}{(41)}}
-    & \makecell{14.5\% \\ \textcolor{\cor}{(58)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(48)}}
+    & \makecell{41.0\% \\ \textcolor{\cor}{(55)}}
+    & \makecell{41.0\% \\ \textcolor{\cor}{(103)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(60)}}
-    & \makecell{13.7\% \\ \textcolor{\cor}{(57)}}
-    & \makecell{13.7\% \\ \textcolor{\cor}{(117)}} \\ 
+    & \makecell{1.7\% \\ \textcolor{\cor}{(57)}}
+    & \makecell{1.7\% \\ \textcolor{\cor}{(117)}} \\ 
 
   \end{tabular}
 }
@@ -2455,12 +2455,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(52)}}
-    & \makecell{68.4\% \\ \textcolor{\cor}{(10)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(6)}}
-    & \makecell{7.9\% \\ \textcolor{\cor}{(8)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(58)}}
+    & \makecell{76.3\% \\ \textcolor{\cor}{(18)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -2477,21 +2477,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(52)}}
-    & \makecell{68.4\% \\ \textcolor{\cor}{(10)}}
-    & \makecell{68.4\% \\ \textcolor{\cor}{(62)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(6)}}
-    & \makecell{7.9\% \\ \textcolor{\cor}{(8)}}
-    & \makecell{7.9\% \\ \textcolor{\cor}{(14)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(58)}}
+    & \makecell{76.3\% \\ \textcolor{\cor}{(18)}}
+    & \makecell{76.3\% \\ \textcolor{\cor}{(76)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(58)}}
-    & \makecell{13.2\% \\ \textcolor{\cor}{(18)}}
-    & \makecell{13.2\% \\ \textcolor{\cor}{(76)}} \\ 
+    & \makecell{0.0\% \\ \textcolor{\cor}{(18)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(76)}} \\ 
 
   \end{tabular}
 }
@@ -2507,12 +2507,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(37)}}
-    & \makecell{78.7\% \\ \textcolor{\cor}{(10)}} \\ 
-
-    & Sim
     & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(37)}}
+    & \makecell{78.7\% \\ \textcolor{\cor}{(10)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -2529,21 +2529,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(37)}}
-    & \makecell{78.7\% \\ \textcolor{\cor}{(10)}}
-    & \makecell{78.7\% \\ \textcolor{\cor}{(47)}} \\ 
-
-    & Sim
     & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
+
+    & Sim
+    & \makecell{nao\% \\ \textcolor{\cor}{(37)}}
+    & \makecell{78.7\% \\ \textcolor{\cor}{(10)}}
+    & \makecell{78.7\% \\ \textcolor{\cor}{(47)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(37)}}
-    & \makecell{21.3\% \\ \textcolor{\cor}{(10)}}
-    & \makecell{21.3\% \\ \textcolor{\cor}{(47)}} \\ 
+    & \makecell{0.0\% \\ \textcolor{\cor}{(10)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(47)}} \\ 
 
   \end{tabular}
 }
@@ -2559,12 +2559,12 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(8)}}
-    & \makecell{47.1\% \\ \textcolor{\cor}{(9)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(2)}}
+    & \makecell{11.8\% \\ \textcolor{\cor}{(2)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
-    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(6)}}
+    & \makecell{35.3\% \\ \textcolor{\cor}{(7)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -2581,21 +2581,21 @@
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
     & Não
-    & \makecell{nao\% \\ \textcolor{\cor}{(8)}}
-    & \makecell{47.1\% \\ \textcolor{\cor}{(9)}}
-    & \makecell{47.1\% \\ \textcolor{\cor}{(17)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(2)}}
+    & \makecell{11.8\% \\ \textcolor{\cor}{(2)}}
+    & \makecell{11.8\% \\ \textcolor{\cor}{(4)}} \\ 
 
     & Sim
-    & \makecell{nao\% \\ \textcolor{\cor}{(0)}}
-    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
-    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
+    & \makecell{nao\% \\ \textcolor{\cor}{(6)}}
+    & \makecell{35.3\% \\ \textcolor{\cor}{(7)}}
+    & \makecell{35.3\% \\ \textcolor{\cor}{(13)}} \\ 
 
     \midrule
 
     & 
     & \makecell{sim\% \\ \textcolor{\cor}{(8)}}
-    & \makecell{52.9\% \\ \textcolor{\cor}{(9)}}
-    & \makecell{52.9\% \\ \textcolor{\cor}{(17)}} \\ 
+    & \makecell{11.8\% \\ \textcolor{\cor}{(9)}}
+    & \makecell{11.8\% \\ \textcolor{\cor}{(17)}} \\ 
 
   \end{tabular}
 }
