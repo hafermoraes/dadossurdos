@@ -230,11 +230,12 @@ export_confmat_to_latex <-
     PCTs <-
       input_table$table |>
       as.data.frame() |>
+      pivot_wider(names_from = Truth, values_from = Freq) |>
       adorn_totals(where = c("row", "col")) |>
       adorn_percentages(denominator = "all") |>
       adorn_pct_formatting(digits = PCT_DIGITS) |>
       mutate(across(-1, \(x) str_remove(x, "%")))
-
+    
     CNTs <-
       input_table$table |>
       as.data.frame() |>
@@ -367,6 +368,7 @@ export_subconfmat_to_latex <-
     PCTs <-
       input_table$table |>
       as.data.frame() |>
+      pivot_wider(names_from = Truth, values_from = Freq) |>
       adorn_totals(where = c("row", "col")) |>
       adorn_percentages(denominator = "all") |>
       adorn_pct_formatting(digits = PCT_DIGITS) |>
