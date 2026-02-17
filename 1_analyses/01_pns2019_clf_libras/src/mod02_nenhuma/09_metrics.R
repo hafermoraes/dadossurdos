@@ -57,14 +57,14 @@ class_independent_metrics_set <-
 
 
 message("configurando métricas dependentes de classe para otimização do classificador otimizado...")
-f1_measure <- metric_tweak("f1", f_meas, beta = 1)
-f2_measure <- metric_tweak("f2", f_meas, beta = 2)
+# f1_measure <- metric_tweak("f1", f_meas, beta = 1)
+# f2_measure <- metric_tweak("f2", f_meas, beta = 2)
 
 class_dependent_metrics_set <- metric_set(
   accuracy, 
-  j_index, 
-  f1_measure, 
-  f2_measure
+  j_index
+  # f1_measure, 
+  # f2_measure
 )
 
 toc()

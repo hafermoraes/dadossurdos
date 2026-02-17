@@ -181,7 +181,7 @@ for(CLF in classifiers$wflow_id) {
     select(.metric, .estimate)
 
   export_class_dependent_metrics <-
-    preds_with_optimum_threshold |>
+    weighted_preds_with_optimum_threshold |>
     class_dependent_metrics_set(
       truth = libras,
       estimate = .pred_class

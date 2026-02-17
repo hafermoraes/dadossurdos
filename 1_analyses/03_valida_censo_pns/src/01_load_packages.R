@@ -1,3 +1,4 @@
+library(tictoc)
 
 tic()
 message("importanto pacotes do GNU R para a comparação...")
@@ -9,6 +10,4 @@ library(arrow)
 library(ggplot2)
 library(xtable)
 library(tidytext)
-library(tictoc)
-
 toc()
