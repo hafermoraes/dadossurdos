@@ -1,0 +1,17 @@
+library(tictoc)
+
+tic()
+message("importanto pacotes do GNU R para a comparação...")
+
+library(readr)
+library(dplyr)
+library(tidyr)
+library(arrow)
+library(ggplot2)
+library(xtable)
+library(survey)
+library(srvyr)
+library(DDM)
+toc()
+
+
