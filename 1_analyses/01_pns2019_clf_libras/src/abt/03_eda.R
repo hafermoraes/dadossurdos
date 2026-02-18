@@ -99,13 +99,65 @@ toc()
 
 tic()
 message("reproduzindo Tabela 8, p. 40, de 'Pesquisa Nacional de Saúde 2019: Ciclos de Vida'...")
-pns2019_posterior |>
+pns2019_dif_ouvir_libras <- 
+  pns2019_posterior |>
   as_survey() |>
   filter(idade >= 5 , idade <= 40) |>
   group_by(dif_ouvir) |>
   summarise(
-    l = survey_mean(libras_01, na.rm = TRUE, vartype=c('se','ci'))
+    N = survey_total(na.rm = TRUE),
+    p = survey_mean(na.rm = TRUE, vartype = 'ci'),
+    l = survey_mean(libras_01, na.rm = TRUE, vartype='ci')
   )
+
+export_dif_ouvir_libras <-
+  pns2019_dif_ouvir_libras |>
+  mutate(
+    across( c(N, N_se), 
+            label_number(accuracy = 1, big.mark = ".", decimal.mark = ",") ),
+    across( c(p, p_low, p_upp, l, l_low, l_upp), 
+            \(x) 100.0*x ),
+    across( c(p, p_low, p_upp, l, l_low, l_upp),  
+            label_number(accuracy = 0.01, big.mark = ".", decimal.mark = ","))
+  ) |>
+  select(-N_se) |>
+  transmute(
+    dif_ouvir,
+    N,
+    p,
+    p_ic95 = paste0("[", p_low, "; ", p_upp, "]"),
+    l,
+    l_ic95 = paste0("[", l_low, "; ", l_upp, "]")
+  )
+
+  print(
+    xtable( 
+      export_dif_ouvir_libras, 
+      digits = c(
+        0, # row name
+        0, # dif_ouvir
+        0, # N
+        0, # p
+        0, # p_ic95
+        0, # l
+        0  # l_ic95
+      )
+    ),
+    sanitize.text.function = NULL,
+    only.contents=TRUE,
+    include.rownames=FALSE,
+    include.colnames=FALSE,
+    hline.after=NULL,
+    comment=FALSE,
+    append=FALSE,
+    file=paste0(
+      eda_dir,
+      "eda_dif_ouvir_libras.tex"
+    )
+  )
+  
+
+
 toc()
 
 

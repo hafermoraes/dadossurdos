@@ -43,7 +43,7 @@ tbl_reordered <-
   mutate(
     across(
       c(censo2000, censo2010, pns2019), 
-      ~sprintf("%.4f%%", . * 100)
+      ~sprintf("%.1f%%", . * 100)
     ),
     rank = case_when(
       # reordenamento para 'instrucao'
