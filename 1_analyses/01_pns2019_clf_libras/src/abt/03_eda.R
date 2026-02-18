@@ -104,7 +104,7 @@ pns2019_posterior |>
   filter(idade >= 5 , idade <= 40) |>
   group_by(dif_ouvir) |>
   summarise(
-    n = survey_mean(libras_01, na.rm = TRUE, vartype=c('se','ci'))
+    l = survey_mean(libras_01, na.rm = TRUE, vartype=c('se','ci'))
   )
 toc()
 
@@ -127,14 +127,64 @@ pns2019_usuarios_libras <-
       starts_with("n"),
       label_number(accuracy = 1, big.mark = ".", decimal.mark = ",")
     ),
+    across(starts_with("pct"), \(x) 100*x),
     across(
       starts_with("pct"),
-      label_percent(accuracy = 0.01, big.mark = ".", decimal.mark = ",")
+      label_number(accuracy = 0.01, big.mark = ".", decimal.mark = ",")
     )
   )
-# pns2019_usuarios_libras
-# paste0("(erro padrão: ", pns2019_usuarios_libras$n_se, ", IC 95%: [", pns2019_usuarios_libras$n_low, "; ", pns2019_usuarios_libras$n_upp, "])")
-# paste0("(erro padrão: ", pns2019_usuarios_libras$pct_se, ", IC 95%: [", pns2019_usuarios_libras$pct_low, "; ", pns2019_usuarios_libras$pct_upp, "])")
+
+eda_vars <- paste0(eda_dir, "eda_vars.tex")
+cat(
+  paste0(
+    "\n\n\\newcommand{\\LibrasPCT}{",
+    pns2019_usuarios_libras$pct,
+    "\\%}\n"
+  ),
+  file = eda_vars,
+  append = FALSE
+)
+cat(
+  paste0(
+    "\\newcommand{\\LibrasPCTfootnote}{",
+    paste0(
+      "(erro padrão: ", 
+      pns2019_usuarios_libras$pct_se, 
+      "\\%, IC 95\\%: [", 
+      pns2019_usuarios_libras$pct_low, 
+      "\\%; ", 
+      pns2019_usuarios_libras$pct_upp, "\\%])"
+      ),
+    "}\n\n"
+  ),
+  file = eda_vars,
+  append = TRUE
+)
+cat(
+  paste0(
+    "\\newcommand{\\LibrasCNT}{",
+    pns2019_usuarios_libras$n,
+    "}\n"
+  ),
+  file = eda_vars,
+  append = TRUE
+)
+cat(
+  paste0(
+    "\\newcommand{\\LibrasCNTfootnote}{",
+    paste0(
+      "(erro padrão: ", 
+      pns2019_usuarios_libras$n_se, 
+      ", IC 95\\%: [", 
+      pns2019_usuarios_libras$n_low, 
+      "; ", 
+      pns2019_usuarios_libras$n_upp, "])"
+    ),
+    "}\n\n"
+  ),
+  file = eda_vars,
+  append = TRUE
+)
 toc()
 
 
