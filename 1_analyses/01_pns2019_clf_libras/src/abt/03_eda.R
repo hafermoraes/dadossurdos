@@ -200,12 +200,12 @@ cat(
   paste0(
     "\\newcommand{\\LibrasPCTfootnote}{",
     paste0(
-      "(erro padrão: ", 
+      "erro padrão: ", 
       pns2019_usuarios_libras$pct_se, 
       "\\%, IC 95\\%: [", 
       pns2019_usuarios_libras$pct_low, 
       "\\%; ", 
-      pns2019_usuarios_libras$pct_upp, "\\%])"
+      pns2019_usuarios_libras$pct_upp, "\\%]"
       ),
     "}\n\n"
   ),
@@ -225,12 +225,12 @@ cat(
   paste0(
     "\\newcommand{\\LibrasCNTfootnote}{",
     paste0(
-      "(erro padrão: ", 
+      "erro padrão: ", 
       pns2019_usuarios_libras$n_se, 
       ", IC 95\\%: [", 
       pns2019_usuarios_libras$n_low, 
       "; ", 
-      pns2019_usuarios_libras$n_upp, "])"
+      pns2019_usuarios_libras$n_upp, "]"
     ),
     "}\n\n"
   ),
@@ -521,6 +521,8 @@ eda_plot <-
   ) |> 
   mutate(
     rank = case_when(
+      # reordenamento para 'uf'
+      key == 'uf' ~ p,
       # reordenamento para 'instrucao'
       value == "outros"        ~ 1,
       value == "fundamental"   ~ 2,
@@ -539,7 +541,7 @@ eda_plot <-
       value == "10-19"    ~ 3,
       value == "20-39"    ~ 4,
       value == "40+"      ~ 5,
-      TRUE                ~ 6
+      TRUE                ~ 0
     ),
     value = reorder_within(value, rank, key)
   ) |> 
