@@ -311,7 +311,7 @@ for(CLF in classifiers$wflow_id) {
         )
 
       export_subconfmat_to_latex(
-        input_table = clf_confmat_sub[[ data_type ]],
+        input_table = clf_confmat_sub[[ "weighted" ]],
         model = model,
         classifier = str_remove_all(CLF, "basic_model_"),
         dif_ouvir = dif,
