@@ -174,7 +174,7 @@ cat(msg, file = OUTPUT_VALIDATION, sep='\n', append = TRUE)
 
 censo2000_abt |>
   filter( row_id == as.numeric(sorteio$row_id))  |>
-  select( row_id, sabe_libras) |>
+  select( row_id, sabe_libras, categ_ouvinte, categ_deficiente_auditivo, categ_surdo, categ_surdocego, sabe_libras_nao0sim1) |>
   collect() |>
   glimpse() |>
   capture.output() |>

@@ -41,7 +41,7 @@ censo2000_oos <-
   censo2000_common |>
   select(
     row_id,
-    idade, sexo, instrucao, dif_ouvir
+    idade, sexo, instrucao, dif_ouvir, dif_enxergar
   ) 
 
 pns2019_clf_base_dir <-
@@ -54,7 +54,7 @@ pns2019_clf_base_dir <-
 
 PREDICT_NENHUMA <- FALSE
 PREDICT_ALGUMA <- FALSE
-PREDICT_GRANDE <- TRUE
+PREDICT_GRANDE <- FALSE
 PREDICT_INCAPAZ <- TRUE
 
 
@@ -89,6 +89,8 @@ dif_ouvir_ignorado <-
   ) |>
   transmute(
     row_id,
+    dif_ouvir,
+    dif_enxergar,
     sabe_libras = ''
   ) |> 
   collect()
@@ -127,6 +129,8 @@ if(PREDICT_NENHUMA){
     ) |> 
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ifelse(
         .pred_sim >= clf$optimum_threshold,
         "sim",
@@ -140,6 +144,8 @@ if(PREDICT_NENHUMA){
     dif_ouvir_nenhuma |>
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ''
     ) |>
     collect()
@@ -178,6 +184,8 @@ if(PREDICT_ALGUMA){
     ) |> 
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ifelse(
         .pred_sim >= clf$optimum_threshold,
         "sim",
@@ -191,6 +199,8 @@ if(PREDICT_ALGUMA){
     dif_ouvir_alguma |>
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ''
     ) |>
     collect()
@@ -230,6 +240,8 @@ if(PREDICT_GRANDE){
     ) |> 
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ifelse(
         .pred_sim >= clf$optimum_threshold,
         "sim",
@@ -243,6 +255,8 @@ if(PREDICT_GRANDE){
     dif_ouvir_grande |>
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ''
     ) |>
     collect()
@@ -283,6 +297,8 @@ if(PREDICT_INCAPAZ){
     ) |> 
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ifelse(
         .pred_sim >= clf$optimum_threshold,
         "sim",
@@ -296,6 +312,8 @@ if(PREDICT_INCAPAZ){
     dif_ouvir_incapaz |>
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ''
     ) |>
     collect()
@@ -310,6 +328,35 @@ censo2000_libras <-
     preds_incapaz,
     dif_ouvir_ignorado
   ) |>
+  mutate(
+    categ_ouvinte = case_when(
+      dif_ouvir == 'nenhuma' ~ 'Ouvinte',
+      dif_ouvir == 'alguma'  ~ 'Ouvinte',
+      TRUE ~ NA_character_
+    ),
+    categ_deficiente_auditivo = case_when(
+      dif_ouvir == 'grande'  ~ 'Deficiente Auditivo',
+      dif_ouvir == 'incapaz' ~ 'Deficiente Auditivo',
+      TRUE ~ NA_character_
+    ),
+    categ_surdo = case_when(
+      dif_ouvir == 'grande'  & sabe_libras == 'sim' ~ 'Surdo',
+      dif_ouvir == 'incapaz' & sabe_libras == 'sim' ~ 'Surdo',
+      TRUE ~ NA_character_
+    ),
+    categ_surdocego = case_when(
+      dif_ouvir == 'grande'  & dif_enxergar == 'grande'  ~ 'Surdo-cego',
+      dif_ouvir == 'grande'  & dif_enxergar == 'incapaz' ~ 'Surdo-cego',
+      dif_ouvir == 'incapaz' & dif_enxergar == 'grande'  ~ 'Surdo-cego',
+      dif_ouvir == 'incapaz' & dif_enxergar == 'incapaz' ~ 'Surdo-cego',
+      TRUE ~ NA_character_
+    ),
+    sabe_libras_nao0sim1 = case_when(
+      sabe_libras == 'sim' ~ 1,
+      TRUE ~ 0
+    )
+  ) |>
+  select(-dif_ouvir, -dif_enxergar) |>
   to_duckdb()
 
 rm(preds_nenhuma, dif_ouvir_nenhuma, PREDICT_NENHUMA)

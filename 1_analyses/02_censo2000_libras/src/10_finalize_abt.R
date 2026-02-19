@@ -109,5 +109,5 @@ message("redução de ", size_csv, " (csv) para ", size_parquet, " (parquet)")
 message("removendo arquivo ", OUTPUT_CSV)
 system(paste0("rm ", OUTPUT_CSV))
 
-
+gc()
 

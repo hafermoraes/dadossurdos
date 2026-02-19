@@ -1,35 +1,32 @@
-#' @title Imputação Preditiva de Libras (Censo 2010)
+#' @title Predição de Uso de Libras (Censo 2010) via Modelos PNS 2019
 #' 
 #' @description
-#' Este script aplica os modelos classificadores desenvolvidos a partir da PNS 2019 
-#' aos microdados harmonizados do Censo 2010. O processo utiliza uma estratégia de 
-#' "estratificação por dificuldade", onde modelos específicos (XGBoost, Naive Bayes, MARS) 
-#' são aplicados dependendo do grau de deficiência auditiva relatado (\code{dif_ouvir}).
+#' Este script aplica classificadores treinados no projeto PNS 2019 aos microdados do 
+#' Censo 2010. O processo é segmentado pelo nível de deficiência auditiva (\code{dif_ouvir}), 
+#' utilizando modelos específicos (XGBoost, Naive Bayes, MARS) para cada estrato, 
+#' visando imputar a variável \code{sabe_libras} em uma base histórica.
 #'
-#' @section Estratégia de Predição:
+#' @section Estratégia de Classificação:
 #' \itemize{
-#'   \item \bold{Modelagem por Estrato}: Carrega modelos \code{.rds} pré-treinados, 
-#'     cada um com seu próprio \code{optimum_threshold} calculado na validação da PNS.
-#'   \item \bold{Flags de Controle}: Utiliza variáveis booleanas (\code{PREDICT_}) 
-#'     para ativar ou desativar a predição em subgrupos específicos (ex: apenas 'grande' e 'incapaz').
-#'   \item \bold{Processamento Híbrido}: Filtra os dados via \code{duckdb}, mas realiza 
-#'     a predição em memória (\code{collect}) utilizando o motor do \code{tidymodels}.
+#'   \item \bold{Segmentação}: A base é dividida em 5 subgrupos: \emph{nenhuma, alguma, grande, incapaz} e \emph{ignorado}.
+#'   \item \bold{Modelos Carregados}: 
+#'     \itemize{
+#'       \item \code{grande}: Utiliza XGBoost (\code{xgb}).
+#'       \item \code{incapaz}: Utiliza Naive Bayes (\code{nb}).
+#'       \item \code{nenhuma/alguma}: Configuráveis via flags (atualmente desativadas).
+#'     }
+#'   \item \bold{Threshold Ótimo}: Aplica o ponto de corte específico de cada modelo 
+#'     (\code{optimum_threshold}) para binarizar a predição de probabilidade em "sim/nao".
 #' }
 #'
-#' @section Configuração de Modelos:
-#' \itemize{
-#'   \item \bold{Grande Dificuldade}: Classificador XGBoost (\code{mod04_grande}).
-#'   \item \bold{Incapaz}: Classificador Naive Bayes (\code{mod05_incapaz}).
-#'   \item \bold{Nenhuma/Alguma}: Atualmente configurados para retornar valores vazios, 
-#'     ajustáveis conforme a necessidade analítica.
+#' @section Fluxo de Dados:
+#' \enumerate{
+#'   \item Coleta os dados do \code{duckdb} para memória (\code{collect}).
+#'   \item Realiza a predição via \code{predict()} do ecossistema \code{tidymodels}.
+#'   \item Consolida os resultados (\code{bind_rows}) e exporta para CSV.
 #' }
 #'
-#' @note 
-#' É fundamental que as categorias de \code{instrucao} e \code{dif_ouvir} no Censo 2010 
-#' estejam perfeitamente alinhadas aos fatores utilizados no treinamento dos modelos 
-#' originais para evitar erros de predição.
-#'
-#' @name 08_vars_libras_clf_censo2010
+#' @name 08_vars_libras_clf_censo
 NULL
 
 
@@ -44,9 +41,8 @@ censo2010_oos <-
   censo2010_common |>
   select(
     row_id,
-    idade, sexo, instrucao, dif_ouvir
+    idade, sexo, instrucao, dif_ouvir, dif_enxergar
   ) 
-
 
 pns2019_clf_base_dir <-
   paste0(
@@ -58,7 +54,7 @@ pns2019_clf_base_dir <-
 
 PREDICT_NENHUMA <- FALSE
 PREDICT_ALGUMA <- FALSE
-PREDICT_GRANDE <- TRUE
+PREDICT_GRANDE <- FALSE
 PREDICT_INCAPAZ <- TRUE
 
 
@@ -67,7 +63,6 @@ dif_ouvir_nenhuma <-
   filter(
     dif_ouvir == 'nenhuma'
   )
-
 
 dif_ouvir_alguma <-
   censo2010_oos |>
@@ -94,6 +89,8 @@ dif_ouvir_ignorado <-
   ) |>
   transmute(
     row_id,
+    dif_ouvir,
+    dif_enxergar,
     sabe_libras = ''
   ) |> 
   collect()
@@ -132,6 +129,8 @@ if(PREDICT_NENHUMA){
     ) |> 
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ifelse(
         .pred_sim >= clf$optimum_threshold,
         "sim",
@@ -145,6 +144,8 @@ if(PREDICT_NENHUMA){
     dif_ouvir_nenhuma |>
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ''
     ) |>
     collect()
@@ -183,6 +184,8 @@ if(PREDICT_ALGUMA){
     ) |> 
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ifelse(
         .pred_sim >= clf$optimum_threshold,
         "sim",
@@ -196,6 +199,8 @@ if(PREDICT_ALGUMA){
     dif_ouvir_alguma |>
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ''
     ) |>
     collect()
@@ -219,8 +224,7 @@ if(PREDICT_GRANDE){
 
   dif_ouvir_grande <-
     dif_ouvir_grande |>
-    collect() 
-    
+    collect()
     
   predict_probs <-
     predict(
@@ -236,6 +240,8 @@ if(PREDICT_GRANDE){
     ) |> 
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ifelse(
         .pred_sim >= clf$optimum_threshold,
         "sim",
@@ -249,6 +255,8 @@ if(PREDICT_GRANDE){
     dif_ouvir_grande |>
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ''
     ) |>
     collect()
@@ -289,6 +297,8 @@ if(PREDICT_INCAPAZ){
     ) |> 
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ifelse(
         .pred_sim >= clf$optimum_threshold,
         "sim",
@@ -302,6 +312,8 @@ if(PREDICT_INCAPAZ){
     dif_ouvir_incapaz |>
     transmute(
       row_id,
+      dif_ouvir,
+      dif_enxergar,
       sabe_libras = ''
     ) |>
     collect()
@@ -316,6 +328,35 @@ censo2010_libras <-
     preds_incapaz,
     dif_ouvir_ignorado
   ) |>
+  mutate(
+    categ_ouvinte = case_when(
+      dif_ouvir == 'nenhuma' ~ 'Ouvinte',
+      dif_ouvir == 'alguma'  ~ 'Ouvinte',
+      TRUE ~ NA_character_
+    ),
+    categ_deficiente_auditivo = case_when(
+      dif_ouvir == 'grande'  ~ 'Deficiente Auditivo',
+      dif_ouvir == 'incapaz' ~ 'Deficiente Auditivo',
+      TRUE ~ NA_character_
+    ),
+    categ_surdo = case_when(
+      dif_ouvir == 'grande'  & sabe_libras == 'sim' ~ 'Surdo',
+      dif_ouvir == 'incapaz' & sabe_libras == 'sim' ~ 'Surdo',
+      TRUE ~ NA_character_
+    ),
+    categ_surdocego = case_when(
+      dif_ouvir == 'grande'  & dif_enxergar == 'grande'  ~ 'Surdo-cego',
+      dif_ouvir == 'grande'  & dif_enxergar == 'incapaz' ~ 'Surdo-cego',
+      dif_ouvir == 'incapaz' & dif_enxergar == 'grande'  ~ 'Surdo-cego',
+      dif_ouvir == 'incapaz' & dif_enxergar == 'incapaz' ~ 'Surdo-cego',
+      TRUE ~ NA_character_
+    ),
+    sabe_libras_nao0sim1 = case_when(
+      sabe_libras == 'sim' ~ 1,
+      TRUE ~ 0
+    )
+  ) |>
+  select(-dif_ouvir, -dif_enxergar) |>
   to_duckdb()
 
 rm(preds_nenhuma, dif_ouvir_nenhuma, PREDICT_NENHUMA)

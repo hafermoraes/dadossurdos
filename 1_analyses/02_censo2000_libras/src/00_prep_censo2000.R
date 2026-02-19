@@ -71,3 +71,6 @@ source(paste0(src_dir, '09_vars_spatial.R'))
 
 source(paste0(src_dir, '10_finalize_abt.R'))
 
+source(paste0(src_dir, '11_validate_abt.R'))
+
+source(paste0(src_dir, '12_sabe_libras_stats.R'))
