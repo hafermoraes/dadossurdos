@@ -1,24 +1,25 @@
-
 ANO_CENSO <- 2010
+
 
 tic()
 message("estimação dos usuários de libras no censo", ANO_CENSO)
+gc()
 censo2010_stats_svydesign <-
   censo2010_abt |>
   filter(
     dif_ouvir %in% c('grande', 'incapaz') # reduz tempo de processamento consideravelmente...
-  ) |> 
+  ) |>
   mutate(
     censo = ANO_CENSO,
-    across( 
-      c(peso_amostral, sabe_libras_nao0sim1), 
-      as.numeric 
+    across(
+      c(peso_amostral, sabe_libras_nao0sim1),
+      as.numeric
     )
   ) |>
   as_survey_design(
     ids = 1,
     weights = peso_amostral
-  ) 
+  )
 toc()
 
 
@@ -27,6 +28,7 @@ toc()
 
 
 tic()
+gc()
 message("estimação da quantidade de deficientes auditivos no censo", ANO_CENSO)
 censo2010_stats_da <-
   censo2010_stats_svydesign |>
@@ -54,6 +56,7 @@ toc()
 
 
 tic()
+gc()
 message("estimação da quantidade de surdos no censo", ANO_CENSO)
 censo2010_stats_surdo <-
   censo2010_stats_svydesign |>
@@ -82,6 +85,7 @@ toc()
 
 
 tic()
+gc()
 message("estimação da quantidade de surdos-cegos no censo", ANO_CENSO)
 censo2010_stats_surdocego <-
   censo2010_stats_svydesign |>
@@ -106,19 +110,18 @@ toc()
 
 
 tic()
+gc()
 message("consolidando as informações para a tese...")
 censo2010_stats <-
   bind_rows(
     censo2010_stats_da,
     censo2010_stats_surdo,
     censo2010_stats_surdocego
-  )
-
-censo2010_stats |>
+  ) |>
   mutate(
     across(
       c(N,N_low,N_upp,l,l_low,l_upp),
-      label_number(accuracy = 1, big.mark = ".", decimal.mark = ",")     
+      label_number(accuracy = 1, big.mark = ".", decimal.mark = ",")
     ),
     across(
       c(lp, lp_low, lp_upp),
@@ -126,7 +129,7 @@ censo2010_stats |>
     ),
     across(
       c(lp, lp_low, lp_upp),
-      label_number(accuracy = 0.1, big.mark = ".", decimal.mark = ",")     
+      label_number(accuracy = 0.1, big.mark = ".", decimal.mark = ",")
     )
   )
 toc()

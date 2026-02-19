@@ -31,6 +31,7 @@
 #' @name 10_finalize_abt_censo2010
 NULL
 
+gc()
 
 # comandos rodam via linux para não usar memória
 FILES <- paste0(
@@ -54,6 +55,7 @@ OUTPUT_PARQUET <- paste0(data_dir, "censo2010_abt.parquet")
 # e remove coluna row_id
 for(FILE in FILES){
   tic()
+  gc()
   message("tratando arquivo ", FILE, " ...")
   system(paste0("sort -t, -k1,1n -o ", FILE, " ",FILE))
   if(FILE != FILES[1]){
@@ -63,12 +65,17 @@ for(FILE in FILES){
   toc()
 }
 
+
 tic()
+gc()
 message("concatenando arquivos em uma base única...")
 system(paste0("paste -d ',' ", INPUTS, " > ", OUTPUT_CSV))
 toc()
 
+
+
 tic()
+gc()
 message("removendo arquivos intermediários...")
 for(FILE in FILES){
   message("tratando arquivo ", FILE)
@@ -76,7 +83,9 @@ for(FILE in FILES){
 }
 toc()
 
+
 tic()
+gc()
 message("convertendo arquivo csv em parquet para eficiência em disco...")
 col_names <- names(read_csv(OUTPUT_CSV, n_max = 0))
 csv_schema <- schema(
