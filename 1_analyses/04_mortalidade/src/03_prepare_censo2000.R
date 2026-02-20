@@ -8,38 +8,20 @@ message("preparando os dados do censo", ANO_CENSO," para as análises de mortali
 tic()
 message("selecionando subconjunto mínimo de variáveis do censo", ANO_CENSO,"...")
 censo2000_mortalidade_subset <-
-  censo2000 |> 
+  censo2000_abt |> 
   mutate(
     across(
-      c(idade, peso_amostral),
+      c(
+        peso_amostral,
+        idade,
+        categ_ouvinte, categ_deficiente_auditivo, categ_surdo, categ_surdocego
+      ),
       as.numeric
-    ),
-    ouvinte = case_when(
-      dif_ouvir == 'nenhuma' ~ 'sim',
-      dif_ouvir == 'alguma'  ~ 'sim',
-      TRUE ~ 'nao'
-    ),
-    deficiente_auditivo = case_when(
-      dif_ouvir == 'grande'  ~ 'sim',
-      dif_ouvir == 'incapaz' ~ 'sim',
-      TRUE ~ 'nao'
-    ),
-    surdo = case_when(
-      dif_ouvir == 'grande'  & sabe_libras == 'sim' ~ 'sim',
-      dif_ouvir == 'incapaz' & sabe_libras == 'sim' ~ 'sim',
-      TRUE ~ 'nao'
-    ),
-    surdocego = case_when(
-      dif_ouvir == 'grande'  & dif_enxergar == 'grande'  ~ 'sim',
-      dif_ouvir == 'grande'  & dif_enxergar == 'incapaz' ~ 'sim',
-      dif_ouvir == 'incapaz' & dif_enxergar == 'grande'  ~ 'sim',
-      dif_ouvir == 'incapaz' & dif_enxergar == 'incapaz' ~ 'sim',
-      TRUE ~ 'nao'
     ),
     ano = ANO_CENSO
   ) |>
   select(
-    ouvinte, deficiente_auditivo, surdo, surdocego,
+    categ_ouvinte, categ_deficiente_auditivo, categ_surdo, categ_surdocego,
     ano, sexo, idade, peso_amostral
   )
 toc()
@@ -72,7 +54,7 @@ message("subgrupo 'ouvinte' no censo", ANO_CENSO,"...")
 
 censo2000_mort_ouvinte <-
   censo2000_mortalidade_subset |>
-  filter( ouvinte == 'sim') |>
+  filter( categ_ouvinte == 1) |>
   group_by(ano, sexo, idade) |>
   summarise(n = sum(peso_amostral, na.rm = TRUE)) |>
   transmute(
@@ -91,7 +73,7 @@ message("subgrupo 'deficiente_auditivo' no censo", ANO_CENSO,"...")
 
 censo2000_mort_deficiente_auditivo <-
   censo2000_mortalidade_subset |>
-  filter( deficiente_auditivo == 'sim') |>
+  filter( categ_deficiente_auditivo == 1) |>
   group_by(ano, sexo, idade) |>
   summarise(n = sum(peso_amostral, na.rm = TRUE)) |>
   transmute(
@@ -110,7 +92,7 @@ message("subgrupo 'surdo' no censo", ANO_CENSO,"...")
 
 censo2000_mort_surdo <-
   censo2000_mortalidade_subset |>
-  filter( surdo == 'sim') |>
+  filter( categ_surdo == 1) |>
   group_by(ano, sexo, idade) |>
   summarise(n = sum(peso_amostral, na.rm = TRUE)) |>
   transmute(
@@ -129,7 +111,7 @@ message("subgrupo 'surdocego' no censo", ANO_CENSO,"...")
 
 censo2000_mort_surdocego <-
   censo2000_mortalidade_subset |>
-  filter( surdocego == 'sim') |>
+  filter( categ_surdocego == 1) |>
   group_by(ano, sexo, idade) |>
   summarise(n = sum(peso_amostral, na.rm = TRUE)) |>
   transmute(

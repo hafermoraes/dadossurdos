@@ -27,7 +27,7 @@ results_dir <-
   )
 
   
-censo2000_parquet <-
+censo2000_abt_parquet <-
   paste0(
     base_dir,
     '02_censo2000_libras/',
@@ -35,7 +35,7 @@ censo2000_parquet <-
     'censo2000_abt.parquet'
   )
   
-censo2010_parquet <-
+censo2010_abt_parquet <-
   paste0(
     base_dir,
     '02_censo2010_libras/',
@@ -52,3 +52,6 @@ source(paste0(src_dir, '03_prepare_censo2000.R'))
 
 source(paste0(src_dir, '04_prepare_censo2010.R'))
 
+source(paste0(src_dir, '05_unify_tables.R'))
+
+source(paste0(src_dir, '06_age_pyramids.R'))
