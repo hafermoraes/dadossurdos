@@ -330,26 +330,26 @@ censo2010_libras <-
   ) |>
   mutate(
     categ_ouvinte = case_when(
-      dif_ouvir == 'nenhuma' ~ 'Ouvinte',
-      dif_ouvir == 'alguma'  ~ 'Ouvinte',
-      TRUE ~ NA_character_
+      dif_ouvir == 'nenhuma' ~ 1,
+      dif_ouvir == 'alguma'  ~ 1,
+      TRUE ~ 0
     ),
     categ_deficiente_auditivo = case_when(
-      dif_ouvir == 'grande'  ~ 'Deficiente Auditivo',
-      dif_ouvir == 'incapaz' ~ 'Deficiente Auditivo',
-      TRUE ~ NA_character_
+      dif_ouvir == 'grande'  ~ 1,
+      dif_ouvir == 'incapaz' ~ 1,
+      TRUE ~ 0
     ),
     categ_surdo = case_when(
-      dif_ouvir == 'grande'  & sabe_libras == 'sim' ~ 'Surdo',
-      dif_ouvir == 'incapaz' & sabe_libras == 'sim' ~ 'Surdo',
-      TRUE ~ NA_character_
+      dif_ouvir == 'grande'  & sabe_libras == 'sim' ~ 1,
+      dif_ouvir == 'incapaz' & sabe_libras == 'sim' ~ 1,
+      TRUE ~ 0
     ),
     categ_surdocego = case_when(
-      dif_ouvir == 'grande'  & dif_enxergar == 'grande'  ~ 'Surdo-cego',
-      dif_ouvir == 'grande'  & dif_enxergar == 'incapaz' ~ 'Surdo-cego',
-      dif_ouvir == 'incapaz' & dif_enxergar == 'grande'  ~ 'Surdo-cego',
-      dif_ouvir == 'incapaz' & dif_enxergar == 'incapaz' ~ 'Surdo-cego',
-      TRUE ~ NA_character_
+      dif_ouvir == 'grande'  & dif_enxergar == 'grande'  ~ 1,
+      dif_ouvir == 'grande'  & dif_enxergar == 'incapaz' ~ 1,
+      dif_ouvir == 'incapaz' & dif_enxergar == 'grande'  ~ 1,
+      dif_ouvir == 'incapaz' & dif_enxergar == 'incapaz' ~ 1,
+      TRUE ~ 0
     ),
     sabe_libras_nao0sim1 = case_when(
       sabe_libras == 'sim' ~ 1,

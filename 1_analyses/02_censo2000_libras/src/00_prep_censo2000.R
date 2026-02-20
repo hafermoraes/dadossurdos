@@ -50,6 +50,12 @@ data_dir <-
     'data/'
   )
 
+results_dir <-
+  paste0(
+    base_dir,
+    'results/'
+  )
+
 
 source(paste0(src_dir, '01_load_packages.R'))
 
