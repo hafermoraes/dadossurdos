@@ -62,6 +62,8 @@ message("configurando métricas dependentes de classe para otimização do class
 
 class_dependent_metrics_set <- metric_set(
   accuracy, 
+  sens,
+  spec,
   j_index
   # f1_measure, 
   # f2_measure

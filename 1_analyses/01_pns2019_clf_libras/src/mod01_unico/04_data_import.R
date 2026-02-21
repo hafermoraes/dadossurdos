@@ -35,15 +35,17 @@ libras <-
       ),
     show_col_types = FALSE
   ) |>
+  filter(idade <=140) |>
   mutate(
     # https://workflowsets.tidymodels.org/reference/workflow_set.html
     case_weights = importance_weights(case_weights),
     libras = factor(
       libras,
-      levels = c('nao', 'sim')
+      levels = c('sim', 'nao')
     )
   ) |>
-  filter(idade <=40)
+  group_by(idade, sexo, instrucao, dif_ouvir, libras) |>
+  summarise( case_weights = sum(case_weights))
 toc()
   
 if(FALSE){

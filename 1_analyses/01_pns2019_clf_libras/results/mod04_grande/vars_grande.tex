@@ -1,6 +1,6 @@
 
 
-\newcommand{\MODgrandeCLFdtSPECthreshold}{0.05}
+\newcommand{\MODgrandeCLFdtSPECthreshold}{0}
 
 
 
@@ -8,9 +8,9 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- cost\_complexity &  0 \\ 
-  tree\_depth &  4 \\ 
-  min\_n & 37 \\ 
+ cost\_complexity & 0 \\ 
+  tree\_depth & 2 \\ 
+  min\_n & 9 \\ 
   \end{tabular}
   \endgroup
 }
@@ -19,10 +19,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- roc\_auc &  0,348 \\ 
-  pr\_auc &  0,705 \\ 
-  accuracy &  0,471 \\ 
-  j\_index & -0,036 \\ 
+ roc\_auc & 0,5 \\ 
+  pr\_auc & 0,559 \\ 
+  accuracy & 0,024 \\ 
+  sens & 1 \\ 
+  spec & 0 \\ 
+  j\_index & 0 \\ 
   \end{tabular}
   \endgroup
 }
@@ -32,16 +34,16 @@
   \tiny
   \begin{tabular}{m{0.1cm}ccc}
     & & \multicolumn{2}{c}{Real} \\
-    & & Não & Sim \\
+    & & Sim & Não \\
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{42.2\% \\ \textcolor{\cor}{(33.510)}}
-    & \makecell{5.0\% \\ \textcolor{\cor}{(3.958)}} \\ 
-
     & Sim
-    & \makecell{47.9\% \\ \textcolor{\cor}{(37.973)}}
-    & \makecell{4.9\% \\ \textcolor{\cor}{(3.890)}} \\ 
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}} \\ 
+
+    & Não
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -54,25 +56,25 @@
 
     & & \multicolumn{2}{c}{Real} & \\
     \cmidrule(lr){3-4}
-    & & Não & Sim & \\    \midrule
+    & & Sim & Não & \\    \midrule
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{42.2\% \\ \textcolor{\cor}{(33.510)}}
-    & \makecell{5.0\% \\ \textcolor{\cor}{(3.958)}}
-    & \makecell{47.2\% \\ \textcolor{\cor}{(37.468)}} \\ 
-
     & Sim
-    & \makecell{47.9\% \\ \textcolor{\cor}{(37.973)}}
-    & \makecell{4.9\% \\ \textcolor{\cor}{(3.890)}}
-    & \makecell{52.8\% \\ \textcolor{\cor}{(41.863)}} \\ 
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}}
+    & \makecell{100.0\% \\ \textcolor{\cor}{(625.825)}} \\ 
+
+    & Não
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
+    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
     \midrule
 
     & 
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}}
-    & \makecell{100.0\% \\ \textcolor{\cor}{(79.331)}} \\ 
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}}
+    & \makecell{100.0\% \\ \textcolor{\cor}{(625.825)}} \\ 
 
   \end{tabular}
 }
@@ -98,8 +100,10 @@
   \tiny
   \begin{tabular}{ll}
  roc\_auc & 0,5 \\ 
-  pr\_auc & 0,888 \\ 
-  accuracy & 0,901 \\ 
+  pr\_auc & 0,559 \\ 
+  accuracy & 0,024 \\ 
+  sens & 1 \\ 
+  spec & 0 \\ 
   j\_index & 0 \\ 
   \end{tabular}
   \endgroup
@@ -110,14 +114,14 @@
   \tiny
   \begin{tabular}{m{0.1cm}ccc}
     & & \multicolumn{2}{c}{Real} \\
-    & & Não & Sim \\
+    & & Sim & Não \\
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}} \\ 
-
     & Sim
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}} \\ 
+
+    & Não
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
@@ -132,15 +136,15 @@
 
     & & \multicolumn{2}{c}{Real} & \\
     \cmidrule(lr){3-4}
-    & & Não & Sim & \\    \midrule
+    & & Sim & Não & \\    \midrule
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}}
-    & \makecell{100.0\% \\ \textcolor{\cor}{(79.331)}} \\ 
-
     & Sim
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}}
+    & \makecell{100.0\% \\ \textcolor{\cor}{(625.825)}} \\ 
+
+    & Não
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
@@ -148,9 +152,9 @@
     \midrule
 
     & 
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}}
-    & \makecell{100.0\% \\ \textcolor{\cor}{(79.331)}} \\ 
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}}
+    & \makecell{100.0\% \\ \textcolor{\cor}{(625.825)}} \\ 
 
   \end{tabular}
 }
@@ -176,8 +180,10 @@
   \tiny
   \begin{tabular}{ll}
  roc\_auc & 0,5 \\ 
-  pr\_auc & 0,888 \\ 
-  accuracy & 0,901 \\ 
+  pr\_auc & 0,559 \\ 
+  accuracy & 0,024 \\ 
+  sens & 1 \\ 
+  spec & 0 \\ 
   j\_index & 0 \\ 
   \end{tabular}
   \endgroup
@@ -188,14 +194,14 @@
   \tiny
   \begin{tabular}{m{0.1cm}ccc}
     & & \multicolumn{2}{c}{Real} \\
-    & & Não & Sim \\
+    & & Sim & Não \\
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}} \\ 
-
     & Sim
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}} \\ 
+
+    & Não
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
 
@@ -210,15 +216,15 @@
 
     & & \multicolumn{2}{c}{Real} & \\
     \cmidrule(lr){3-4}
-    & & Não & Sim & \\    \midrule
+    & & Sim & Não & \\    \midrule
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}}
-    & \makecell{100.0\% \\ \textcolor{\cor}{(79.331)}} \\ 
-
     & Sim
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}}
+    & \makecell{100.0\% \\ \textcolor{\cor}{(625.825)}} \\ 
+
+    & Não
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
@@ -226,9 +232,9 @@
     \midrule
 
     & 
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}}
-    & \makecell{100.0\% \\ \textcolor{\cor}{(79.331)}} \\ 
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}}
+    & \makecell{100.0\% \\ \textcolor{\cor}{(625.825)}} \\ 
 
   \end{tabular}
 }
@@ -243,9 +249,9 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- hidden\_units &   9 \\ 
+ hidden\_units &   2 \\ 
   penalty &   0 \\ 
-  epochs & 466 \\ 
+  epochs & 219 \\ 
   \end{tabular}
   \endgroup
 }
@@ -254,10 +260,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- roc\_auc & 0,254 \\ 
-  pr\_auc & 0,695 \\ 
-  accuracy & 0,618 \\ 
-  j\_index & 0,331 \\ 
+ roc\_auc & 0,499 \\ 
+  pr\_auc & 0,307 \\ 
+  accuracy & 0,809 \\ 
+  sens & 0,317 \\ 
+  spec & 0,822 \\ 
+  j\_index & 0,139 \\ 
   \end{tabular}
   \endgroup
 }
@@ -267,16 +275,16 @@
   \tiny
   \begin{tabular}{m{0.1cm}ccc}
     & & \multicolumn{2}{c}{Real} \\
-    & & Não & Sim \\
+    & & Sim & Não \\
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{54.6\% \\ \textcolor{\cor}{(43.342)}}
-    & \makecell{2.7\% \\ \textcolor{\cor}{(2.158)}} \\ 
-
     & Sim
-    & \makecell{35.5\% \\ \textcolor{\cor}{(28.141)}}
-    & \makecell{7.2\% \\ \textcolor{\cor}{(5.690)}} \\ 
+    & \makecell{0.8\% \\ \textcolor{\cor}{(4.835)}}
+    & \makecell{17.4\% \\ \textcolor{\cor}{(108.847)}} \\ 
+
+    & Não
+    & \makecell{1.7\% \\ \textcolor{\cor}{(10.399)}}
+    & \makecell{80.2\% \\ \textcolor{\cor}{(501.744)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -289,32 +297,32 @@
 
     & & \multicolumn{2}{c}{Real} & \\
     \cmidrule(lr){3-4}
-    & & Não & Sim & \\    \midrule
+    & & Sim & Não & \\    \midrule
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{54.6\% \\ \textcolor{\cor}{(43.342)}}
-    & \makecell{2.7\% \\ \textcolor{\cor}{(2.158)}}
-    & \makecell{57.4\% \\ \textcolor{\cor}{(45.500)}} \\ 
-
     & Sim
-    & \makecell{35.5\% \\ \textcolor{\cor}{(28.141)}}
-    & \makecell{7.2\% \\ \textcolor{\cor}{(5.690)}}
-    & \makecell{42.6\% \\ \textcolor{\cor}{(33.831)}} \\ 
+    & \makecell{0.8\% \\ \textcolor{\cor}{(4.835)}}
+    & \makecell{17.4\% \\ \textcolor{\cor}{(108.847)}}
+    & \makecell{18.2\% \\ \textcolor{\cor}{(113.682)}} \\ 
+
+    & Não
+    & \makecell{1.7\% \\ \textcolor{\cor}{(10.399)}}
+    & \makecell{80.2\% \\ \textcolor{\cor}{(501.744)}}
+    & \makecell{81.8\% \\ \textcolor{\cor}{(512.143)}} \\ 
 
     \midrule
 
     & 
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}}
-    & \makecell{100.0\% \\ \textcolor{\cor}{(79.331)}} \\ 
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}}
+    & \makecell{100.0\% \\ \textcolor{\cor}{(625.825)}} \\ 
 
   \end{tabular}
 }
 
 
 
-\newcommand{\MODgrandeCLFnbSPECthreshold}{0.25}
+\newcommand{\MODgrandeCLFnbSPECthreshold}{0.01}
 
 
 
@@ -322,8 +330,8 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- smoothness & 0,52 \\ 
-  Laplace & 1,396 \\ 
+ smoothness & 1,499 \\ 
+  Laplace & 2,816 \\ 
   \end{tabular}
   \endgroup
 }
@@ -332,10 +340,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- roc\_auc & 0,358 \\ 
-  pr\_auc & 0,711 \\ 
-  accuracy & 0,502 \\ 
-  j\_index & 0,242 \\ 
+ roc\_auc & 0,628 \\ 
+  pr\_auc & 0,174 \\ 
+  accuracy & 0,955 \\ 
+  sens & 0,099 \\ 
+  spec & 0,976 \\ 
+  j\_index & 0,075 \\ 
   \end{tabular}
   \endgroup
 }
@@ -345,16 +355,16 @@
   \tiny
   \begin{tabular}{m{0.1cm}ccc}
     & & \multicolumn{2}{c}{Real} \\
-    & & Não & Sim \\
+    & & Sim & Não \\
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{42.6\% \\ \textcolor{\cor}{(33.813)}}
-    & \makecell{2.3\% \\ \textcolor{\cor}{(1.811)}} \\ 
-
     & Sim
-    & \makecell{47.5\% \\ \textcolor{\cor}{(37.670)}}
-    & \makecell{7.6\% \\ \textcolor{\cor}{(6.037)}} \\ 
+    & \makecell{0.2\% \\ \textcolor{\cor}{(1.512)}}
+    & \makecell{2.3\% \\ \textcolor{\cor}{(14.563)}} \\ 
+
+    & Não
+    & \makecell{2.2\% \\ \textcolor{\cor}{(13.722)}}
+    & \makecell{95.2\% \\ \textcolor{\cor}{(596.028)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -367,32 +377,32 @@
 
     & & \multicolumn{2}{c}{Real} & \\
     \cmidrule(lr){3-4}
-    & & Não & Sim & \\    \midrule
+    & & Sim & Não & \\    \midrule
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{42.6\% \\ \textcolor{\cor}{(33.813)}}
-    & \makecell{2.3\% \\ \textcolor{\cor}{(1.811)}}
-    & \makecell{44.9\% \\ \textcolor{\cor}{(35.624)}} \\ 
-
     & Sim
-    & \makecell{47.5\% \\ \textcolor{\cor}{(37.670)}}
-    & \makecell{7.6\% \\ \textcolor{\cor}{(6.037)}}
-    & \makecell{55.1\% \\ \textcolor{\cor}{(43.707)}} \\ 
+    & \makecell{0.2\% \\ \textcolor{\cor}{(1.512)}}
+    & \makecell{2.3\% \\ \textcolor{\cor}{(14.563)}}
+    & \makecell{2.6\% \\ \textcolor{\cor}{(16.075)}} \\ 
+
+    & Não
+    & \makecell{2.2\% \\ \textcolor{\cor}{(13.722)}}
+    & \makecell{95.2\% \\ \textcolor{\cor}{(596.028)}}
+    & \makecell{97.4\% \\ \textcolor{\cor}{(609.750)}} \\ 
 
     \midrule
 
     & 
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}}
-    & \makecell{100.0\% \\ \textcolor{\cor}{(79.331)}} \\ 
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}}
+    & \makecell{100.0\% \\ \textcolor{\cor}{(625.825)}} \\ 
 
   \end{tabular}
 }
 
 
 
-\newcommand{\MODgrandeCLFrfSPECthreshold}{0.2}
+\newcommand{\MODgrandeCLFrfSPECthreshold}{0.1}
 
 
 
@@ -400,9 +410,9 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- mtry &   2 \\ 
-  trees & 390 \\ 
-  min\_n &  37 \\ 
+ mtry &     7 \\ 
+  trees & 1.093 \\ 
+  min\_n &    34 \\ 
   \end{tabular}
   \endgroup
 }
@@ -411,10 +421,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- roc\_auc & 0,362 \\ 
-  pr\_auc & 0,724 \\ 
-  accuracy & 0,437 \\ 
-  j\_index & 0,17 \\ 
+ roc\_auc & 0,613 \\ 
+  pr\_auc & 0,214 \\ 
+  accuracy & 0,892 \\ 
+  sens & 0,271 \\ 
+  spec & 0,907 \\ 
+  j\_index & 0,178 \\ 
   \end{tabular}
   \endgroup
 }
@@ -424,16 +436,16 @@
   \tiny
   \begin{tabular}{m{0.1cm}ccc}
     & & \multicolumn{2}{c}{Real} \\
-    & & Não & Sim \\
+    & & Sim & Não \\
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{36.1\% \\ \textcolor{\cor}{(28.668)}}
-    & \makecell{2.3\% \\ \textcolor{\cor}{(1.811)}} \\ 
-
     & Sim
-    & \makecell{54.0\% \\ \textcolor{\cor}{(42.815)}}
-    & \makecell{7.6\% \\ \textcolor{\cor}{(6.037)}} \\ 
+    & \makecell{0.7\% \\ \textcolor{\cor}{(4.132)}}
+    & \makecell{9.1\% \\ \textcolor{\cor}{(56.714)}} \\ 
+
+    & Não
+    & \makecell{1.8\% \\ \textcolor{\cor}{(11.102)}}
+    & \makecell{88.5\% \\ \textcolor{\cor}{(553.877)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -446,32 +458,32 @@
 
     & & \multicolumn{2}{c}{Real} & \\
     \cmidrule(lr){3-4}
-    & & Não & Sim & \\    \midrule
+    & & Sim & Não & \\    \midrule
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{36.1\% \\ \textcolor{\cor}{(28.668)}}
-    & \makecell{2.3\% \\ \textcolor{\cor}{(1.811)}}
-    & \makecell{38.4\% \\ \textcolor{\cor}{(30.479)}} \\ 
-
     & Sim
-    & \makecell{54.0\% \\ \textcolor{\cor}{(42.815)}}
-    & \makecell{7.6\% \\ \textcolor{\cor}{(6.037)}}
-    & \makecell{61.6\% \\ \textcolor{\cor}{(48.852)}} \\ 
+    & \makecell{0.7\% \\ \textcolor{\cor}{(4.132)}}
+    & \makecell{9.1\% \\ \textcolor{\cor}{(56.714)}}
+    & \makecell{9.7\% \\ \textcolor{\cor}{(60.846)}} \\ 
+
+    & Não
+    & \makecell{1.8\% \\ \textcolor{\cor}{(11.102)}}
+    & \makecell{88.5\% \\ \textcolor{\cor}{(553.877)}}
+    & \makecell{90.3\% \\ \textcolor{\cor}{(564.979)}} \\ 
 
     \midrule
 
     & 
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}}
-    & \makecell{100.0\% \\ \textcolor{\cor}{(79.331)}} \\ 
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}}
+    & \makecell{100.0\% \\ \textcolor{\cor}{(625.825)}} \\ 
 
   \end{tabular}
 }
 
 
 
-\newcommand{\MODgrandeCLFsvmSPECthreshold}{0}
+\newcommand{\MODgrandeCLFsvmSPECthreshold}{0.12}
 
 
 
@@ -479,7 +491,7 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- cost & 0,034 \\ 
+ cost & 3,513 \\ 
   \end{tabular}
   \endgroup
 }
@@ -488,10 +500,12 @@
   \begingroup
   \tiny
   \begin{tabular}{ll}
- roc\_auc & 0,547 \\ 
-  pr\_auc & 0,8 \\ 
-  accuracy & 0,901 \\ 
-  j\_index & 0 \\ 
+ roc\_auc & 0,454 \\ 
+  pr\_auc & 0,099 \\ 
+  accuracy & 0,081 \\ 
+  sens & 1 \\ 
+  spec & 0,058 \\ 
+  j\_index & 0,058 \\ 
   \end{tabular}
   \endgroup
 }
@@ -501,16 +515,16 @@
   \tiny
   \begin{tabular}{m{0.1cm}ccc}
     & & \multicolumn{2}{c}{Real} \\
-    & & Não & Sim \\
+    & & Sim & Não \\
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}} \\ 
-
     & Sim
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{91.9\% \\ \textcolor{\cor}{(574.944)}} \\ 
+
+    & Não
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
-    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
+    & \makecell{5.7\% \\ \textcolor{\cor}{(35.647)}} \\ 
 
   \end{tabular}
   \endgroup
@@ -523,108 +537,25 @@
 
     & & \multicolumn{2}{c}{Real} & \\
     \cmidrule(lr){3-4}
-    & & Não & Sim & \\    \midrule
+    & & Sim & Não & \\    \midrule
 
     \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}}
-    & \makecell{100.0\% \\ \textcolor{\cor}{(79.331)}} \\ 
-
     & Sim
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{91.9\% \\ \textcolor{\cor}{(574.944)}}
+    & \makecell{94.3\% \\ \textcolor{\cor}{(590.178)}} \\ 
+
+    & Não
     & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
-    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}}
-    & \makecell{0.0\% \\ \textcolor{\cor}{(0)}} \\ 
+    & \makecell{5.7\% \\ \textcolor{\cor}{(35.647)}}
+    & \makecell{5.7\% \\ \textcolor{\cor}{(35.647)}} \\ 
 
     \midrule
 
     & 
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}}
-    & \makecell{100.0\% \\ \textcolor{\cor}{(79.331)}} \\ 
-
-  \end{tabular}
-}
-
-
-
-\newcommand{\MODgrandeCLFxgbSPECthreshold}{0.28}
-
-
-
-\newcommand{\MODgrandeCLFxgbSPECparams}{
-  \begingroup
-  \tiny
-  \begin{tabular}{ll}
- mtry &  6 \\ 
-  min\_n &  8 \\ 
-  tree\_depth &  2 \\ 
-  learn\_rate &  0,001 \\ 
-  loss\_reduction &  1,36 \\ 
-  sample\_size &  0,413 \\ 
-  stop\_iter & 12 \\ 
-  \end{tabular}
-  \endgroup
-}
-
-\newcommand{\MODgrandeCLFxgbSPECmetrics}{
-  \begingroup
-  \tiny
-  \begin{tabular}{ll}
- roc\_auc & 0,372 \\ 
-  pr\_auc & 0,732 \\ 
-  accuracy & 0,443 \\ 
-  j\_index & 0,144 \\ 
-  \end{tabular}
-  \endgroup
-}
-
-\newcommand{\MODgrandeCLFxgbCONFMATminimal}{
-  \begingroup
-  \tiny
-  \begin{tabular}{m{0.1cm}ccc}
-    & & \multicolumn{2}{c}{Real} \\
-    & & Não & Sim \\
-
-    \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{37.0\% \\ \textcolor{\cor}{(29.382)}}
-    & \makecell{2.6\% \\ \textcolor{\cor}{(2.096)}} \\ 
-
-    & Sim
-    & \makecell{53.1\% \\ \textcolor{\cor}{(42.101)}}
-    & \makecell{7.3\% \\ \textcolor{\cor}{(5.752)}} \\ 
-
-  \end{tabular}
-  \endgroup
-}
-
-
-
-\newcommand{\MODgrandeCLFxgbCONFMATwithmargins}{
-  \begin{tabular}{m{0.1cm}cccc}
-
-    & & \multicolumn{2}{c}{Real} & \\
-    \cmidrule(lr){3-4}
-    & & Não & Sim & \\    \midrule
-
-    \multirow{2}{*}{\rotatebox{90}{Predito}}
-    & Não
-    & \makecell{37.0\% \\ \textcolor{\cor}{(29.382)}}
-    & \makecell{2.6\% \\ \textcolor{\cor}{(2.096)}}
-    & \makecell{39.7\% \\ \textcolor{\cor}{(31.478)}} \\ 
-
-    & Sim
-    & \makecell{53.1\% \\ \textcolor{\cor}{(42.101)}}
-    & \makecell{7.3\% \\ \textcolor{\cor}{(5.752)}}
-    & \makecell{60.3\% \\ \textcolor{\cor}{(47.853)}} \\ 
-
-    \midrule
-
-    & 
-    & \makecell{90.1\% \\ \textcolor{\cor}{(71.483)}}
-    & \makecell{9.9\% \\ \textcolor{\cor}{(7.848)}}
-    & \makecell{100.0\% \\ \textcolor{\cor}{(79.331)}} \\ 
+    & \makecell{2.4\% \\ \textcolor{\cor}{(15.234)}}
+    & \makecell{97.6\% \\ \textcolor{\cor}{(610.591)}}
+    & \makecell{100.0\% \\ \textcolor{\cor}{(625.825)}} \\ 
 
   \end{tabular}
 }
