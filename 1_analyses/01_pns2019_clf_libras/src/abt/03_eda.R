@@ -57,7 +57,7 @@ toc()
 
 
 tic()
-message("expandindo probabilicamente a amostra nos microdados...")
+message("expandindo probabilisticamente a amostra nos microdados...")
 
 ## Survey design (source: https://rdrr.io/cran/PNSIBGE/src/R/pns_design.R, accessed on September, 2nd 2022)
 options(survey.lonely.psu="adjust")
@@ -511,6 +511,8 @@ for(arg_column in COLUMNS){
         TRUE ~ as.character(value)
       ),
       rank = case_when(
+        # reordenamento para 'uf'
+        key == 'uf' ~ parse_number(p, locale = locale(decimal_mark = ",")) / 100,
         # reordenamento para 'instrucao'
         value == "outros"        ~ 1,
         value == "fundamental"   ~ 2,
