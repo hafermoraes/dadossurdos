@@ -30,7 +30,7 @@ NULL
 
 modelmatrix <-
   svytable(
-    formula=~idade+sexo+instrucao+dif_ouvir+libras,
+    formula=~idade+sexo+instrucao+dif_ouvir+libras+uf+alfabetizado,
     design=pns2019_posterior
   ) |>
   as_tibble() |>

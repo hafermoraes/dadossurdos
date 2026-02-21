@@ -1,3 +1,27 @@
+
+tic()
+message("investigando o alto percentual de missings no censo2000...")
+subset_censo2000 |>
+  mutate(
+    across(c(p001), as.numeric)
+  ) |>
+  group_by(
+    v0428, # alfabetizado (sabe ler e escrever)
+    v0432 # instrucao
+    ) |>
+  summarise(
+    n = n(),
+    s = sum(p001, na.rm=TRUE)
+  ) |> 
+  ungroup() |>
+  mutate(
+    p = s/sum(s)
+  ) |>
+  arrange(v0428, v0432) |>
+  collect()
+toc()
+
+
 message("confirmando que o tratamento externo ao R não corrompeu os dados...")
 
 tic()
