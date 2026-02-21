@@ -64,11 +64,19 @@ RUN Rscript -e "install.packages(\
     'baguette', \
     'brulee', \
     'solitude', \
-    'tailor', \
     'embed', \
+    'remotes', \
     'tidytext' \
     )\
     )"
+
+RUN Rscript -e "install.packages( \
+    'pak', \
+    repos='https://cran.rstudio.com' \
+    ); \
+    pak::pak('tidymodels/tailor'); \ 
+    remotes::install_github('bschneidr/fastsurvey') \
+    "
 
 WORKDIR /home/rstudio/
 
