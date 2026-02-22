@@ -1,15 +1,12 @@
 
 tic()
 message("importando base tratada na PNS 2019 de ", pns2019_parsed_csv)
-pns2019_mortalidade_parsed_data <-
+pns2019_parsed_data <-
   read_csv(
     file=pns2019_parsed_csv,
     show_col_types = FALSE
   ) |>
-  transmute(
-    upa_pns, v0024, v0028, v00282, v00283,
-    sexo,
-    idade,
+  mutate(
     categ_ouvinte = case_when(
       dif_ouvir == 'nenhuma' ~ 1,
       dif_ouvir == 'alguma'  ~ 1,
@@ -54,15 +51,15 @@ pns2019_prior <-
   survey::svydesign(
     ids = ~upa_pns, 
     strata = ~v0024, 
-    data = subset(pns2019_mortalidade_parsed_data, v0028 != 0), 
+    data = subset( pns2019_parsed_data, v0028 != 0),
     weights = ~v0028, 
     nest = TRUE
   )
 # Post-stratification
 popc.types <-
   data.frame( 
-    v00283=as.character(unique(pns2019_mortalidade_parsed_data$v00283)), 
-    Freq=as.numeric(unique(pns2019_mortalidade_parsed_data$v00282))
+    v00283=as.character(unique(pns2019_parsed_data$v00283)), 
+    Freq=as.numeric(unique(pns2019_parsed_data$v00282))
   )
 popc.types <- popc.types[order(popc.types$v00283),]
 pns2019_posterior <-
