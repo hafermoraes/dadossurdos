@@ -36,16 +36,17 @@ censo_stats <-
     ) 
   )
 
-print(
-  xtable( censo_stats ),
-  sanitize.text.function = NULL,
-  only.contents=TRUE,
-  include.rownames=FALSE,
-  include.colnames=FALSE,
-  hline.after=NULL,
-  comment=FALSE,
-  file=paste0(results_dir, "censo_stats_by_categ.tex")
-)
+# print(
+#   xtable( censo_stats ),
+#   sanitize.text.function = NULL,
+#   only.contents=TRUE,
+#   include.rownames=FALSE,
+#   include.colnames=FALSE,
+#   hline.after=NULL,
+#   comment=FALSE,
+#   append=FALSE,
+#   file=paste0(results_dir, "censo_stats_by_categ.tex")
+# )
 
 output_str <- capture.output(
   print(

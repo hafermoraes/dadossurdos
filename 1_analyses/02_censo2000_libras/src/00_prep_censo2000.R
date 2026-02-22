@@ -30,6 +30,8 @@
 #' @name censo2000_orchestrator
 NULL
 
+message("removendo todos os objetos prévios...")
+rm(list = ls(all.names = TRUE))
 
 base_dir <-
   paste0(

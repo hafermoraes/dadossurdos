@@ -30,6 +30,10 @@
 #' @keywords master-script pipeline tidymodels
 NULL
 
+message("removendo todos os objetos prévios...")
+rm(list = ls(all.names = TRUE))
+
+
 message("definindo as variáveis globais...")
 
 PARALLEL <- FALSE

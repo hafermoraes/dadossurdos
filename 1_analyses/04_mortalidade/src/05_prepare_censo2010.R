@@ -43,6 +43,15 @@ censo2010_mort_total <-
   ) |>
   collect()
 
+assert_that(
+  sum(censo2010_mort_total$n) == 
+    censo2010_mortalidade_subset |> 
+    summarise(sum(peso_amostral, na.rm=TRUE)) |> 
+    pull(),
+  msg = "peso_amostral deve coincidir"
+)
+
+
 toc()
 
 
@@ -63,6 +72,16 @@ censo2010_mort_ouvinte <-
   ) |>
   collect()
 
+assert_that(
+  sum(censo2010_mort_ouvinte$n) == 
+    censo2010_mortalidade_subset |> 
+    filter(categ_ouvinte == 1 ) |>
+    summarise(sum(peso_amostral, na.rm=TRUE)) |> 
+    pull(),
+  msg = "peso_amostral deve coincidir"
+)
+
+
 toc()
 
 
@@ -81,6 +100,16 @@ censo2010_mort_deficiente_auditivo <-
     ano, sexo, idade, n
   ) |>
   collect()
+
+assert_that(
+  sum(censo2010_mort_deficiente_auditivo$n) == 
+    censo2010_mortalidade_subset |> 
+    filter(categ_deficiente_auditivo == 1 ) |>
+    summarise(sum(peso_amostral, na.rm=TRUE)) |> 
+    pull(),
+  msg = "peso_amostral deve coincidir"
+)
+
 
 toc()
 
@@ -101,6 +130,16 @@ censo2010_mort_surdo <-
   ) |>
   collect()
 
+assert_that(
+  sum(censo2010_mort_surdo$n) == 
+    censo2010_mortalidade_subset |> 
+    filter(categ_surdo == 1 ) |>
+    summarise(sum(peso_amostral, na.rm=TRUE)) |> 
+    pull(),
+  msg = "peso_amostral deve coincidir"
+)
+
+
 toc()
 
 
@@ -119,6 +158,16 @@ censo2010_mort_surdocego <-
     ano, sexo, idade, n
   ) |>
   collect()
+
+assert_that(
+  sum(censo2010_mort_surdocego$n) == 
+    censo2010_mortalidade_subset |> 
+    filter(categ_surdocego == 1 ) |>
+    summarise(sum(peso_amostral, na.rm=TRUE)) |> 
+    pull(),
+  msg = "peso_amostral deve coincidir"
+)
+
 
 toc()
 

@@ -12,6 +12,8 @@ library(xtable)
 library(survey)
 library(srvyr)
 library(DDM)
+library(scales)
+library(assertthat)
 toc()
 
 

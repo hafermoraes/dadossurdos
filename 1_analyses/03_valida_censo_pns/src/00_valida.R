@@ -1,4 +1,6 @@
 
+message("removendo todos os objetos prévios...")
+rm(list = ls(all.names = TRUE))
 
 base_dir <-
   paste0(
@@ -53,14 +55,19 @@ censo2010_parquet <-
   )
   
 
-source(paste0(src_dir, '01_load_packages.R'))
+source(paste0(src_dir, '01_empty_data_and_results_directory.R'))
 
-source(paste0(src_dir, '02_import_data.R'))
+source(paste0(src_dir, '02_load_packages.R'))
 
-source(paste0(src_dir, '03_prepare_pns2019.R'))
+source(paste0(src_dir, '03_import_data.R'))
 
-source(paste0(src_dir, '04_prepare_censo2000.R'))
+source(paste0(src_dir, '04_prepare_pns2019.R'))
 
-source(paste0(src_dir, '05_prepare_censo2010.R'))
+source(paste0(src_dir, '05_prepare_censo2000.R'))
 
-source(paste0(src_dir, '06_compare_distributions.R'))
+source(paste0(src_dir, '06_prepare_censo2010.R'))
+
+source(paste0(src_dir, '07_compare_distributions.R'))
+
+source(paste0(src_dir, '08_censo2000_censo2010_stats.R'))
+
