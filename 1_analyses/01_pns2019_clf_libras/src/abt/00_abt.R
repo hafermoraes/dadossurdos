@@ -59,14 +59,6 @@ eda_dir <-
     "eda/"
   )
 
-results_dir <-
-  paste0(
-    base_dir,
-    "results/"
-  )
-
-
-
 source(paste0(src_dir, '01_empty_data_and_results_directory.R'))
 
 source(paste0(src_dir, '02_load_packages.R'))
