@@ -16,3 +16,12 @@ censo2010_abt <-
   ) |>
   to_duckdb()
 toc()
+
+tic()
+message("importanto dados da pns2019 para as análises de morbidade...")
+pns2019_abt <-
+  open_dataset(
+    censo2010_abt_parquet
+  ) |>
+  to_duckdb()
+toc()

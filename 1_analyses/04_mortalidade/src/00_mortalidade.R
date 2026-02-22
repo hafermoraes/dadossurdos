@@ -45,7 +45,15 @@ censo2010_abt_parquet <-
     'data/',
     'censo2010_abt.parquet'
   )
-  
+
+pns2019_abt_csv <-
+  paste0(
+    base_dir,
+    '01_pns2019_clf_libras/',
+    'data/',
+    'TODO'
+  )
+
 
 message("construindo a faixa etária para as análises...")
 
