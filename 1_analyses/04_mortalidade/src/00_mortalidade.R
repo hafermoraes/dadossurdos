@@ -46,12 +46,12 @@ censo2010_abt_parquet <-
     'censo2010_abt.parquet'
   )
 
-pns2019_abt_csv <-
+pns2019_parsed_csv <-
   paste0(
     base_dir,
     '01_pns2019_clf_libras/',
     'data/',
-    'TODO'
+    'pns2019_01_parsed.csv'
   )
 
 
@@ -69,11 +69,13 @@ source(paste0(src_dir, '03_import_data.R'))
 
 source(paste0(src_dir, '04_prepare_censo2000.R'))
 
-source(paste0(src_dir, '05_prepare_censo2010.R'))
+source(paste0(src_dir, '04_prepare_censo2010.R'))
 
-source(paste0(src_dir, '06_unify_tables.R'))
+source(paste0(src_dir, '04_prepare_pns2019.R'))
 
-source(paste0(src_dir, '07_plot_age_pyramids.R'))
+source(paste0(src_dir, '05_unify_censuses.R'))
 
-source(paste0(src_dir, '08_life_tables.R'))
+source(paste0(src_dir, '06_plot_censo_age_pyramids.R'))
+
+source(paste0(src_dir, '07_life_tables.R'))
 
