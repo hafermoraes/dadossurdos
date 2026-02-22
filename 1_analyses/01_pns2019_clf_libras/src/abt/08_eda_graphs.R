@@ -32,7 +32,7 @@ NULL
 
 eda_plot_mosaic <- function(column){
   eda_plot <- 
-    ggplot(data = microdados) +
+    ggplot(data = modelmatrix) +
     geom_mosaic(
       aes(
         weights = case_weights, 
@@ -48,17 +48,17 @@ eda_plot_mosaic <- function(column){
 }
 
 COLUMNS <- c(
+  'idade',
   'sexo',
-  'alfabetizado',
-  'estado_civil',
   'instrucao',
-  'cor_raca',
-  'dif_enxergar',
   'dif_ouvir',
-  'dif_locomover',
   'uf',
-  'faixa_idade',
-  'idade'
+  'alfabetizado'
+  ## 'estado_civil',
+  ## 'cor_raca',
+  ## 'dif_enxergar',
+  ## 'dif_locomover',
+  ## 'faixa_idade',
 )
 
 
@@ -95,9 +95,19 @@ for(arg_column in COLUMNS){
 
 
 (
-  ggplot(data = microdados) +
-    geom_density( aes(x=idade, fill = libras), alpha = 0.2) + 
-    facet_wrap( ~ dif_ouvir)
+  modelmatrix |>
+    group_by(idade, dif_ouvir, libras) |>
+    summarise(case_weights = sum(case_weights, na.rm=TRUE)) |>
+    mutate(idade = as.numeric(idade)) |>
+    ggplot(
+      aes(x=idade, fill = libras, weight = case_weights)
+    ) +
+    labs(
+      x = "idade",
+      y = "densidade de probabilidade"
+    ) +
+    geom_histogram(aes(y = after_stat(density)), alpha = 0.5) + 
+    facet_wrap( ~ dif_ouvir, scales='free_y')
 ) |>
   ggsave(
     filename = paste0(
@@ -108,33 +118,4 @@ for(arg_column in COLUMNS){
     height=8
   )
 
-
-# correlações
-
-# adaptado de https://towardsdatascience.com/bank-customer-churn-with-tidymodels-part-1-model-development-cdec4eeb131c/
-(
-  recipe(libras ~ ., data = microdados) |>
-    step_naomit(all_factor_predictors()) |>
-    step_dummy(all_nominal_predictors()) |>
-    step_rm(case_weights, starts_with("uf")) |>
-    prep(microdados) |> 
-    bake(new_data = NULL) |> 
-    mutate(
-      libras = if_else( libras == 'sim', 1, 0)
-    ) |> 
-    correlate() |>
-    shave() |>
-    rplot( print_cor = T) +
-    # scale_color_gradient2(low = 'orange', high = 'light blue') + 
-    theme(axis.text.x = element_text(angle = 90)) +
-    labs(title = "Correlation Plot")
-) |>
-  ggsave(
-    filename = paste0(
-      eda_dir,
-      "eda_corr_plot.pdf"
-    ),
-    width=12,
-    height=8
-  )
 
