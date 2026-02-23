@@ -41,7 +41,7 @@ prevalence_by_agegrp <- function(arg_var, arg_output_file, arg_append){
       p_upp = numeric(),
       subgrp = character(),
       var = character(),
-      agegrp = character()
+      fx_idade = character()
     )
 
   # itera cada subgrupo de interesse da tese
@@ -79,7 +79,7 @@ prevalence_by_agegrp <- function(arg_var, arg_output_file, arg_append){
           p_upp,
           subgrp = arg_subgrp,
           var = arg_var,
-          agegrp
+          fx_idade
         )
 
     } else {
@@ -102,7 +102,7 @@ prevalence_by_agegrp <- function(arg_var, arg_output_file, arg_append){
           p_upp,
           subgrp = arg_subgrp,
           var = arg_var,
-          agegrp
+          fx_idade
         )
 
     } # if(arg_subgrp == 'categ_total')
@@ -136,7 +136,8 @@ morb_prevalencias_fx_idade <-
     p_low = numeric(),
     p_upp = numeric(),
     subgrp = character(),
-    var = character()
+    var = character(),
+    fx_idade = character()
   )
 
 for(var in VARS){
@@ -161,3 +162,4 @@ for(var in VARS){
 
   append_flag <- TRUE
 }
+
