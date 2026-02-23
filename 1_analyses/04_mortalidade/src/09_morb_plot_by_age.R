@@ -1,7 +1,7 @@
-library(stringr)
+
 
 morb_prevalencias_fx_idade |> 
-  filter(subgrp != "categ_total") |> 
+  filter(!is.na(p), subgrp != "categ_total") |> 
   ggplot(aes(x = fx_idade, y = p, color = subgrp, group = subgrp)) +
   geom_point(position = position_dodge(width = 0.5), size = 2) +
   geom_errorbar(

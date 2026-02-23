@@ -24,7 +24,7 @@ VARS <-
 
 VARS <-
   c(
-    "mort_diagnostico_hipertensao_arterial",       "mort_diagnostico_diabetes"
+    "mort_diagnostico_depressão",       "mort_diagnostico_doenca_mental"
   )
 
 gc()
