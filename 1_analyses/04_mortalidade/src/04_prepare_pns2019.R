@@ -32,7 +32,14 @@ pns2019_parsed_data <-
     sabe_libras_nao0sim1 = case_when(
       libras == 'sim' ~ 1,
       TRUE ~ 0
-    )
+    ),
+    fx_idade = cut(
+        idade, 
+        breaks = lt_spec$breaks, 
+        labels = lt_spec$labels, 
+        right = FALSE, 
+        ordered_result = TRUE
+      )
   )  
 toc()
 

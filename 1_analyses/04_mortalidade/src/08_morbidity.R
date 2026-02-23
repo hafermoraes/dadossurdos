@@ -21,12 +21,6 @@ VARS <-
     "antrop_imc"
   )
 
-VARS <-
-  c(
-    "mort_diagnostico_hipertensao_arterial",       "mort_diagnostico_diabetes",
-    "mort_diagnostico_colesterol_alto",            "mort_diagnostico_cardiopatia"
-)
-
 
 gc()
 
