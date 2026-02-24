@@ -15,6 +15,6 @@ library(DDM)
 library(scales)
 library(assertthat)
 library(stringr)
+library(microdatasus)
+library(purrr)
 toc()
-
-

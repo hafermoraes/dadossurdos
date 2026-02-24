@@ -75,7 +75,8 @@ RUN Rscript -e "install.packages( \
     repos='https://cran.rstudio.com' \
     ); \
     pak::pak('tidymodels/tailor'); \ 
-    remotes::install_github('bschneidr/fastsurvey') \
+    remotes::install_github('bschneidr/fastsurvey'); \
+    remotes::install_github('rfsaldanha/microdatasus') \
     "
 
 WORKDIR /home/rstudio/

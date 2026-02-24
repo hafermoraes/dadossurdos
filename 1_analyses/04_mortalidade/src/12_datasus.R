@@ -1,13 +1,4 @@
 
-## # remotes::install_github("rfsaldanha/microdatasus")
-library(microdatasus)
-library(dplyr)
-library(purrr)
-library(readr)
-library(tictoc)
-library(scales)
-library(stringr)
-
 anos <- 2000:2010
 ufs <- c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
          "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", 
@@ -100,54 +91,15 @@ toc()
 
 
 
-
-
-# 1. Preparar os dados (ordenados do maior para o menor)
-pareto_data <- sim_2000_2010 %>%
-  group_by(CAPITULO_CID10) %>%
-  summarise(total_mortes = sum(obitos, na.rm = TRUE)) %>%
-  arrange(desc(total_mortes)) %>%
-  mutate(
-    percent_acumulada = cumsum(total_mortes) / sum(total_mortes) * 100,
-    # Quebra o texto a cada 25 caracteres para facilitar a leitura em 90 graus
-    capitulo_wrap = str_wrap(CAPITULO_CID10, width = 15),
-    capitulo_wrap = factor(capitulo_wrap, levels = unique(capitulo_wrap))
+tic()
+message("exportando gráfico de pareto das causas básicas de morte (Datasus/SIM, 2000-2010)...")
+export_plot_pareto(
+  input_df = sim_2000_2010,
+  plot_width = 12,
+  plot_height = 6,
+  output_file = paste0(
+    results_dir,
+    "pareto_capcid10_sim20002010.pdf"
   )
-
-# 2. Ajuste de escala para alinhar barras e linha
-max_mortes <- max(pareto_data$total_mortes)
-ratio <- max_mortes / 100
-
-# 3. Gráfico Vertical
-ggplot(pareto_data, aes(x = capitulo_wrap)) +
-  # Barras de frequência
-  geom_col(aes(y = total_mortes), fill = "grey40", alpha = 0.8) +
-  # Linha de Pareto
-  geom_line(aes(y = percent_acumulada * ratio, group = 1), color = "black", size = 0.5) +
-  geom_point(aes(y = percent_acumulada * ratio), color = "black", size = 1) +
-  # Rótulos de porcentagem na linha
-  geom_text(aes(y = percent_acumulada * ratio, 
-                label = paste0(round(percent_acumulada, 1), "%")),
-            vjust = -1.5, color = "black", size = 3) +
-  # Eixos e Escalas
-  scale_y_continuous(
-    name = "Total de Óbitos",
-    labels = label_number(scale = 1e-6, suffix = " mi."),
-    expand = expansion(mult = c(0, 0.2)),
-    sec.axis = sec_axis(
-      ~ . / ratio, 
-      name = "Porcentagem Acumulada", 
-      breaks = seq(0, 100, by = 20),
-      labels = label_percent(scale = 1, suffix = "%")
-    )
-  ) +
-  #theme_minimal() +
-  labs(
-    x = "Capítulo da CID-10"
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 9),
-    axis.title.y.right = element_text(color = "black"),
-    axis.text.y.right = element_text(color = "black"),
-    panel.grid.minor = element_blank()
-  )
+)
+toc()
