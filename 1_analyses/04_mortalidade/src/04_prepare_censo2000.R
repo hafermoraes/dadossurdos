@@ -183,4 +183,12 @@ censo2000_mortalidade <-
     censo2000_mort_surdocego
   )
 
+rm(
+  censo2000_mort_total,
+  censo2000_mort_ouvinte,
+  censo2000_mort_deficiente_auditivo,
+  censo2000_mort_surdo,
+  censo2000_mort_surdocego
+  )
+
 toc()

@@ -185,4 +185,13 @@ censo2010_mortalidade <-
     censo2010_mort_surdocego
   )
 
+rm(
+  censo2010_mort_total,
+  censo2010_mort_ouvinte,
+  censo2010_mort_deficiente_auditivo,
+  censo2010_mort_surdo,
+  censo2010_mort_surdocego
+)
+
+
 toc()

@@ -77,5 +77,5 @@ source(paste0(src_dir, '05_unify_censuses.R'))
 
 source(paste0(src_dir, '06_plot_censo_age_pyramids.R'))
 
-source(paste0(src_dir, '07_life_tables.R'))
+source(paste0(src_dir, '07_intercensal_life_tables.R'))
 

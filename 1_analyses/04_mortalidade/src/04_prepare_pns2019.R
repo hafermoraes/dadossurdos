@@ -230,4 +230,12 @@ pns2019_mortalidade <-
     pns2019_mort_surdocego
   )
 
+rm(
+  pns2019_mort_total,
+  pns2019_mort_ouvinte,
+  pns2019_mort_deficiente_auditivo,
+  pns2019_mort_surdo,
+  pns2019_mort_surdocego
+)
+
 toc()

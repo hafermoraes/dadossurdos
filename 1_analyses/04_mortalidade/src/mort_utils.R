@@ -21,12 +21,20 @@ life_table_structure <- function(OMEGA, STEP){
 export_plot_age_pyramid_comparison <- function(arg_subgrp, plot_width, plot_height, output_file){
   
   plt_data <-
-    censo_mortalidade |>
+    piramides_mortalidade |>
     pivot_longer(
       cols = -c(subgrp, fx_idade),
       names_pattern = "(.*)_(.*)",
       names_to = c("sexo", "ano"),
       values_to = "n"
+    ) |>
+    # filter(ano!=2019) |> # removendo PNS 2019 dos gráficos...
+    mutate(
+      ano = case_when(
+        ano == 2000 ~ 'Censo 2000',
+        ano == 2010 ~ 'Censo 2010',
+        ano == 2019 ~ 'PNS 2019'
+      )
     ) |>
     group_by(ano, subgrp, fx_idade, sexo) |>
     summarise(n = sum(n, na.rm = TRUE), .groups = "drop") |>
@@ -62,7 +70,10 @@ export_plot_age_pyramid_comparison <- function(arg_subgrp, plot_width, plot_heig
       fill = ""
     ) +
     theme_bw() +
-    theme(legend.position = "top")
+    theme(
+      legend.position = "top",
+      panel.spacing = unit(2, "lines")
+    )
   
   ggsave(
     filename = output_file,
@@ -149,3 +160,152 @@ export_plot_pareto <- function(input_df, plot_width, plot_height, output_file){
     )
   
 } # export_plot_pareto <- function(input_df, plot_width, plot_height, output_file)
+
+
+
+formatar_br <- function(x, decimais = 0) {
+  res <- ifelse(
+    is.na(x) | x == 0, 
+    "-", 
+    format(round(x, decimais), 
+           big.mark = ".", 
+           decimal.mark = ",", 
+           nsmall = decimais, 
+           scientific = FALSE)
+  )
+  return(trimws(res))
+}
+
+# export_mort_razao_sobrevivencia <- function(categ, output_file){
+#   
+#   tbl <-
+#     piramides_mortalidade |>
+#     filter(subgrp == categ) |>
+#     transmute(
+#       subgrp = '',
+#       fx_idade,
+#       f_2000 = feminino_2000,
+#       f_2010 = feminino_2010,
+#       f_rs = case_when(
+#         feminino_2000 == 0 ~ NA_real_,
+#         TRUE ~ lead(feminino_2010, n = 2) / feminino_2000
+#       ),
+#       m_2000 = masculino_2000,
+#       m_2010 = masculino_2010,
+#       m_rs = case_when(
+#         masculino_2000 == 0 ~ NA_real_,
+#         TRUE ~ lead(masculino_2010, n = 2) / masculino_2000
+#       )
+#     ) |> 
+#     mutate(
+#       across(c(f_2000, f_2010, m_2000, m_2010), ~ formatar_br(.x, 0)),
+#       across(c(f_rs, m_rs), ~ formatar_br(.x, 4))
+#     )
+#   
+#   res_latex <- capture.output(
+#     print(
+#       xtable(tbl),
+#       sanitize.text.function = identity, 
+#       only.contents = TRUE,
+#       include.rownames = FALSE,
+#       include.colnames = FALSE,
+#       hline.after = NULL,
+#       comment = FALSE
+#     )
+#   )
+#   
+#   res_latex  0) {
+#     res_latex[n_linhas] <- gsub("\\\\\\\\", "", res_latex[n_linhas])
+#   }
+#   # -----------------
+# 
+#   cat(res_latex, sep = "\n", file = output_file)
+#   
+# } # export_mort_razao_sobrevivencia <- function(subgrp, output_file)
+# 
+
+
+
+
+
+
+library(dplyr)
+library(xtable)
+
+# 1. Função de formatação
+formatar_br <- function(x, decimais = 0) {
+  res <- ifelse(
+    is.na(x) | x == 0, 
+    "-", 
+    format(round(as.numeric(x), decimais), 
+           big.mark = ".", 
+           decimal.mark = ",", 
+           nsmall = decimais, 
+           scientific = FALSE)
+  )
+  return(trimws(res))
+}
+
+
+
+
+
+
+
+formatar_br <- function(x, decimais = 0) {
+  res <- ifelse(
+    is.na(x) | x == 0, 
+    "-", 
+    format(round(as.numeric(x), decimais), 
+           big.mark = ".", decimal.mark = ",", 
+           nsmall = decimais, scientific = FALSE)
+  )
+  return(trimws(res))
+}
+
+export_mort_razao_sobrevivencia <- function(categ, output_file) {
+  
+  tbl <-
+    piramides_mortalidade |>
+    filter(subgrp == categ) |>
+    transmute(
+      fx_idade,
+      f_2000 = feminino_2000, 
+      f_2010 = feminino_2010,
+      f_rs = case_when(
+        feminino_2000 == 0 ~ NA_real_,
+        TRUE ~ lead(feminino_2010, n = 2) / feminino_2000
+      ),
+      m_2000 = masculino_2000, 
+      m_2010 = masculino_2010,
+      m_rs = case_when(
+        masculino_2000 == 0 ~ NA_real_,
+        TRUE ~ lead(masculino_2010, n = 2) / masculino_2000
+      )
+    ) |>
+    mutate(
+      across(c(f_2000, f_2010, m_2000, m_2010), ~ formatar_br(.x, 0)),
+      across(c(f_rs, m_rs), ~ formatar_br(.x, 4))
+    )
+  
+  res_latex <- capture.output(
+    print(
+      xtable(tbl),
+      sanitize.text.function = identity, 
+      only.contents = TRUE,
+      include.rownames = FALSE, 
+      include.colnames = FALSE,
+      hline.after = NULL,
+      comment = FALSE
+    )
+  )
+  
+  texto_completo <- paste(res_latex, collapse = "\n")
+  
+  texto_final <- sub("\\\\\\\\(?=[^\\\\\\\\]*$)", "", texto_completo, perl = TRUE)
+  
+  writeLines(
+    texto_final,
+    con = output_file
+  )
+}

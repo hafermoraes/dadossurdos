@@ -1,11 +1,22 @@
 
+
+
+
+
 tic()
 message("unificando as bases dos censos 2000 e 2010...")
 piramides_mortalidade <-
   bind_rows(
     censo2000_mortalidade,
     censo2010_mortalidade,
-    pns2019_mortalidade
+    pns2019_mortalidade,
+    expand_grid(
+      subgrp = c('total', 'ouvinte','deficiente_auditivo','surdo','surdocego'),
+      ano = c(2000,2010,2019),
+      sexo = c('feminino','masculino'),
+      idade = lt_spec$breaks[-length(lt_spec$breaks)],
+      n = 0
+    )
   ) |> 
   mutate(
     fx_idade = cut(
