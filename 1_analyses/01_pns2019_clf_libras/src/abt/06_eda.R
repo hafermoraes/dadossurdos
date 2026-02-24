@@ -19,8 +19,19 @@ pns2019_dif_ouvir_libras_all_ages <-
   group_by(dif_ouvir) |>
   summarise(
     N = survey_total(na.rm = TRUE),
-    p = survey_mean(na.rm = TRUE, vartype = 'ci'),
-    l = survey_mean(libras_01, na.rm = TRUE, vartype='ci')
+    p = survey_mean(
+      na.rm = TRUE,
+      proportion=TRUE,
+      prop_method='xlogit',
+      vartype = 'ci'
+    ),
+    l = survey_mean(
+      libras_01,
+      proportion=TRUE,
+      prop_method='xlogit',
+      na.rm = TRUE,
+      vartype='ci'
+    )
   )
 
 export_dif_ouvir_libras_all_ages <-
@@ -80,8 +91,19 @@ pns2019_dif_ouvir_libras_ages_5_40 <-
   group_by(dif_ouvir) |>
   summarise(
     N = survey_total(na.rm = TRUE),
-    p = survey_mean(na.rm = TRUE, vartype = 'ci'),
-    l = survey_mean(libras_01, na.rm = TRUE, vartype='ci')
+    p = survey_mean(
+      na.rm = TRUE,
+      proportion=TRUE,
+      prop_method='xlogit',
+      vartype = 'ci'
+    ),
+    l = survey_mean(
+      libras_01,
+      proportion=TRUE,
+      prop_method='xlogit',
+      na.rm = TRUE,
+      vartype='ci'
+    )
   )
 
 export_dif_ouvir_libras_ages_5_40 <-

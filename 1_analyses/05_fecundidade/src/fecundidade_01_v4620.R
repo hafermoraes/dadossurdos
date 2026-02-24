@@ -35,6 +35,12 @@ gc()
 surveydesign |>
   group_by(dif_ouvir) |>
   summarise(
-    qtde = survey_mean(filhos_nascidos, vartype = 'ci', na.rm = TRUE)
+    qtde = survey_mean(
+      filhos_nascidos,
+      proportion=TRUE,
+      prop_method='xlogit',
+      vartype = 'ci',
+      na.rm = TRUE
+    )
   )
 

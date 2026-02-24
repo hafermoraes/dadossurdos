@@ -34,6 +34,12 @@ gc()
 surveydesign |>
   group_by(dif_ouvir) |>
   summarise(
-    pct = survey_mean(relacao_resp_domicilio, vartype = 'ci', na.rm = TRUE)
+    pct = survey_mean(
+      relacao_resp_domicilio,
+      proportion=TRUE,
+      prop_method='xlogit',
+      vartype = 'ci',
+      na.rm = TRUE
+    )
   )
 

@@ -35,6 +35,12 @@ gc()
 surveydesign |>
   group_by(dif_ouvir) |>
   summarise(
-    pct = survey_mean(municipio_sempre_morou, vartype = 'ci', na.rm = TRUE)
+    pct = survey_mean(
+      municipio_sempre_morou,
+      proportion=TRUE,
+      prop_method='xlogit',
+      vartype = 'ci',
+      na.rm = TRUE
+    )
   )
 
