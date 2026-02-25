@@ -25,7 +25,7 @@ cid10_cap_i  <- "Cap. I  - Infecciosas e parasitárias (4,5%)"
 morb_prevalencias_data <-
   morb_prevalencias |>
   mutate(
-    doenca = casw_when(
+    doenca = case_when(
       # Capítulo IX - Aparelho Circulatório
       var == "mort_diagnostico_hipertensao_arterial"  ~ "Hipertensão Arterial",
       var == "mort_diagnostico_cardiopatia"           ~ "Cardiopatia",
@@ -58,15 +58,15 @@ morb_prevalencias_data <-
       var == "mort_diagnostico_diabetes"              ~ "Diabetes",
       var == "mort_diagnostico_colesterol_alto"       ~ "Colesterol alto",
       var == "antrop_imc"                             ~ "IMC",
-      # Cap. V - Transtornos Mentais
-      var == "mort_diagnostico_depressão"             ~ "Depressão",
-      var == "mort_diagnostico_doenca_mental"         ~ "Transtorno mental",
-      var == "mort_doenca_mental_esquizofrenia"       ~ "Esquizofrenia",
-      var == "mort_doenca_mental_transtorno_bipolar"  ~ "Transtorno Bipolar",
-      var == "mort_doenca_mental_toc"                 ~ "TOC",
-      # Cap. I - Infecciosas e Parasitárias
-      var == "mort_diagnostico_doenca_chagas"         ~ "Doença de chagas",
-      var == "mort_diagnostico_dst_ist"               ~ "ISTs",
+      # # Cap. V - Transtornos Mentais
+      # var == "mort_diagnostico_depressão"             ~ "Depressão",
+      # var == "mort_diagnostico_doenca_mental"         ~ "Transtorno mental",
+      # var == "mort_doenca_mental_esquizofrenia"       ~ "Esquizofrenia",
+      # var == "mort_doenca_mental_transtorno_bipolar"  ~ "Transtorno Bipolar",
+      # var == "mort_doenca_mental_toc"                 ~ "TOC",
+      # # Cap. I - Infecciosas e Parasitárias
+      # var == "mort_diagnostico_doenca_chagas"         ~ "Doença de chagas",
+      # var == "mort_diagnostico_dst_ist"               ~ "ISTs",
       TRUE ~ NA_character_
       
     ),
@@ -103,19 +103,91 @@ morb_prevalencias_data <-
       var == "mort_diagnostico_diabetes"              ~ cid10_cap_iv,
       var == "mort_diagnostico_colesterol_alto"       ~ cid10_cap_iv,
       var == "antrop_imc"                             ~ cid10_cap_iv,
-      # Cap. V - Transtornos Mentais
-      var == "mort_diagnostico_depressão"             ~ cid10_cap_v,
-      var == "mort_diagnostico_doenca_mental"         ~ cid10_cap_v,
-      var == "mort_doenca_mental_esquizofrenia"       ~ cid10_cap_v,
-      var == "mort_doenca_mental_transtorno_bipolar"  ~ cid10_cap_v,
-      var == "mort_doenca_mental_toc"                 ~ cid10_cap_v,
-      # Cap. I - Infecciosas e Parasitárias
-      var == "mort_diagnostico_doenca_chagas"         ~ cid10_cap_i,
-      var == "mort_diagnostico_dst_ist"               ~ cid10_cap_i,
+      # # Cap. V - Transtornos Mentais
+      # var == "mort_diagnostico_depressão"             ~ cid10_cap_v,
+      # var == "mort_diagnostico_doenca_mental"         ~ cid10_cap_v,
+      # var == "mort_doenca_mental_esquizofrenia"       ~ cid10_cap_v,
+      # var == "mort_doenca_mental_transtorno_bipolar"  ~ cid10_cap_v,
+      # var == "mort_doenca_mental_toc"                 ~ cid10_cap_v,
+      # # Cap. I - Infecciosas e Parasitárias
+      # var == "mort_diagnostico_doenca_chagas"         ~ cid10_cap_i,
+      # var == "mort_diagnostico_dst_ist"               ~ cid10_cap_i,
       TRUE ~ NA_character_
     )
   ) 
   
+
+morb_prevalencias_data |>
+  drop_na() |>
+  select(cid10_cap, doenca, subgrp, sexo, p) |> 
+  pivot_wider(
+    id_cols = c(cid10_cap, doenca),
+    names_from = c(sexo, subgrp),
+    values_from = p
+  ) |> 
+  transmute(
+    cid10_cap, doenca,
+    f_rp_surdo = feminino_categ_surdo / feminino_categ_total,
+    f_rp_surdocego = feminino_categ_surdocego / feminino_categ_total,
+    f_rp_deficiente_auditivo = feminino_categ_deficiente_auditivo / feminino_categ_total,
+    m_rp_surdo = masculino_categ_surdo / masculino_categ_total,
+    m_rp_surdocego = masculino_categ_surdocego / masculino_categ_total,
+    m_rp_deficiente_auditivo = masculino_categ_deficiente_auditivo / masculino_categ_total
+  ) |> 
+  arrange(cid10_cap, doenca) |>
+  mutate(
+    across(
+      contains("_rp_"), 
+      ~ ifelse(is.na(.), "-", format(round(., 2), nsmall = 2))
+    )
+  ) |>
+  group_by(cid10_cap) |> 
+  mutate(
+    n_total = n(),
+    # Escapa o % para \% antes de montar a estrutura do LaTeX
+    cid10_cap_clean = gsub("%", "\\\\%", cid10_cap),
+    cid10_cap_latex = ifelse(
+      row_number() == 1, 
+      paste0(
+        "\\makecell[{{m{3.5cm}}}]{",
+        "\\multirow{", 
+        n_total, 
+        "}{=}{", 
+        cid10_cap_clean, 
+        "}}"
+        ),
+      ""
+    ),
+    is_last = row_number() == n()
+  ) |> 
+  ungroup() |> 
+  select(cid10_cap_latex, doenca, contains("_rp_"), is_last) |>
+  mutate(
+    row_idx = row_number(),
+    line_str = apply(across(1:8), 1, paste, collapse = " & "),
+    latex_line = case_when(
+      row_idx == n() ~ paste0(line_str, " \\\\ \\bottomrule"),
+      is_last ~ paste0(line_str, " \\\\ \\midrule"),
+      TRUE ~ paste0(line_str, " \\\\")
+    )
+  ) |> 
+  pull(latex_line) |> 
+  # # Converte para as linhas do LaTeX
+  # apply(1, function(x) {
+  #   # x[1:8] são os dados, x[9] é o marcador is_last
+  #   dados <- paste(x[1:8], collapse = " & ")
+  #   if (as.logical(x[9])) {
+  #     paste0(dados, " \\\\ \\midrule")
+  #   } else {
+  #     paste0(dados, " \\\\")
+  #   }
+  # }) |> 
+  writeLines(
+    paste0(
+      results_dir,
+      "mort_razoes_prevalencia.tex"
+    )
+  )
 
   
 dodge_spacing <- 0.7
@@ -127,7 +199,7 @@ morb_prevalencias_data |>
   ) |> 
   ggplot(
     aes(
-      x = var, 
+      x = doenca, 
       y = p, 
       color = subgrp,
       shape = subgrp
@@ -142,7 +214,7 @@ morb_prevalencias_data |>
     position = position_dodge(width = dodge_spacing), 
     width = 0.2
   ) +
-  facet_wrap(cid10_cap ~sexo, scales = "free") + 
+  facet_wrap(cid10_cap ~ sexo, scales = "free") + 
   coord_flip() +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
   scale_shape_manual(values = c(0, 1, 2, 8)) +
