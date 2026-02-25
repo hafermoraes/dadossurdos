@@ -91,6 +91,8 @@ toc()
 
 
 
+
+
 tic()
 message("exportando gráfico de pareto das causas básicas de morte (Datasus/SIM, 2000-2010)...")
 export_plot_pareto(
@@ -103,3 +105,19 @@ export_plot_pareto(
   )
 )
 toc()
+
+
+# read_csv(
+#   paste0(
+#     data_dir,
+#     "sim_2000_2010_grp.csv"
+#   ),
+#   show_col_types = FALSE
+# ) |>
+# group_by(CAPITULO_CID10) |>
+# summarise(s = sum(total_obitos)) |>
+# arrange(desc(s)) |>
+# mutate(
+#   p = s/sum(s)*100.0,
+#   c = cumsum(p)
+# )

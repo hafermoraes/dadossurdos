@@ -79,3 +79,16 @@ source(paste0(src_dir, '06_plot_censo_age_pyramids.R'))
 
 source(paste0(src_dir, '07_intercensal_life_tables.R'))
 
+source(paste0(src_dir, '08_morbidity.R'))
+
+source(paste0(src_dir, '09_morbidity_plot.R'))
+
+source(paste0(src_dir, '10_morbidity_by_age.R'))
+
+source(paste0(src_dir, '11_morbidity_by_age_plot.R'))
+
+source(paste0(src_dir, '12_datasus.R'))
+
+source(paste0(src_dir, '13_logit_brass.R'))
+
+

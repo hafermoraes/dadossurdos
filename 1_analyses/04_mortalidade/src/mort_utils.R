@@ -95,7 +95,7 @@ export_plot_pareto <- function(input_df, plot_width, plot_height, output_file){
       capitulo_wrap = factor(capitulo_wrap, levels = unique(capitulo_wrap))
     )
   
-  max_mortes <- max(pareto_data$total_mortes)
+  max_mortes <- max(plt_data$total_mortes)
   ratio <- max_mortes / 100
   
   plt <-
@@ -167,98 +167,13 @@ formatar_br <- function(x, decimais = 0) {
   res <- ifelse(
     is.na(x) | x == 0, 
     "-", 
-    format(round(x, decimais), 
-           big.mark = ".", 
-           decimal.mark = ",", 
-           nsmall = decimais, 
-           scientific = FALSE)
-  )
-  return(trimws(res))
-}
-
-# export_mort_razao_sobrevivencia <- function(categ, output_file){
-#   
-#   tbl <-
-#     piramides_mortalidade |>
-#     filter(subgrp == categ) |>
-#     transmute(
-#       subgrp = '',
-#       fx_idade,
-#       f_2000 = feminino_2000,
-#       f_2010 = feminino_2010,
-#       f_rs = case_when(
-#         feminino_2000 == 0 ~ NA_real_,
-#         TRUE ~ lead(feminino_2010, n = 2) / feminino_2000
-#       ),
-#       m_2000 = masculino_2000,
-#       m_2010 = masculino_2010,
-#       m_rs = case_when(
-#         masculino_2000 == 0 ~ NA_real_,
-#         TRUE ~ lead(masculino_2010, n = 2) / masculino_2000
-#       )
-#     ) |> 
-#     mutate(
-#       across(c(f_2000, f_2010, m_2000, m_2010), ~ formatar_br(.x, 0)),
-#       across(c(f_rs, m_rs), ~ formatar_br(.x, 4))
-#     )
-#   
-#   res_latex <- capture.output(
-#     print(
-#       xtable(tbl),
-#       sanitize.text.function = identity, 
-#       only.contents = TRUE,
-#       include.rownames = FALSE,
-#       include.colnames = FALSE,
-#       hline.after = NULL,
-#       comment = FALSE
-#     )
-#   )
-#   
-#   res_latex  0) {
-#     res_latex[n_linhas] <- gsub("\\\\\\\\", "", res_latex[n_linhas])
-#   }
-#   # -----------------
-# 
-#   cat(res_latex, sep = "\n", file = output_file)
-#   
-# } # export_mort_razao_sobrevivencia <- function(subgrp, output_file)
-# 
-
-
-
-
-
-
-library(dplyr)
-library(xtable)
-
-# 1. Função de formatação
-formatar_br <- function(x, decimais = 0) {
-  res <- ifelse(
-    is.na(x) | x == 0, 
-    "-", 
-    format(round(as.numeric(x), decimais), 
-           big.mark = ".", 
-           decimal.mark = ",", 
-           nsmall = decimais, 
-           scientific = FALSE)
-  )
-  return(trimws(res))
-}
-
-
-
-
-
-
-
-formatar_br <- function(x, decimais = 0) {
-  res <- ifelse(
-    is.na(x) | x == 0, 
-    "-", 
-    format(round(as.numeric(x), decimais), 
-           big.mark = ".", decimal.mark = ",", 
-           nsmall = decimais, scientific = FALSE)
+    format(
+      round(as.numeric(x), decimais), 
+      big.mark = ".",
+      decimal.mark = ",", 
+      nsmall = decimais,
+      scientific = FALSE
+    )
   )
   return(trimws(res))
 }
@@ -309,3 +224,258 @@ export_mort_razao_sobrevivencia <- function(categ, output_file) {
     con = output_file
   )
 }
+
+
+# ===============================
+
+prevalence_all_ages <- function(arg_var, arg_output_file, arg_append){
+
+  message("calculando prevalência de ",arg_var, "...")
+
+  # (re)inicializa tabela de resultados em branco
+  outer_table <-
+    tibble(
+      sexo = character(),     # resultados por sexo
+      n = numeric(),          # número de pessoas com arg_var == 1
+      n_low = numeric(),      # limite inferior do número de pessoas com arg_var == 1
+      n_upp = numeric(),      # limite superior do número de pessoas com arg_var == 1
+      p = numeric(),          # percentual de pessoas com arg_var == 1
+      p_low = numeric(),      # limite inferior do percentual de pessoas com arg_var == 1
+      p_upp = numeric(),      # limite superior do número de pessoas com arg_var == 1
+      subgrp = character(),   # categoria (total/ouvinte/deficiente_auditivo/surdo/surdocego)
+      var = character()       # arg_var (atributo mensurado na PNS 2019)
+    )
+
+  # itera cada subgrupo de interesse da tese
+  SUBGRPS <-
+    c(
+      "categ_total",
+      "categ_ouvinte",
+      "categ_surdo",
+      "categ_surdocego",
+      "categ_deficiente_auditivo"
+    )
+
+  svy_proportion <- TRUE
+  if(arg_var == 'antrop_imc'){
+    svy_proportion <- FALSE
+  }
+  
+  svy_prop_method <- 'xlogit'
+
+  for(arg_subgrp in SUBGRPS){
+
+    tic()
+
+    message("   para o grupo ", arg_subgrp, "...")
+
+    if(arg_subgrp == 'categ_total'){
+
+      inner_table <-
+        pns2019_posterior |>
+        as_survey() |>
+        group_by(sexo) |>
+        summarise(
+          n = survey_total(
+            .data[[arg_var]],
+            na.rm=TRUE,
+            vartype='ci'
+          ),
+          p = survey_mean(
+            .data[[arg_var]],
+            na.rm=TRUE,
+            proportion = svy_proportion,
+            prop_method = svy_prop_method,
+            vartype='ci'
+          )
+        ) |>
+        mutate(
+          n_low = pmax(0, n_low),
+          subgrp = arg_subgrp,
+          var = arg_var
+        )
+
+    } else {
+
+      inner_table <-
+        pns2019_posterior |>
+        as_survey() |>
+        filter( .data[[arg_subgrp]] == 1) |>
+        group_by(sexo) |>
+        summarise(
+          n = survey_total(
+            .data[[arg_var]],
+            na.rm=TRUE,
+            vartype='ci'
+          ),
+          p = survey_mean(
+            .data[[arg_var]],
+            na.rm=TRUE,
+            proportion = svy_proportion,
+            prop_method = svy_prop_method,
+            vartype='ci'
+          )
+        ) |>
+        mutate(
+          n_low = pmax(0, n_low),
+          subgrp = arg_subgrp,
+          var = arg_var
+        )
+
+    } # if(arg_subgrp == 'categ_total')
+
+    outer_table <-
+      bind_rows(
+        outer_table,
+        inner_table
+      )
+
+    toc()
+
+    message("     salvando dados de ", arg_var, " em disco em ", arg_output_file, "...")
+    inner_table |>
+      write_csv(
+        file = arg_output_file,
+        append = arg_append
+      )
+    arg_append <- TRUE # sobrescreve arg_append daqui pra frente...
+    
+  } # for(arg_subgrp in SUBGRPS)
+
+  return(outer_table)
+
+} # prevalence_all_ages <- function(arg_var, output_file, append)
+
+# ===================
+
+prevalence_by_agegrp <- function(arg_var, arg_output_file, arg_append){
+
+  message("calculando prevalência de ",arg_var, "...")
+
+  # (re)inicializa tabela de resultados em branco
+  outer_table <-
+    tibble(
+      sexo = character(),     # resultados por sexo
+      n = numeric(),          # número de pessoas com arg_var == 1
+      n_low = numeric(),      # limite inferior do número de pessoas com arg_var == 1
+      n_upp = numeric(),      # limite superior do número de pessoas com arg_var == 1
+      p = numeric(),          # percentual de pessoas com arg_var == 1
+      p_low = numeric(),      # limite inferior do percentual de pessoas com arg_var == 1
+      p_upp = numeric(),      # limite superior do número de pessoas com arg_var == 1
+      subgrp = character(),   # categoria (total/ouvinte/deficiente_auditivo/surdo/surdocego)
+      var = character(),      # arg_var (atributo mensurado na PNS 2019)
+      fx_idade = character()  # faixa etária
+    )
+
+  # itera cada subgrupo de interesse da tese
+  SUBGRPS <-
+    c(
+      "categ_total",
+      "categ_ouvinte",
+      "categ_surdo",
+      "categ_surdocego",
+      "categ_deficiente_auditivo"
+    )
+
+  svy_proportion <- TRUE
+  if(arv_var == 'antrop_imc'){
+    svy_proportion <- FALSE
+  }
+  svy_prop_method <- 'xlogit'
+
+  for(arg_subgrp in SUBGRPS){
+
+    tic()
+
+    message("   para o grupo ", arg_subgrp, "...")
+
+    if(arg_subgrp == 'categ_total'){
+
+      inner_table <-
+        pns2019_posterior |>
+        as_survey() |>
+        group_by(sexo, fx_idade) |>
+        summarise(
+          n = survey_total(
+            .data[[arg_var]],
+            na.rm=TRUE,
+            vartype='ci'
+          ),
+          p = survey_mean(
+            .data[[arg_var]],
+            na.rm=TRUE,
+            proportion = svy_proportion,
+            prop_method = svy_prop_method,
+            vartype='ci'
+          )
+        ) |>
+        transmute(
+          sexo,
+          n,
+          n_low = pmax(0,n_low),
+          n_upp,
+          p,
+          p_low,
+          p_upp,
+          subgrp = arg_subgrp,
+          var = arg_var,
+          fx_idade
+        )
+
+    } else {
+
+      inner_table <-
+        pns2019_posterior |>
+        as_survey() |>
+        filter( .data[[arg_subgrp]] == 1) |>
+        group_by(sexo, fx_idade) |>
+        summarise(
+          n = survey_total(
+            .data[[arg_var]],
+            na.rm=TRUE,
+            vartype='ci'
+          ),
+          p = survey_mean(
+            .data[[arg_var]],
+            na.rm=TRUE,
+            proportion = svy_proportion,
+            prop_method = svy_prop_method,
+            vartype='ci'
+          )
+        ) |>
+        transmute(
+          sexo,
+          n,
+          n_low = pmax(0,n_low),
+          n_upp,
+          p,
+          p_low,
+          p_upp,
+          subgrp = arg_subgrp,
+          var = arg_var,
+          fx_idade
+        )
+
+    } # if(arg_subgrp == 'categ_total')
+
+    outer_table <-
+      bind_rows(
+        outer_table,
+        inner_table
+      )
+
+    toc()
+
+    message("     salvando dados de ", arg_var, " em disco em ", arg_output_file, "...")
+    inner_table |>
+      write_csv(
+        file = arg_output_file,
+        append = arg_append
+      )
+    arg_append <- TRUE # sobrescreve arg_append daqui pra frente...
+    
+  } # for(arg_subgrp in SUBGRPS)
+
+  return(outer_table)
+
+} # prevalence_by_agegrp <- function(arg_var, output_file, append)

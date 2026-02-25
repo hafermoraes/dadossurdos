@@ -165,8 +165,21 @@ pns2019_pct_libras <-
   pns2019_posterior |>
   as_survey() |>
   summarise(
-    n = survey_total(libras_01, na.rm = TRUE, vartype=c('se','ci')),
-    pct = survey_mean(libras_01, na.rm = TRUE, vartype=c('se','ci'))
+    n = survey_total(
+      libras_01,
+      na.rm = TRUE,
+      vartype=c('se','ci')
+    ),
+    pct = survey_mean(
+      libras_01,
+      proportion=TRUE,
+      prop_method='xlogit',
+      na.rm = TRUE,
+      vartype=c('se','ci')
+    )
+  ) |>
+  mutate(
+    n_low = pmax(0, n_low)
   )
 
 pns2019_usuarios_libras <-
@@ -297,15 +310,24 @@ eda_stats_by_variable <- function(column) {
   base_table <- 
     suppressWarnings(
       pns2019_posterior |>
-      as_survey() |>
-      group_by(across(all_of(column))) |>
-      summarise(
-        n = survey_total(na.rm = TRUE, vartype = 'ci'),
-        l = survey_total(libras_01, na.rm = TRUE, vartype = 'ci'),
-        p = survey_mean(libras_01, na.rm = TRUE, vartype = 'ci')
-      ) |>
-      rename(value = 1) |>
-      mutate(key = column)
+        as_survey() |>
+        group_by(across(all_of(column))) |>
+        summarise(
+          n = survey_total(na.rm = TRUE, vartype = 'ci'),
+          l = survey_total(libras_01, na.rm = TRUE, vartype = 'ci'),
+          p = survey_mean(
+            libras_01,
+            proportion=TRUE,
+            prop_method='xlogit',
+            na.rm = TRUE,
+            vartype = 'ci')
+        ) |>
+        rename(value = 1) |>
+        mutate(
+          key = column,
+          n_low = pmax(0, n_low),
+          l_low = pmax(0, l_low)
+        )
     )
   
   summary_table <-
