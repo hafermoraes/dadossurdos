@@ -1,19 +1,4 @@
 
-VARS <-
-  c(
-    ,       ,
-    ,            ,
-    "mort_diagnostico_reumatismo",                 "mort_diagnostico_dort",
-    ,                  ,
-    ,            ,
-    ,                      ,
-    
-    
-  )
-
-
-
-
 # Rótulos para os gráficos
 cid10_cap_ix <- "Cap. IX - Aparelho Circulatório (28,4% dos Óbitos)"
 cid10_cap_ii <- "Cap. II - Neoplasias (14,4% dos Óbitos)"
@@ -22,8 +7,15 @@ cid10_cap_iv <- "Cap. IV - Endócrinas, nutricionais e metabólicas (5,5% dos Ó
 cid10_cap_v  <- "Cap. V  - Transtornos mentais (0,9% dos óbitos)"
 cid10_cap_i  <- "Cap. I  - Infecciosas e parasitárias (4,5%)"
 
-morb_prevalencias_data <-
-  morb_prevalencias |>
+
+morb_prevalencias <-
+  read_csv(
+    paste0(
+      results_dir,
+      "morb_prevalencias.csv"
+    ),
+    show_col_types = FALSE
+  ) |>
   mutate(
     doenca = case_when(
       # Capítulo IX - Aparelho Circulatório
@@ -95,7 +87,7 @@ morb_prevalencias_data <-
       var == "mort_cancer_ovario"                     ~ cid10_cap_ii,
       var == "mort_cancer_tireoide"                   ~ cid10_cap_ii,
       # Cap. X - Aparelho Respiratório
-      var == "mort_diagnostico_asma" ~ cid10_cap_x,
+      var == "mort_diagnostico_asma"                  ~ cid10_cap_x,
       var == "mort_diagnostico_doenca_pulmonar"       ~ cid10_cap_x,
       var == "mort_doenca_pulmonar_enfisema"          ~ cid10_cap_x,
       var == "mort_doenca_pulmonar_bronquite_cronica" ~ cid10_cap_x,
@@ -115,9 +107,27 @@ morb_prevalencias_data <-
       TRUE ~ NA_character_
     )
   ) 
-  
 
-morb_prevalencias_data |>
+
+get_gradient_color <- function(val) {
+  if (is.na(val) || val == "-") return(val)
+  v <- as.numeric(val)
+  if (v > 1) {
+    intensity <- min(round((v - 1) * 100), 100)
+    return(paste0("\\cellcolor{myblue!", intensity, "!white}", format(round(v, 2), nsmall = 2)))
+  } else if (v < 1) {
+    intensity <- min(round((1 - v) * 100), 100)
+    return(paste0("\\cellcolor{myred!", intensity, "!white}", format(round(v, 2), nsmall = 2)))
+  } else {
+    return(format(round(v, 2), nsmall = 2))
+  }
+}
+
+
+  
+# tabela "Razões de Prevalência para as cetegorias"
+morb_prevalencias_data <-
+  morb_prevalencias |>
   drop_na() |>
   select(cid10_cap, doenca, subgrp, sexo, p) |> 
   pivot_wider(
@@ -128,23 +138,28 @@ morb_prevalencias_data |>
   transmute(
     cid10_cap, doenca,
     f_rp_surdo = feminino_categ_surdo / feminino_categ_total,
-    f_rp_surdocego = feminino_categ_surdocego / feminino_categ_total,
-    f_rp_deficiente_auditivo = feminino_categ_deficiente_auditivo / feminino_categ_total,
     m_rp_surdo = masculino_categ_surdo / masculino_categ_total,
+    f_rp_surdocego = feminino_categ_surdocego / feminino_categ_total,
     m_rp_surdocego = masculino_categ_surdocego / masculino_categ_total,
+    f_rp_deficiente_auditivo = feminino_categ_deficiente_auditivo / feminino_categ_total,
     m_rp_deficiente_auditivo = masculino_categ_deficiente_auditivo / masculino_categ_total
   ) |> 
-  arrange(cid10_cap, doenca) |>
+  arrange(cid10_cap, doenca)
+
+
+
+
+morb_prevalencias_data |>
   mutate(
     across(
       contains("_rp_"), 
-      ~ ifelse(is.na(.), "-", format(round(., 2), nsmall = 2))
+      ~ ifelse(is.na(.), "-", format(round(., 2), decimal.mark = ",", nsmall = 2))
     )
   ) |>
+  mutate(across(contains("_rp_"), ~ map_chr(., get_gradient_color))) |>
   group_by(cid10_cap) |> 
   mutate(
     n_total = n(),
-    # Escapa o % para \% antes de montar a estrutura do LaTeX
     cid10_cap_clean = gsub("%", "\\\\%", cid10_cap),
     cid10_cap_latex = ifelse(
       row_number() == 1, 
@@ -172,16 +187,6 @@ morb_prevalencias_data |>
     )
   ) |> 
   pull(latex_line) |> 
-  # # Converte para as linhas do LaTeX
-  # apply(1, function(x) {
-  #   # x[1:8] são os dados, x[9] é o marcador is_last
-  #   dados <- paste(x[1:8], collapse = " & ")
-  #   if (as.logical(x[9])) {
-  #     paste0(dados, " \\\\ \\midrule")
-  #   } else {
-  #     paste0(dados, " \\\\")
-  #   }
-  # }) |> 
   writeLines(
     paste0(
       results_dir,
@@ -189,43 +194,102 @@ morb_prevalencias_data |>
     )
   )
 
-  
-dodge_spacing <- 0.7
 
-morb_prevalencias_data |>
-  filter(
-    subgrp != "categ_ouvinte",
-    !is.na(cid10_cap)
-  ) |> 
-  ggplot(
-    aes(
-      x = doenca, 
-      y = p, 
-      color = subgrp,
-      shape = subgrp
-    )
-  ) +
-  geom_point(
-    position = position_dodge(width = dodge_spacing), 
-    size = 2
-  ) +
-  geom_errorbar(
-    aes(ymin = p_low, ymax = p_upp), 
-    position = position_dodge(width = dodge_spacing), 
-    width = 0.2
-  ) +
-  facet_wrap(cid10_cap ~ sexo, scales = "free") + 
-  coord_flip() +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-  scale_shape_manual(values = c(0, 1, 2, 8)) +
-  theme_bw() +
-  theme(
-    legend.position = "bottom",
-    aspect.ratio = 0.6
-  ) +
-  labs(
-    x = "Variável PNS",
-    y = "Prevalência (p)",
-    color = "Subgrupo",
-    shape = "Subgrupo"
+
+
+# mort_priors_alpha
+mort_priors_alpha <-
+  morb_prevalencias_data |>
+  pivot_longer(
+    -c(cid10_cap, doenca)
+  ) |>
+  drop_na() |>
+  group_by(name) |>
+  summarise(
+    # paramétrico
+    mean = mean(value, na.rm=TRUE),
+    sd = sd(value, na.rm=TRUE),
+    # não paramétrico
+    median = median(value, na.rm = TRUE),
+    mad =mad(value, na.rm = TRUE),
+    iqr = IQR(value, na.rm=TRUE)
+  ) 
+
+
+# mort_priors_beta
+bind_rows(
+  censo2000_mortalidade |> mutate(src = 'censo2000'),
+  censo2010_mortalidade |> mutate(src = 'censo2010'),
+  pns2019_mortalidade |> mutate( src = 'pns2019')
+) |>
+  mutate(
+    ind_65mais = ifelse( idade >= 65, 1, 0),
+    ind_15_64 = ifelse( (idade > 14) & (idade < 65) , 1, 0)
+  ) |>
+  group_by(
+    src, subgrp, ano, sexo
+  ) |>
+  summarise(
+    idade_media = sum( idade * n) / sum(n),
+    razao_dependencia_idosos = sum( ind_65mais * idade * n) / sum( ind_15_64 * idade * n)
+  ) |>
+  pivot_longer(
+    
   )
+  View()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(FALSE){
+  dodge_spacing <- 0.7
+  
+  morb_prevalencias_data |>
+    filter(
+      subgrp != "categ_ouvinte",
+      !is.na(cid10_cap)
+    ) |> 
+    ggplot(
+      aes(
+        x = doenca, 
+        y = p, 
+        color = subgrp,
+        shape = subgrp
+      )
+    ) +
+    geom_point(
+      position = position_dodge(width = dodge_spacing), 
+      size = 2
+    ) +
+    geom_errorbar(
+      aes(ymin = p_low, ymax = p_upp), 
+      position = position_dodge(width = dodge_spacing), 
+      width = 0.2
+    ) +
+    facet_wrap(cid10_cap ~ sexo, scales = "free") + 
+    coord_flip() +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    scale_shape_manual(values = c(0, 1, 2, 8)) +
+    theme_bw() +
+    theme(
+      legend.position = "bottom",
+      aspect.ratio = 0.6
+    ) +
+    labs(
+      x = "Variável PNS",
+      y = "Prevalência (p)",
+      color = "Subgrupo",
+      shape = "Subgrupo"
+    )
+
+}  

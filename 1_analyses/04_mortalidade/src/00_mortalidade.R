@@ -1,4 +1,7 @@
 
+
+
+
 message("removendo todos os objetos prévios...")
 rm(list = ls(all.names = TRUE))
 
@@ -73,7 +76,7 @@ source(paste0(src_dir, '04_prepare_censo2010.R'))
 
 source(paste0(src_dir, '04_prepare_pns2019.R'))
 
-source(paste0(src_dir, '05_unify_censuses.R'))
+source(paste0(src_dir, '05_unify_treated_sources.R'))
 
 source(paste0(src_dir, '06_plot_censo_age_pyramids.R'))
 

@@ -9,7 +9,7 @@ mlp,Preprocessor1_Model09,recipe,mlp,pr_auc,binary,0.483040152611212,5,0.0362282
 mlp,Preprocessor1_Model03,recipe,mlp,pr_auc,binary,0.43965771663316294,5,0.04735503477977661
 mlp,Preprocessor1_Model01,recipe,mlp,pr_auc,binary,0.4240931215786091,5,0.015909288376147728
 mlp,Preprocessor1_Model05,recipe,mlp,pr_auc,binary,0.4181649416955177,5,0.022734787437786962
-mars,Preprocessor1_Model5,recipe,mars,pr_auc,binary,0.3927298722029454,4,0.08039607107109394
+mars,Preprocessor1_Model5,recipe,mars,pr_auc,binary,0.39279023631833665,4,0.08037896989869228
 mlp,Preprocessor1_Model02,recipe,mlp,pr_auc,binary,0.39207603455343376,5,0.009093563338998155
 mars,Preprocessor1_Model1,recipe,mars,pr_auc,binary,0.38247540835257965,5,0.014709706056106902
 mlp,Preprocessor1_Model08,recipe,mlp,pr_auc,binary,0.3716015681762349,5,0.015162086391221663
@@ -35,7 +35,7 @@ dt,Preprocessor1_Model06,recipe,decision_tree,pr_auc,binary,0.3355052153270079,5
 dt,Preprocessor1_Model01,recipe,decision_tree,pr_auc,binary,0.3328279711908002,5,0.005007067523504955
 mars,Preprocessor1_Model2,recipe,mars,pr_auc,binary,0.3326807640059057,5,0.006664173931025897
 logres,Preprocessor1_Model07,recipe,logistic_reg,pr_auc,binary,0.33022156676910164,5,0.013136791273596704
-dt,Preprocessor1_Model08,recipe,decision_tree,pr_auc,binary,0.3246395361455965,5,0.006781985404740135
+dt,Preprocessor1_Model08,recipe,decision_tree,pr_auc,binary,0.32439183941467037,5,0.00697559678655271
 mars,Preprocessor1_Model4,recipe,mars,pr_auc,binary,0.32364922832306114,4,0.0184291390708126
 logres,Preprocessor1_Model08,recipe,logistic_reg,pr_auc,binary,0.3191621886643881,5,0.012037914651178875
 logres,Preprocessor1_Model09,recipe,logistic_reg,pr_auc,binary,0.3191610827979381,5,0.012055085818684096
@@ -43,10 +43,10 @@ logres,Preprocessor1_Model02,recipe,logistic_reg,pr_auc,binary,0.318868227807150
 logres,Preprocessor1_Model05,recipe,logistic_reg,pr_auc,binary,0.3188675779542596,5,0.012086082395647974
 logres,Preprocessor1_Model01,recipe,logistic_reg,pr_auc,binary,0.31880013817066366,5,0.012294183249334517
 logres,Preprocessor1_Model03,recipe,logistic_reg,pr_auc,binary,0.31878384785079145,5,0.012186546159255005
-mars,Preprocessor1_Model6,recipe,mars,pr_auc,binary,0.3185381422454302,4,0.014983038416185255
 logres,Preprocessor1_Model06,recipe,logistic_reg,pr_auc,binary,0.31761601032961856,5,0.012306866954971822
 dt,Preprocessor1_Model03,recipe,decision_tree,pr_auc,binary,0.31728531322477865,5,0.0071313684240643695
 svm,Preprocessor1_Model02,recipe,svm_linear,pr_auc,binary,0.31671118049069025,5,0.02797894100024432
+mars,Preprocessor1_Model6,recipe,mars,pr_auc,binary,0.3117038046423975,4,0.00960999257116171
 svm,Preprocessor1_Model04,recipe,svm_linear,pr_auc,binary,0.3058694487530164,5,0.015953932446883638
 svm,Preprocessor1_Model06,recipe,svm_linear,pr_auc,binary,0.30486029490944694,5,0.02613212551687263
 rf,Preprocessor1_Model05,recipe,rand_forest,pr_auc,binary,0.30227914174335374,5,0.010904306475759726
@@ -87,7 +87,7 @@ nb,Preprocessor1_Model08,recipe,naive_Bayes,roc_auc,binary,0.6565698808834374,5,
 mlp,Preprocessor1_Model07,recipe,mlp,roc_auc,binary,0.6439071151253764,5,0.010548781116539816
 mlp,Preprocessor1_Model04,recipe,mlp,roc_auc,binary,0.6437097181115512,5,0.01659391976684258
 logres,Preprocessor1_Model07,recipe,logistic_reg,roc_auc,binary,0.5918457363852737,5,0.019183103871856896
-dt,Preprocessor1_Model08,recipe,decision_tree,roc_auc,binary,0.5777956990620252,5,0.009902333373475378
+dt,Preprocessor1_Model08,recipe,decision_tree,roc_auc,binary,0.5775737487447501,5,0.009936090674545914
 svm,Preprocessor1_Model02,recipe,svm_linear,roc_auc,binary,0.5728492708455777,5,0.034849840300190324
 dt,Preprocessor1_Model01,recipe,decision_tree,roc_auc,binary,0.5680955047950159,5,0.01001706513619541
 dt,Preprocessor1_Model04,recipe,decision_tree,roc_auc,binary,0.5632120481201098,5,0.008475568029551328
@@ -104,11 +104,11 @@ dt,Preprocessor1_Model10,recipe,decision_tree,roc_auc,binary,0.5446472174435331,
 dt,Preprocessor1_Model05,recipe,decision_tree,roc_auc,binary,0.5438590092655176,5,0.004567804367229846
 dt,Preprocessor1_Model06,recipe,decision_tree,roc_auc,binary,0.5437340445288704,5,0.004574695195106399
 dt,Preprocessor1_Model03,recipe,decision_tree,roc_auc,binary,0.5425903517853775,5,0.008608800424464378
-mars,Preprocessor1_Model6,recipe,mars,roc_auc,binary,0.5352328401195263,4,0.004188657339842062
+mars,Preprocessor1_Model6,recipe,mars,roc_auc,binary,0.531498099203839,4,0.004657674010423712
 mars,Preprocessor1_Model2,recipe,mars,roc_auc,binary,0.5295905441201746,5,0.015264188204099624
 mars,Preprocessor1_Model3,recipe,mars,roc_auc,binary,0.5289921053898813,5,0.009030852661940703
 mars,Preprocessor1_Model1,recipe,mars,roc_auc,binary,0.5275944043428809,5,0.010014049202277385
-mars,Preprocessor1_Model5,recipe,mars,roc_auc,binary,0.5255531657669816,4,0.009358182702255446
+mars,Preprocessor1_Model5,recipe,mars,roc_auc,binary,0.5268324055330634,4,0.00940976456336621
 mars,Preprocessor1_Model4,recipe,mars,roc_auc,binary,0.5232402408699005,4,0.014975356319076243
 svm,Preprocessor1_Model05,recipe,svm_linear,roc_auc,binary,0.5167698558549211,5,0.025262370147267465
 svm,Preprocessor1_Model01,recipe,svm_linear,roc_auc,binary,0.5142905671025555,5,0.02202609009290378

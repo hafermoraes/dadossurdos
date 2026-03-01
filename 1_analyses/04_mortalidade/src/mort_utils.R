@@ -87,7 +87,7 @@ export_plot_pareto <- function(input_df, plot_width, plot_height, output_file){
   plt_data <-
     input_df |>
     group_by(CAPITULO_CID10) |>
-    summarise(total_mortes = sum(obitos, na.rm = TRUE)) |>
+    summarise(total_mortes = sum(total_obitos, na.rm = TRUE)) |>
     arrange(desc(total_mortes)) |>
     mutate(
       percent_acumulada = cumsum(total_mortes) / sum(total_mortes) * 100,
@@ -102,8 +102,7 @@ export_plot_pareto <- function(input_df, plot_width, plot_height, output_file){
     plt_data |>
     ggplot(aes(x = capitulo_wrap)) +
     geom_col(
-      aes(
-        y = total_mortes),
+      aes(y = total_mortes),
       fill = "grey40",
       alpha = 0.8
     ) +
@@ -125,30 +124,31 @@ export_plot_pareto <- function(input_df, plot_width, plot_height, output_file){
     geom_text(
       aes(
         y = percent_acumulada * ratio, 
-        label = paste0(round(percent_acumulada, 1), "%")
+        label = paste0(format(round(percent_acumulada, 1), decimal.mark=","), "%")
       ),
-      vjust = -1.5,
+      vjust = -2,
       color = "black",
-      size = 3
+      size = 4
     ) +
     scale_y_continuous(
       name = "Total de Óbitos",
       labels = label_number(scale = 1e-6, suffix = " mi."),
-      expand = expansion(mult = c(0, 0.2)),
-      sec.axis = sec_axis(
-        ~ . / ratio, 
-        name = "Porcentagem Acumulada", 
-        breaks = seq(0, 100, by = 20),
-        labels = label_percent(scale = 1, suffix = "%")
-      )
+      expand = expansion(mult = c(0, 0.3))#,
+      # sec.axis = sec_axis(
+      #   ~ . / ratio, 
+      #   name = "Porcentagem Acumulada", 
+      #   breaks = seq(0, 100, by = 20),
+      #   labels = label_percent(scale = 1, suffix = "%")
+      # )
     ) +
     labs(
       x = "Capítulo da CID-10"
     ) +
     theme(
-      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 9),
-      axis.title.y.right = element_text(color = "black"),
-      axis.text.y.right = element_text(color = "black"),
+      axis.title.x = element_text(size = 13),
+      axis.title.y = element_text(size = 13),
+      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 12),
+      axis.text.y = element_text(size = 13),
       panel.grid.minor = element_blank()
     )
   

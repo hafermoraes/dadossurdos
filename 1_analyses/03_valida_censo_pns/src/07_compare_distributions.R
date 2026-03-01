@@ -154,7 +154,7 @@ message("exportando gráfico de comparação no formato pdf em disco...")
 plot_comparison |>
   ggsave(
     filename = paste0(results_dir, "plt_comparison.pdf"),
-    width = 10,
-    height = 8
+    width = 8,
+    height = 6
   )
 toc()

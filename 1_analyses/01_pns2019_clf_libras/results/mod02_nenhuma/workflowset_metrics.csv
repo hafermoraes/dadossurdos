@@ -11,8 +11,8 @@ dt,Preprocessor1_Model05,recipe,decision_tree,pr_auc,binary,0.635976276288982,5,
 dt,Preprocessor1_Model06,recipe,decision_tree,pr_auc,binary,0.635976276288982,5,0.06247010245445322
 dt,Preprocessor1_Model10,recipe,decision_tree,pr_auc,binary,0.635976276288982,5,0.06247010245445322
 mars,Preprocessor1_Model4,recipe,mars,pr_auc,binary,0.5983906616935406,5,0.06085132537392863
+mars,Preprocessor1_Model5,recipe,mars,pr_auc,binary,0.5622408790580045,5,0.08736649549560237
 mlp,Preprocessor1_Model03,recipe,mlp,pr_auc,binary,0.5560966925249347,5,0.05581920691502925
-mars,Preprocessor1_Model5,recipe,mars,pr_auc,binary,0.547626224840565,5,0.09981803541302478
 mars,Preprocessor1_Model6,recipe,mars,pr_auc,binary,0.547626224840565,5,0.09981803541302478
 mlp,Preprocessor1_Model09,recipe,mlp,pr_auc,binary,0.52380681676724306,5,0.0698724691783791
 mars,Preprocessor1_Model1,recipe,mars,pr_auc,binary,0.5105018824990922,5,0.047117628615897605
@@ -121,7 +121,7 @@ mars,Preprocessor1_Model3,recipe,mars,roc_auc,binary,0.4965319549105602,5,0.0048
 mlp,Preprocessor1_Model10,recipe,mlp,roc_auc,binary,0.4935856436449769,5,0.02407873072065727
 mars,Preprocessor1_Model4,recipe,mars,roc_auc,binary,0.49318194832901485,5,0.004518307582310727
 mars,Preprocessor1_Model6,recipe,mars,roc_auc,binary,0.4917603345340958,5,0.005081674607196629
-mars,Preprocessor1_Model5,recipe,mars,roc_auc,binary,0.49082575509484344,5,0.005619691438064596
+mars,Preprocessor1_Model5,recipe,mars,roc_auc,binary,0.49102320145524886,5,0.005497182114266642
 mlp,Preprocessor1_Model07,recipe,mlp,roc_auc,binary,0.4771781970255673,5,0.0176832637843424
 rf,Preprocessor1_Model10,recipe,rand_forest,roc_auc,binary,0.4699487295843479,5,0.012180782524378724
 rf,Preprocessor1_Model06,recipe,rand_forest,roc_auc,binary,0.469159132186879,5,0.010824702707202745

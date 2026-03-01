@@ -92,11 +92,22 @@ toc()
 
 
 
+sim_2000_2010_grp <-
+  read_csv(
+    paste0(
+      data_dir,
+      "sim_2000_2010_grp.csv"
+    ),
+    show_col_types = FALSE
+  )
+
+
+
 
 tic()
 message("exportando gráfico de pareto das causas básicas de morte (Datasus/SIM, 2000-2010)...")
 export_plot_pareto(
-  input_df = sim_2000_2010,
+  input_df = sim_2000_2010_grp,
   plot_width = 12,
   plot_height = 6,
   output_file = paste0(

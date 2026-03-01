@@ -160,7 +160,11 @@ export_threshold_to_latex <-
     
     cat(
       paste0(
-        "\n\n\\newcommand{",latex_var,"}{",round(threshold, N_DIGITS),"}\n\n"
+        "\n\n\\newcommand{",
+        latex_var,
+        "}{",
+        format(round(threshold, N_DIGITS), decimal.mark = ","),
+        "}\n\n"
       ),
       file = output_file,
       append = TRUE
@@ -234,7 +238,12 @@ export_confmat_to_latex <-
       adorn_totals(where = c("row", "col")) |>
       adorn_percentages(denominator = "all") |>
       adorn_pct_formatting(digits = PCT_DIGITS) |>
-      mutate(across(-1, \(x) str_remove(x, "%")))
+      mutate(
+        across(
+          -1,
+          \(x) x |> str_remove("%") |> str_replace("\\.", ",")
+        )
+      )
     
     CNTs <-
       input_table$table |>
@@ -372,7 +381,12 @@ export_subconfmat_to_latex <-
       adorn_totals(where = c("row", "col")) |>
       adorn_percentages(denominator = "all") |>
       adorn_pct_formatting(digits = PCT_DIGITS) |>
-      mutate(across(-1, \(x) str_remove(x, "%")))
+      mutate(
+        across(
+          -1,
+          \(x) x |> str_remove("%") |> str_replace("\\.", ",")
+        )
+      )
 
     CNTs <-
       input_table$table |>
