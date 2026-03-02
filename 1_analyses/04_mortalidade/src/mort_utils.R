@@ -131,7 +131,7 @@ export_plot_pareto <- function(input_df, plot_width, plot_height, output_file){
       size = 4
     ) +
     scale_y_continuous(
-      name = "Total de Óbitos",
+      name = "Total de óbitos na decada",
       labels = label_number(scale = 1e-6, suffix = " mi."),
       expand = expansion(mult = c(0, 0.3))#,
       # sec.axis = sec_axis(
@@ -142,7 +142,7 @@ export_plot_pareto <- function(input_df, plot_width, plot_height, output_file){
       # )
     ) +
     labs(
-      x = "Capítulo da CID-10"
+      x = "Capítulo da Classificação Internacional de Doenças, Catálogo de 2010 (CID-10)"
     ) +
     theme(
       axis.title.x = element_text(size = 13),

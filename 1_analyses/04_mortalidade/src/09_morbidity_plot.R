@@ -112,14 +112,15 @@ morb_prevalencias <-
 get_gradient_color <- function(val) {
   if (is.na(val) || val == "-") return(val)
   v <- as.numeric(val)
+  v_fmt <- format(round(v, 2), decimal.mark = ",", nsmall = 2)
   if (v > 1) {
     intensity <- min(round((v - 1) * 100), 100)
-    return(paste0("\\cellcolor{myblue!", intensity, "!white}", format(round(v, 2), nsmall = 2)))
+    return(paste0("\\cellcolor{myblue!", intensity, "!white}", v_fmt))
   } else if (v < 1) {
     intensity <- min(round((1 - v) * 100), 100)
-    return(paste0("\\cellcolor{myred!", intensity, "!white}", format(round(v, 2), nsmall = 2)))
+    return(paste0("\\cellcolor{myred!", intensity, "!white}", v_fmt))
   } else {
-    return(format(round(v, 2), nsmall = 2))
+    return(v_fmt)
   }
 }
 
@@ -152,8 +153,8 @@ morb_prevalencias_data <-
 morb_prevalencias_data |>
   mutate(
     across(
-      contains("_rp_"), 
-      ~ ifelse(is.na(.), "-", format(round(., 2), decimal.mark = ",", nsmall = 2))
+      contains("_rp_"),
+      ~ ifelse(is.na(.), "-", round(., 2))
     )
   ) |>
   mutate(across(contains("_rp_"), ~ map_chr(., get_gradient_color))) |>
