@@ -1,4 +1,6 @@
 
+gc()
+
 # Rótulos para os gráficos
 cid10_cap_ix <- "Cap. IX - Aparelho Circulatório (28,4% dos Óbitos)"
 cid10_cap_ii <- "Cap. II - Neoplasias (14,4% dos Óbitos)"
@@ -126,7 +128,7 @@ get_gradient_color <- function(val) {
 
 
   
-# tabela "Razões de Prevalência para as cetegorias"
+# tabela "Razões de Prevalência para as categorias"
 morb_prevalencias_data <-
   morb_prevalencias |>
   drop_na() |>
@@ -205,92 +207,204 @@ mort_priors_alpha <-
     -c(cid10_cap, doenca)
   ) |>
   drop_na() |>
-  group_by(name) |>
+  mutate(
+    name = str_replace(name, "f_rp_", "feminino_"),
+    name = str_replace(name, "m_rp_", "masculino_")
+  ) |>
+  separate(name, into = c("sex", "category"), sep = "_", extra = "merge") |>
+  group_by(sex, category) |>
   summarise(
     # paramétrico
     mean = mean(value, na.rm=TRUE),
     sd = sd(value, na.rm=TRUE),
     # não paramétrico
     median = median(value, na.rm = TRUE),
-    mad =mad(value, na.rm = TRUE),
+    mad = mad(value, na.rm = TRUE),
     iqr = IQR(value, na.rm=TRUE)
-  ) 
+  ) |>
+  ungroup() |>
+  transmute(
+    sex, category, alpha_mu = median, alpha_sd = mad
+  )
 
 
 # mort_priors_beta
-bind_rows(
-  censo2000_mortalidade |> mutate(src = 'censo2000'),
-  censo2010_mortalidade |> mutate(src = 'censo2010'),
-  pns2019_mortalidade |> mutate( src = 'pns2019')
-) |>
+mort_beta_data <-
+  bind_rows(
+    censo2000_mortalidade |> mutate(src = 'censo2000'),
+    censo2010_mortalidade |> mutate(src = 'censo2010'),
+    pns2019_mortalidade |> mutate( src = 'pns2019')
+  ) |>
+  filter(!(subgrp %in% c('ouvinte'))) |>
   mutate(
     ind_65mais = ifelse( idade >= 65, 1, 0),
     ind_15_64 = ifelse( (idade > 14) & (idade < 65) , 1, 0)
   ) |>
   group_by(
-    src, subgrp, ano, sexo
+    src, subgrp, sexo
   ) |>
   summarise(
-    idade_media = sum( idade * n) / sum(n),
-    razao_dependencia_idosos = sum( ind_65mais * idade * n) / sum( ind_15_64 * idade * n)
+    im = sum( idade * n) / sum(n),
+    rdi = sum( ind_65mais * idade * n) / sum( ind_15_64 * idade * n)
   ) |>
   pivot_longer(
-    
-  )
-  View()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-if(FALSE){
-  dodge_spacing <- 0.7
-  
-  morb_prevalencias_data |>
-    filter(
-      subgrp != "categ_ouvinte",
-      !is.na(cid10_cap)
-    ) |> 
-    ggplot(
-      aes(
-        x = doenca, 
-        y = p, 
-        color = subgrp,
-        shape = subgrp
-      )
-    ) +
-    geom_point(
-      position = position_dodge(width = dodge_spacing), 
-      size = 2
-    ) +
-    geom_errorbar(
-      aes(ymin = p_low, ymax = p_upp), 
-      position = position_dodge(width = dodge_spacing), 
-      width = 0.2
-    ) +
-    facet_wrap(cid10_cap ~ sexo, scales = "free") + 
-    coord_flip() +
-    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-    scale_shape_manual(values = c(0, 1, 2, 8)) +
-    theme_bw() +
-    theme(
-      legend.position = "bottom",
-      aspect.ratio = 0.6
-    ) +
-    labs(
-      x = "Variável PNS",
-      y = "Prevalência (p)",
-      color = "Subgrupo",
-      shape = "Subgrupo"
+    -c(src,subgrp,sexo)
+  ) |>
+  pivot_wider(
+    id_cols = c(src,sexo),
+    names_from = c(subgrp, name),
+    names_glue = "{subgrp}_{name}",
+    values_from = "value"
+  ) |> 
+  transmute(
+    src, sexo,
+    im_surdo = surdo_im / total_im,
+    im_da = deficiente_auditivo_im / total_im,
+    im_surdocego = surdocego_im / total_im,
+    rdi_surdo = surdo_rdi / total_rdi,
+    rdi_da = deficiente_auditivo_rdi / total_rdi,
+    rdi_surdocego = surdocego_rdi / total_rdi
+  ) |>
+  pivot_longer(
+    cols = -c(src, sexo)
+  ) |>
+  separate(name, into = c("index", "category"), sep = "_", extra = "merge") |>
+  pivot_wider(
+    id_cols = c(sexo,category),
+    names_from = c(index, src),
+    values_from = value
+  ) |>
+  mutate(
+    category = case_match(
+      category,
+      "surdo" ~ "Surdo",
+      "surdocego" ~ "Surdocego",
+      "da" ~ "Deficiente Auditivo"
     )
+  ) |>
+  arrange( sexo, category) |>
+  ungroup() |>
+  select(sexo, category, starts_with("im"), starts_with("rdi"))
 
-}  
+
+mort_beta_data |>
+  mutate(
+    across(where(is.numeric), ~ ifelse(is.na(.), "-", round(., 3))),
+    across(where(is.numeric), ~ map_chr(., get_gradient_color)),
+    is_last = row_number() == n()
+  ) |>
+  ungroup() |>
+  mutate(
+    sexo = case_when(
+      row_number() == 1 ~ "\\multirow{3}{=}{Feminino}",
+      row_number() == 4 ~ "\\multirow{3}{=}{Masculino}",
+      TRUE ~ ""
+    )
+  ) |>
+  mutate(
+    line_str = paste(
+      sexo, 
+      category, 
+      apply(across(3:8), 1, paste, collapse = " & "), 
+      sep = " & "
+    ),
+    latex_line = case_when(
+      row_number() == 3 ~ paste0(line_str, " \\\\ \\midrule"),    # Fim do feminino
+      row_number() == n() ~ paste0(line_str, " "), # Fim da tabela
+      TRUE ~ paste0(line_str, " \\\\")                             # Linhas comuns
+    )
+  ) |> 
+  pull(latex_line) |>
+  writeLines(
+    paste0(
+      results_dir,
+      "mort_beta_summary.tex"
+    )
+  )
+
+
+
+
+
+# https://www.lifetable.de/Country/Country?cntr=BRA
+# https://www.lifetable.de/File/GetDocument/data/BRA/BRA.zip
+
+# sex: 1 males 2 females
+# https://www.lifetable.de/File/GetDocument/formats.pdf
+
+install.packages("MortalityLaws")
+
+library(dplyr)
+library(readr)
+library(MortalityLaws)
+
+temp <- tempfile()
+download.file("https://www.lifetable.de/File/GetDocument/data/BRA/BRA.zip", temp)
+
+bra_lt <- 
+  read_csv(
+    unz(temp, "BRA.csv"),
+    show_col_types = FALSE
+  ) |>
+  transmute(
+    type = case_when(
+      TypeLT == 4 ~ 'abridged',
+      TypeLT == 1 ~ 'unabridged',
+      TRUE ~ NA_character_
+    ),
+    year = Year1,
+    sex = ifelse(Sex==1, 'male', 'female'),
+    x = Age, 
+    n = AgeInt, 
+    mx = `m(x)`,
+    qx = `q(x)`,
+    lx = `l(x)`, 
+    dx = `d(x)`, 
+    Lx = `L(x)`,
+    Tx = `T(x)`,
+    ex = `e(x)`,
+    ex_orig = `e(x)Orig`
+  )
+
+unlink(temp)
+rm(temp)
+
+mort_male_censo2000 <-
+  bra_lt |> 
+  filter(sex=='male', type == 'abridged', year==2000)
+  
+
+output <-
+  LifeTable(
+    x = mort_male_censo2000$x,
+    lx = mort_male_censo2000$lx,
+    lx0 = 1e5
+  )
+
+# ex para simulações de monte carlo
+output$lt[1,'ex']
+
+
+# priors
+mort_priors <-
+  list(
+    surdo = list(
+      alpha = list(median = 1.00, mad = 1.0035),
+      beta  = list(median = 0.78, mad = 1.0035)
+    ),
+    surdocego = list(
+      alpha = list(median = 1.00, mad = 1.0035),
+      beta  = list(median = 0.78, mad = 1.0035)
+    ),
+    deficiente_auditivo = list(
+      alpha = list(median = 1.00, mad = 1.0035),
+      beta  = list(median = 0.78, mad = 1.0035)
+    )
+  )
+
+
+mort_priors[["surdo"]][["alpha"]][["median"]]
+
+mort_priors[["surdo"]][["alpha"]][["mad"]]
+
+mort_priors$surdo$alpha$mad

@@ -1,9 +1,16 @@
 
-
-
-
 message("removendo todos os objetos prévios...")
 rm(list = ls(all.names = TRUE))
+
+
+PNS2019_PREVALENCES_DATA <- FALSE
+PNS2019_PREVALENCES_PLOT <- FALSE
+
+PNS2019_PREVALENCES_BY_AGE_DATA <- FALSE
+PNS2019_PREVALENCES_BY_AGE_PLOT <- FALSE
+
+PARETO_DATASUS_DATA <- FALSE
+PARETO_DATASUS_PLOT <- FALSE
 
 base_dir <-
   paste0(
@@ -61,8 +68,8 @@ pns2019_parsed_csv <-
 message("construindo a faixa etária para as análises...")
 
 source(paste0(src_dir, 'mort_utils.R'))
-lt_spec <- life_table_structure(OMEGA=95, STEP=5)
 
+lt_spec <- life_table_structure(OMEGA=95, STEP=5)
 
 source(paste0(src_dir, '01_empty_data_and_results_directory.R'))
 
@@ -84,14 +91,10 @@ source(paste0(src_dir, '07_intercensal_life_tables.R'))
 
 source(paste0(src_dir, '08_morbidity.R'))
 
-source(paste0(src_dir, '09_morbidity_plot.R'))
+source(paste0(src_dir, '09_morbidity_by_age.R'))
 
-source(paste0(src_dir, '10_morbidity_by_age.R'))
+source(paste0(src_dir, '10_datasus.R'))
 
-source(paste0(src_dir, '11_morbidity_by_age_plot.R'))
-
-source(paste0(src_dir, '12_datasus.R'))
-
-source(paste0(src_dir, '13_logit_brass.R'))
+source(paste0(src_dir, '11_logit_brass.R'))
 
 

@@ -66,7 +66,8 @@ RUN Rscript -e "install.packages(\
     'solitude', \
     'embed', \
     'remotes', \
-    'tidytext' \
+    'tidytext', \
+    'MortalityLaws' \
     )\
     )"
 
