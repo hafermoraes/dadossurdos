@@ -365,95 +365,70 @@ toc()
 tic()
 message("criando a lista de prioris por categoria e por sexo...")
 
-# https://demographicestimation.iussp.org/content/fitting-model-life-tables-pair-estimates-child-and-adult-mortality#:~:text=This%20section%20describes%20methods%20than,and%20mortality%20in%20old%20age.
+# https://demographicestimation.iussp.org/content/using-models-derive-life-tables-incomplete-data
 
-
-mort_brass_logit_priors <-
-  list(
-    surdo = list(
-      male = list(
-        alpha = list(
-          mu = mort_priors_alpha |> filter( sex == 'masculino', category == 'surdo') |> pull(alpha_mu),
-          sd = mort_priors_alpha |> filter( sex == 'masculino', category == 'surdo') |> pull(alpha_sd)
-        ),
-        beta  = list(
-          mu = mort_priors_beta |> filter( sex == 'masculino', category == 'surdo') |> pull(beta_mu),
-          sd = mort_priors_beta |> filter( sex == 'masculino', category == 'surdo') |> pull(beta_sd)
-        )
-      ), # surdo/male
-      female = list(
-        alpha = list(
-          mu = mort_priors_alpha |> filter( sex == 'feminino', category == 'surdo') |> pull(alpha_mu),
-          sd = mort_priors_alpha |> filter( sex == 'feminino', category == 'surdo') |> pull(alpha_sd)
-        ),
-        beta  = list(
-          mu = mort_priors_beta |> filter( sex == 'feminino', category == 'surdo') |> pull(beta_mu),
-          sd = mort_priors_beta |> filter( sex == 'feminino', category == 'surdo') |> pull(beta_sd)
-        )
-      ) # surdo/female
-    ), # surdo
-    surdocego = list(
-      male = list(
-        alpha = list(
-          mu = mort_priors_alpha |> filter( sex == 'masculino', category == 'surdocego') |> pull(alpha_mu),
-          sd = mort_priors_alpha |> filter( sex == 'masculino', category == 'surdocego') |> pull(alpha_sd)
-        ),
-        beta  = list(
-          mu = mort_priors_beta |> filter( sex == 'masculino', category == 'surdocego') |> pull(beta_mu),
-          sd = mort_priors_beta |> filter( sex == 'masculino', category == 'surdocego') |> pull(beta_sd)
-        )
-      ), # surdocego/male
-      female = list(
-        alpha = list(
-          mu = mort_priors_alpha |> filter( sex == 'feminino', category == 'surdocego') |> pull(alpha_mu),
-          sd = mort_priors_alpha |> filter( sex == 'feminino', category == 'surdocego') |> pull(alpha_sd)
-        ),
-        beta  = list(
-          mu = mort_priors_beta |> filter( sex == 'feminino', category == 'surdocego') |> pull(beta_mu),
-          sd = mort_priors_beta |> filter( sex == 'feminino', category == 'surdocego') |> pull(beta_sd)
-        )
-      ) # surdocego/female
-    ), # surdocego
-    deficiente_auditivo = list(
-      male = list(
-        alpha = list(
-          mu = mort_priors_alpha |> filter( sex == 'masculino', category == 'deficiente_auditivo') |> pull(alpha_mu),
-          sd = mort_priors_alpha |> filter( sex == 'masculino', category == 'deficiente_auditivo') |> pull(alpha_sd)
-        ),
-        beta  = list(
-          mu = mort_priors_beta |> filter( sex == 'masculino', category == 'deficiente_auditivo') |> pull(beta_mu),
-          sd = mort_priors_beta |> filter( sex == 'masculino', category == 'deficiente_auditivo') |> pull(beta_sd)
-        )
-      ), # deficiente_auditivo/male
-      female = list(
-        alpha = list(
-          mu = mort_priors_alpha |> filter( sex == 'feminino', category == 'deficiente_auditivo') |> pull(alpha_mu),
-          sd = mort_priors_alpha |> filter( sex == 'feminino', category == 'deficiente_auditivo') |> pull(alpha_sd)
-        ),
-        beta  = list(
-          mu = mort_priors_beta |> filter( sex == 'feminino', category == 'deficiente_auditivo') |> pull(beta_mu),
-          sd = mort_priors_beta |> filter( sex == 'feminino', category == 'deficiente_auditivo') |> pull(beta_sd)
-        )
-      ) # deficiente_auditivo/female
-    ) # deficiente_auditivo
-  )
+# Ideally, the fitted β should remain fairly close to its central value of 1.
+# If β differs greatly from 1 (e.g. outside the range 0.8 < β < 1.25), it is
+# advisable to repeat the analysis with an alternative standard life table that
+# has an age pattern of mortality which more closely resembles that of the
+# population in question.
 
 mort_brass_logit_priors <-
   list(
+    # Surdos são o menor grupo, portanto possuem mais variabilidade
     surdo = list(
       male   = list(alpha = list(mu = -0.150, sd = 0.10), beta  = list(mu = 1.00, sd = 0.05)), # surdo/male
       female = list(alpha = list(mu = -0.250, sd = 0.10), beta  = list(mu = 1.00, sd = 0.05))  # surdo/female
-    ), 
+    ),
+    # Surdos-cegos são o segundo maior grupo
     surdocego = list(
       male   = list(alpha = list(mu = 0.450, sd = 0.05), beta  = list(mu = 1.00, sd = 0.05)), # surdocego/male
       female = list(alpha = list(mu = 0.300, sd = 0.05), beta  = list(mu = 1.00, sd = 0.05))  # surdocego/female
-    ), 
+    ),
+    # DA são mais numerosos, então sua variabilidade é menor nas premissas
     deficiente_auditivo = list(
       male   = list(alpha = list(mu = 0.150, sd = 0.02), beta  = list(mu = 1.00, sd = 0.05)), # deficiente_auditivo/male
       female = list(alpha = list(mu = 0.200, sd = 0.02), beta  = list(mu = 1.00, sd = 0.05))  # deficiente_auditivo/female
     )
   )
 
+toc()
+
+
+tic()
+message("exportando prioris em disco como variaveis para latex...")
+OUTPUT_FILE <- paste0(results_dir, "mort_priors_variables.tex")
+
+cat('\n% Variáveis de prioris para a análise do logito de Brass\n', file = OUTPUT_FILE, append=FALSE)
+
+for(var_sex in c('male','female')){
+  for(var_year in c(2000,2010)){
+    for(var_categ in c('surdo','surdocego','deficiente_auditivo')){
+      for(var_param in c('alpha','beta')){
+        for(var_hiperparam in c('mu','sd')){
+          # \newcommand{\MaleSurdoCensoUmAlphaMu}{0,500}
+          cat(
+            paste0(
+              '\\newcommand{\\',
+              str_to_title(var_sex),
+              str_to_title(str_replace(var_categ, "_", "")),
+              ifelse(var_year==2000, 'CensoUm', 'CensoDois'),
+              str_to_title(var_param),
+              str_to_title(var_hiperparam),
+              '}{',
+              formata_br(
+                mort_brass_logit_priors[[var_categ]][[var_sex]][[var_param]][[var_hiperparam]]),
+              '}'
+            ),
+            file = OUTPUT_FILE,
+            sep = '\n',
+            append=TRUE
+          )          
+        } # for(var_hiperparam in c('mu','sd'))
+      } # for(var_param in c('alpha','beta'))
+    } # for(var_categ in c('surdo','surdocego','deficiente_auditivo'))
+  } # for(var_year in c(2000,2010))
+} # for(var_sex in c('male','female'))
 toc()
 
 
