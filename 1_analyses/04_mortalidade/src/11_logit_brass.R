@@ -554,13 +554,19 @@ toc()
 
 
 
+
+
+
+
 tic()
 message("iniciando as análises do logito de brass...")
 
-message("baixando os arquivos de https://www.lifetable.de/File/GetDocument/data/BRA/BRA.zip ...") 
+URL <- "https://www.lifetable.de/File/GetDocument/data/BRA/BRA.zip"
+
+message("baixando os arquivos de ", URL," ...") 
 
 temp <- tempfile()
-download.file("https://www.lifetable.de/File/GetDocument/data/BRA/BRA.zip", temp)
+download.file(URL, temp)
 
 bra_lt <- 
   read_csv(
@@ -603,80 +609,244 @@ toc()
 
 
 
-
-
+# funções de suporte
+# logito
 logit <- function(p) {
   p <- pmax(0.001, pmin(0.999, p))
   0.5 * log((1 - p) / p)
 }
 
+# inverso do logito
 inv_logit <- function(y) 1 / (1 + exp(2 * y))
 
 
-N_SIMS <- 4000
+# tábua de vida via logito de brass (função que aceita alpha, beta e lxs)
+brass_logit_lifetable <- function(alpha, beta, input_lt){
 
-arg_year <- 2000      # 2000 / 2010
-arg_sex <- 'male'     # male / female
-arg_categ <- 'surdo'  # surdo / surdocego / deficiente_auditivo
+  age <- input_lt$x
+  reference_lx <- input_lt$lx / input_lt$lx[1]
+  
+  category_lx <- inv_logit( 
+    alpha + beta * logit(reference_lx)
+  )
 
-# tábua completa (referência para sexo e ano censitário)
-census_life_table <-
-  bra_lt |> 
-  filter(
-    sex == arg_sex, 
-    type == 'abridged', 
-    year == arg_year
+  output_lt <-
+    LifeTable(
+      x = age,
+      lx = category_lx,
+      lx0 = 1e5
+    )
+
+  return(
+    output_lt$lt
+  )
+}
+
+# exporta tábua de vida em latex
+export_life_table <- function(input_lt, output_file) {
+
+  # Remover coluna x (usando dplyr)
+  input_lt <- input_lt |> dplyr::select(-x)
+  
+  # 1. Ajustar a primeira coluna (Intervalos)
+  # Primeiro tratamos as exceções para evitar conflito com o regex
+  input_lt[[1]] <- as.character(input_lt[[1]])
+  input_lt[[1]] <- gsub("\\[0,1\\)", "0", input_lt[[1]])
+  input_lt[[1]] <- gsub("\\[100,\\+\\)", "100+", input_lt[[1]])
+  
+  # Lógica para converter [1,5) em 1-4, [95,100) em 95-99, etc.
+  adjust_range <- function(x) {
+    # Procura o padrão [início, fim)
+    if (grepl("\\[\\d+,\\d+\\)", x)) {
+      # Extrai apenas os números
+      nums <- as.numeric(unlist(regmatches(x, gregexpr("\\d+", x))))
+      # Retorna o formato início-(fim-1)
+      return(paste0(nums[1], "-", nums[2] - 1))
+    }
+    return(x)
+  }
+  
+  input_lt[[1]] <- sapply(input_lt[[1]], adjust_range)
+  
+  # 2. Formatação Numérica Brasileira (4 casas, vírgula decimal e ponto de milhar)
+  N_DIGITS <- 3
+  for(i in 2:ncol(input_lt)) {
+    # Garantir conversão para numérico antes de formatar
+    val_num <- as.numeric(as.character(input_lt[[i]]))
+    
+    input_lt[[i]] <- format(
+      round(val_num, N_DIGITS), 
+      nsmall = N_DIGITS, 
+      decimal.mark = ",",
+      big.mark = ".",
+      scientific = FALSE, 
+      trim = TRUE
+    )
+  }
+  
+  # 3. Construir as linhas do LaTeX (apenas o conteúdo)
+  body <- apply(input_lt, 1, paste, collapse = " & ")
+  
+  # 4. Adicionar \\ em todas as linhas exceto a última
+  n <- length(body)
+  if (n > 1) {
+    body[1:(n-1)] <- paste0(body[1:(n-1)], " \\\\")
+  }
+  
+  # 5. Salvar no disco
+  writeLines(body, output_file)
+}
+
+
+export_life_table(
+  input_lt = mcmc_life_table$lt,
+  output_file=paste0(
+    results_dir,
+    "mort_lt_",
+    arg_year, "_",
+    arg_categ, "_",
+    arg_sex, ".tex"
+  )
+)
+
+
+
+if(MCMC_SIMS){
+  tic()
+  message("simulando esperanças de vida por ano, sexo e categoria via MCMC...")
+  # variáveis globais para as simulações
+  N_SIMS <- 1000
+  
+  YEAR <- c(2000, 2010)
+  SEX <- c('male', 'female')
+  CATEGORY <- c('surdo', 'surdocego', 'deficiente_auditivo')
+  
+  mcmc_e0 <- 
+    tibble(
+      ano = numeric(),         # ano censitário (2000/2010)
+      sexo = character(),      # sexo (male/female)
+      categ = character(),     # categoria (surdo/surdocego/deficiente_auditivo)
+      mcmc_id = numeric(),     # contador da simulação de monte carlo
+      mcmc_alpha = numeric(),  # hiperparâmetro alpha gerado estocasticamente via MCMC
+      mcmc_beta = numeric(),   # hiperparâmetro beta gerado estocasticamente via MCMC
+      mcmc_ex = numeric()      # esperança de vida ao nascer
     )
   
-# tábua de referência
-x_ref <- census_life_table$x
-lx_ref <- census_life_table$lx / census_life_table$lx[1]
+  
+  # arg_year <- 2000      # 2000 / 2010
+  # arg_sex <- 'male'     # male / female
+  # arg_categ <- 'surdo'  # surdo / surdocego / deficiente_auditivo
+  # arg_mcmc_id <- 1
+  
+  for(arg_year in YEAR){
+    for(arg_sex in SEX){
+      for(arg_categ in CATEGORY){
+  
+        reference_lt <-
+          bra_lt |> 
+          filter(
+            sex == arg_sex, 
+            type == 'abridged', 
+            year == arg_year
+          )
+        
+        # reamostragem das prioris
+        priors <- mort_brass_logit_priors[[arg_categ]][[arg_sex]]
 
-# reamostragem das prioris
-priors <- mort_brass_logit_priors[[arg_categ]][[arg_sex]]
+        # TODO exportação csv/tex da tábua de vida por ano/sexo/categoria vem aqui...
+        lt <-
+          brass_logit_lifetable(
+            alpha = priors$alpha$mu,
+            beta = priors$beta$mu,
+            input_lt = reference_lt
+          )
 
-# TODO exportar tábua de vida aqui...
+        lt |>
+          write_csv(
+            paste0(
+              results_dir,
+              "mort_lt_",
+              arg_year, "_",
+              arg_categ, "_",
+              arg_sex, ".csv"
+            )
+          )
+
+        export_life_table(
+          input_lt = lt,
+          output_file=paste0(
+            results_dir,
+            "mort_lt_",
+            arg_year, "_",
+            arg_categ, "_",
+            arg_sex, ".tex"
+          )
+        )
+
+  
+        for(arg_mcmc_id in seq_len(N_SIMS)){
+          
+          mcmc_alpha <- rnorm( 
+            n = 1, 
+            mean = priors$alpha$mu,
+            sd = priors$alpha$sd
+          )
+  
+          mcmc_beta <- rnorm( 
+            n = 1, 
+            mean = priors$beta$mu,
+            sd = priors$beta$sd
+          )
+  
+          mcmc_lt <-
+            brass_logit_lifetable(
+              alpha = mcmc_alpha,
+              beta = mcmc_beta,
+              input_lt = reference_lt
+            )
+  
+          mcmc_e0 <-
+            bind_rows(
+              mcmc_e0,
+              tibble(
+                ano = arg_year,
+                sexo = arg_sex,
+                categ = arg_categ,
+                mcmc_id = arg_mcmc_id,
+                mcmc_alpha = mcmc_alpha,
+                mcmc_beta = mcmc_beta,
+                mcmc_ex = mcmc_lt[1,'ex']
+              )
+            )
+        } # for(mcmc_id in seq_len(N_SIMS))
+      } # for(arg_categ in CATEGORY)
+    } # for(arg_sex in SEX)
+  } # for(arg_year in YEAR)  
+  
+  message("escrevendo resultdos em disco...")
+  mcmc_e0 |>
+    write_csv(
+      paste0(
+        results_dir,
+        "mort_e0_mcmc_results.csv"
+      )
+    )
+  toc()
+} # if(MCMC_SIMS)
 
 
-# simulação do par ordenado (alpha, beta) usado no modelo logito de brass
-# FOR LOOP...
-mcmc_results <- 
-  tibble(
-    ano = numeric(),
-    sexo = character(),
-    categ = character(),
-    mcmc_id = numeric(),
-    mcmc_ex = numeric()
+mcmc_e0 <- 
+  read_csv(
+    paste0(
+      results_dir,
+      "mort_e0_mcmc_results.csv"
+    ),
+    show_col_types = FALSE
   )
 
 
-mcmc_alpha <- rnorm( 
-  n = 1, 
-  mean = priors$alpha$mu,
-  sd = priors$alpha$sd
-)
-
-mcmc_beta <- rnorm( 
-  n = 1, 
-  mean = priors$beta$mu,
-  sd = priors$beta$sd
-)
-
-
-lx_categ <- inv_logit( 
-  mcmc_alpha + mcmc_beta * logit(lx_ref)
-)
-
-
-mcmc_life_table <-
-  LifeTable(
-    x = x_ref,
-    lx = lx_categ,
-    lx0 = 1e5
-  )
-
-# ex para simulações de monte carlo
-mcmc_ex <- mcmc_life_table$lt[1,'ex']
-
-
-
+mcmc_e0 |>
+  ggplot(aes(x = mcmc_ex, color = categ, fill=categ)) +
+  geom_density(alpha = 0.2) +
+  facet_wrap( ano ~ sexo, scales = "free")
+  
