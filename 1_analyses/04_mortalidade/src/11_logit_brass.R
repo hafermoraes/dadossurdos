@@ -838,35 +838,86 @@ mcmc_e0 <-
   )
 
 
-mcmc_e0 |> 
-  ggplot(aes(x = mcmc_ex, color = categ, fill=categ)) +
-  geom_density(alpha = 0.2) +
-  facet_wrap( ano ~ sexo, scales = "free")
-  
-bra_lt |>
-  filter(type == 'abridged', year == 2010, sex=='female') |>
+e0_ibge <- 
+  bra_lt |>
+  filter(x==0, year %in% c(2000,2010), type=='abridged') |>
   transmute(
-    year, 
-    x, 
-    lx_std = lx/1e5
-  ) |>
+    ano = year,
+    sexo = sex,
+    mcmc_ex = ex
+  )
+
+
+e0_plot <-
+  mcmc_e0 |> 
   mutate(
-    lx_am05_b1 = inv_logit( 
-      -0.5 + 1*logit(lx_std)
+    sexo = case_match(
+      sexo, 
+      'male' ~ 'masculino',
+      'female' ~ 'feminino'
     ),
-    lx_ap05_b1 = inv_logit( 
-      0.5 + 1*logit(lx_std)
-    ),
-    lx_am05_b08 = inv_logit( 
-      -0.5 + 0.8*logit(lx_std)
-    ),
-    lx_ap05_b12 = inv_logit( 
-      -0.5 + 1.2*logit(lx_std)
+    categ = case_match(
+      categ,
+      'deficiente_auditivo' ~ 'Deficiente Auditivo',
+      'surdo' ~ 'Surdo',
+      'surdocego' ~ 'Surdocego'
     )
   ) |>
-  pivot_longer(
-    cols =-c(year,x)
-  ) |> 
-  ggplot( aes(x=x, y=value, linetype = name, color=name)) + 
-  geom_line()
+  ggplot(aes(x = mcmc_ex, color = categ, fill=categ)) +
+  geom_density(alpha = 0.2) +
+  geom_vline(
+    data = e0_ibge |> mutate(sexo = case_match(sexo, 'male' ~ 'masculino', 'female' ~ 'feminino')), 
+    aes(xintercept = mcmc_ex), 
+    color = "black", 
+    linetype = "dashed",
+    linewidth = 0.6) +
+  facet_grid( ano ~ sexo, scales = "free") + 
+  scale_fill_grey(start = 0.1, end = 0.7) +
+  scale_color_grey(start = 0.1, end = 0.7) +
+  theme_bw() + 
+  theme(
+    legend.position = "bottom"
+  ) + 
+  labs(
+    x = expression(e[0]),
+    y = "densidade de probabilidade",
+    fill = "", color = ""
+  )
+
+e0_plot |> 
+  ggsave(
+    filename = paste0(
+      results_dir,
+      "mort_e0_densities.pdf"
+    ),
+    width = 10,
+    height = 8
+  )
   
+# bra_lt |>
+#   filter(type == 'abridged', year == 2010, sex=='female') |>
+#   transmute(
+#     year, 
+#     x, 
+#     lx_std = lx/1e5
+#   ) |>
+#   mutate(
+#     lx_am05_b1 = inv_logit( 
+#       -0.5 + 1*logit(lx_std)
+#     ),
+#     lx_ap05_b1 = inv_logit( 
+#       0.5 + 1*logit(lx_std)
+#     ),
+#     lx_am05_b08 = inv_logit( 
+#       -0.5 + 0.8*logit(lx_std)
+#     ),
+#     lx_ap05_b12 = inv_logit( 
+#       -0.5 + 1.2*logit(lx_std)
+#     )
+#   ) |>
+#   pivot_longer(
+#     cols =-c(year,x)
+#   ) |> 
+#   ggplot( aes(x=x, y=value, linetype = name, color=name)) + 
+#   geom_line()
+#   
