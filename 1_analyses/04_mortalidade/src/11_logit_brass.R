@@ -587,30 +587,96 @@ bra_lt <-
     ex_orig = `e(x)Orig`
   )
 
+bra_lt |>
+  write_csv(
+    paste0(
+      data_dir,
+      "bra_lt.csv"
+    )
+  )
+
 unlink(temp)
 rm(temp)
 toc()
 
-mort_male_censo2000 <-
-  bra_lt |> 
-  filter(sex=='male', type == 'abridged', year==2000)
-  
 
-output <-
+
+
+
+
+
+logit <- function(p) {
+  p <- pmax(0.001, pmin(0.999, p))
+  0.5 * log((1 - p) / p)
+}
+
+inv_logit <- function(y) 1 / (1 + exp(2 * y))
+
+
+N_SIMS <- 4000
+
+arg_year <- 2000      # 2000 / 2010
+arg_sex <- 'male'     # male / female
+arg_categ <- 'surdo'  # surdo / surdocego / deficiente_auditivo
+
+# tábua completa (referência para sexo e ano censitário)
+census_life_table <-
+  bra_lt |> 
+  filter(
+    sex == arg_sex, 
+    type == 'abridged', 
+    year == arg_year
+    )
+  
+# tábua de referência
+x_ref <- census_life_table$x
+lx_ref <- census_life_table$lx / census_life_table$lx[1]
+
+# reamostragem das prioris
+priors <- mort_brass_logit_priors[[arg_categ]][[arg_sex]]
+
+# TODO exportar tábua de vida aqui...
+
+
+# simulação do par ordenado (alpha, beta) usado no modelo logito de brass
+# FOR LOOP...
+mcmc_results <- 
+  tibble(
+    ano = numeric(),
+    sexo = character(),
+    categ = character(),
+    mcmc_id = numeric(),
+    mcmc_ex = numeric()
+  )
+
+
+mcmc_alpha <- rnorm( 
+  n = 1, 
+  mean = priors$alpha$mu,
+  sd = priors$alpha$sd
+)
+
+mcmc_beta <- rnorm( 
+  n = 1, 
+  mean = priors$beta$mu,
+  sd = priors$beta$sd
+)
+
+
+lx_categ <- inv_logit( 
+  mcmc_alpha + mcmc_beta * logit(lx_ref)
+)
+
+
+mcmc_life_table <-
   LifeTable(
-    x = mort_male_censo2000$x,
-    lx = mort_male_censo2000$lx,
+    x = x_ref,
+    lx = lx_categ,
     lx0 = 1e5
   )
 
 # ex para simulações de monte carlo
-output$lt[1,'ex']
+mcmc_ex <- mcmc_life_table$lt[1,'ex']
 
 
-# priors
 
-mort_priors[["surdo"]][["alpha"]][["median"]]
-
-mort_priors[["surdo"]][["alpha"]][["mad"]]
-
-mort_priors$surdo$alpha$mad
