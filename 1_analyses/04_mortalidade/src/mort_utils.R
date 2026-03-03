@@ -38,8 +38,10 @@ export_plot_age_pyramid_comparison <- function(arg_subgrp, plot_width, plot_heig
     ) |>
     group_by(ano, subgrp, fx_idade, sexo) |>
     summarise(n = sum(n, na.rm = TRUE), .groups = "drop") |>
-    mutate(n_plot = ifelse(sexo == "feminino", -n, n)) |>
-    ungroup()
+    group_by(ano, subgrp) |> 
+    mutate(pct = n / sum(n)) |> 
+    ungroup() |>
+    mutate(n_plot = ifelse(sexo == "feminino", -pct, pct))
   
   
   plt <- 
@@ -58,11 +60,7 @@ export_plot_age_pyramid_comparison <- function(arg_subgrp, plot_width, plot_heig
     #scale_fill_brewer(palette = "Greys") +
     scale_fill_grey(start = 0.5, end = 0.3) +
     scale_y_continuous(
-      labels = function(x) label_number(
-        scale_cut = c(0, " mil" = 1e3, " mi" = 1e6), # Espaço dentro do nome
-        decimal.mark = ",",
-        big.mark = "."
-      )(abs(x))
+      labels = function(x) scales::percent(abs(x), accuracy = 0.1, decimal.mark = ",")
     ) +
     labs(
       x = "Idade", 
@@ -479,3 +477,31 @@ prevalence_by_agegrp <- function(arg_var, arg_output_file, arg_append){
   return(outer_table)
 
 } # prevalence_by_agegrp <- function(arg_var, output_file, append)
+
+
+# ===================
+
+get_gradient_color <- function(val) {
+  if (is.na(val) || val == "-") return(val)
+  v <- as.numeric(val)
+  v_fmt <- format(round(v, 2), decimal.mark = ",", nsmall = 2)
+  if (v > 1) {
+    intensity <- min(round((v - 1) * 100), 100)
+    return(paste0("\\cellcolor{myblue!", intensity, "!white}", v_fmt))
+  } else if (v < 1) {
+    intensity <- min(round((1 - v) * 100), 100)
+    return(paste0("\\cellcolor{myred!", intensity, "!white}", v_fmt))
+  } else {
+    return(v_fmt)
+  }
+} # get_gradient_color
+
+
+# ===================
+
+formata_br <- function(num){
+  N_DIGITS <- 3
+  return( 
+    format( round(num, N_DIGITS), decimal.mark = ",", nsmall = N_DIGITS)
+    )
+}

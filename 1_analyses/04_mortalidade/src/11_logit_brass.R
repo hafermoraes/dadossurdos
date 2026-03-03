@@ -1,6 +1,12 @@
 
+tic()
+message("garbage collection preventivo para impedir interrupção do R por falta de memória...")
 gc()
+toc()
 
+
+tic()
+message("reclassificando os capítulos do CID-19 na análise de pareto com os dados do SIM/Datasus...")
 # Rótulos para os gráficos
 cid10_cap_ix <- "Cap. IX - Aparelho Circulatório (28,4% dos Óbitos)"
 cid10_cap_ii <- "Cap. II - Neoplasias (14,4% dos Óbitos)"
@@ -8,8 +14,10 @@ cid10_cap_x  <- "Cap. X  - Aparelho Respitarório (9,9% dos Óbitos)"
 cid10_cap_iv <- "Cap. IV - Endócrinas, nutricionais e metabólicas (5,5% dos Óbitos)"
 cid10_cap_v  <- "Cap. V  - Transtornos mentais (0,9% dos óbitos)"
 cid10_cap_i  <- "Cap. I  - Infecciosas e parasitárias (4,5%)"
+toc()
 
-
+tic()
+message("relendo do disco e transformando os dados da análise de pareto...")
 morb_prevalencias <-
   read_csv(
     paste0(
@@ -109,26 +117,13 @@ morb_prevalencias <-
       TRUE ~ NA_character_
     )
   ) 
+toc()
 
 
-get_gradient_color <- function(val) {
-  if (is.na(val) || val == "-") return(val)
-  v <- as.numeric(val)
-  v_fmt <- format(round(v, 2), decimal.mark = ",", nsmall = 2)
-  if (v > 1) {
-    intensity <- min(round((v - 1) * 100), 100)
-    return(paste0("\\cellcolor{myblue!", intensity, "!white}", v_fmt))
-  } else if (v < 1) {
-    intensity <- min(round((1 - v) * 100), 100)
-    return(paste0("\\cellcolor{myred!", intensity, "!white}", v_fmt))
-  } else {
-    return(v_fmt)
-  }
-}
+tic()
+message("análise das razões de prevalência (estimação de \alpha...)")
 
-
-  
-# tabela "Razões de Prevalência para as categorias"
+message("criação do tibble 'morb_prevalencias_data'...")
 morb_prevalencias_data <-
   morb_prevalencias |>
   drop_na() |>
@@ -148,10 +143,11 @@ morb_prevalencias_data <-
     m_rp_deficiente_auditivo = masculino_categ_deficiente_auditivo / masculino_categ_total
   ) |> 
   arrange(cid10_cap, doenca)
+toc()
 
 
-
-
+tic()
+message("exportando a tabela de prevalências para estimar \alpha em disco...")
 morb_prevalencias_data |>
   mutate(
     across(
@@ -196,11 +192,12 @@ morb_prevalencias_data |>
       "mort_razoes_prevalencia.tex"
     )
   )
+toc()
 
 
 
-
-# mort_priors_alpha
+tic()
+message("tratando os dados para a análise de prioris de \alpha...")
 mort_priors_alpha <-
   morb_prevalencias_data |>
   pivot_longer(
@@ -226,9 +223,13 @@ mort_priors_alpha <-
   transmute(
     sex, category, alpha_mu = median, alpha_sd = mad
   )
+toc()
 
 
-# mort_priors_beta
+
+
+tic()
+message("tratando os dados para a análise de prioris de \beta...")
 mort_beta_data <-
   bind_rows(
     censo2000_mortalidade |> mutate(src = 'censo2000'),
@@ -285,8 +286,45 @@ mort_beta_data <-
   arrange( sexo, category) |>
   ungroup() |>
   select(sexo, category, starts_with("im"), starts_with("rdi"))
+toc()
 
 
+tic()
+message("prioris para \beta...")
+mort_priors_beta <-
+  mort_beta_data |>
+    pivot_longer(
+      cols = -c(sexo, category)
+    ) |>
+    filter(
+      grepl("^im_", name)
+    ) |>
+    group_by( sexo, category) |>
+    summarise(
+      median = median( value, na.rm=TRUE),
+      mad = mad(value, na.rm=TRUE)
+    ) |>
+    ungroup() |>
+    rename(
+      sex = sexo,
+      beta_mu = median,
+      beta_sd = mad
+    ) |>
+    mutate(
+      category = case_match(
+        category,
+        "Surdo" ~ "surdo",
+        "Surdocego" ~ "surdocego",
+        "Deficiente Auditivo" ~ "deficiente_auditivo"
+      )
+  )
+toc()
+
+
+
+
+tic()
+message("exportando a tabela de prioris de \beta em disco...")
 mort_beta_data |>
   mutate(
     across(where(is.numeric), ~ ifelse(is.na(.), "-", round(., 3))),
@@ -321,22 +359,205 @@ mort_beta_data |>
       "mort_beta_summary.tex"
     )
   )
+toc()
+
+
+tic()
+message("criando a lista de prioris por categoria e por sexo...")
+mort_brass_logit_priors <-
+  list(
+    surdo = list(
+      male = list(
+        alpha = list(
+          mu = mort_priors_alpha |> filter( sex == 'masculino', category == 'surdo') |> pull(alpha_mu),
+          sd = mort_priors_alpha |> filter( sex == 'masculino', category == 'surdo') |> pull(alpha_sd)
+        ),
+        beta  = list(
+          mu = mort_priors_beta |> filter( sex == 'masculino', category == 'surdo') |> pull(beta_mu),
+          sd = mort_priors_beta |> filter( sex == 'masculino', category == 'surdo') |> pull(beta_sd)
+        )
+      ), # surdo/male
+      female = list(
+        alpha = list(
+          mu = mort_priors_alpha |> filter( sex == 'feminino', category == 'surdo') |> pull(alpha_mu),
+          sd = mort_priors_alpha |> filter( sex == 'feminino', category == 'surdo') |> pull(alpha_sd)
+        ),
+        beta  = list(
+          mu = mort_priors_beta |> filter( sex == 'feminino', category == 'surdo') |> pull(beta_mu),
+          sd = mort_priors_beta |> filter( sex == 'feminino', category == 'surdo') |> pull(beta_sd)
+        )
+      ) # surdo/female
+    ), # surdo
+    surdocego = list(
+      male = list(
+        alpha = list(
+          mu = mort_priors_alpha |> filter( sex == 'masculino', category == 'surdocego') |> pull(alpha_mu),
+          sd = mort_priors_alpha |> filter( sex == 'masculino', category == 'surdocego') |> pull(alpha_sd)
+        ),
+        beta  = list(
+          mu = mort_priors_beta |> filter( sex == 'masculino', category == 'surdocego') |> pull(beta_mu),
+          sd = mort_priors_beta |> filter( sex == 'masculino', category == 'surdocego') |> pull(beta_sd)
+        )
+      ), # surdocego/male
+      female = list(
+        alpha = list(
+          mu = mort_priors_alpha |> filter( sex == 'feminino', category == 'surdocego') |> pull(alpha_mu),
+          sd = mort_priors_alpha |> filter( sex == 'feminino', category == 'surdocego') |> pull(alpha_sd)
+        ),
+        beta  = list(
+          mu = mort_priors_beta |> filter( sex == 'feminino', category == 'surdocego') |> pull(beta_mu),
+          sd = mort_priors_beta |> filter( sex == 'feminino', category == 'surdocego') |> pull(beta_sd)
+        )
+      ) # surdocego/female
+    ), # surdocego
+    deficiente_auditivo = list(
+      male = list(
+        alpha = list(
+          mu = mort_priors_alpha |> filter( sex == 'masculino', category == 'deficiente_auditivo') |> pull(alpha_mu),
+          sd = mort_priors_alpha |> filter( sex == 'masculino', category == 'deficiente_auditivo') |> pull(alpha_sd)
+        ),
+        beta  = list(
+          mu = mort_priors_beta |> filter( sex == 'masculino', category == 'deficiente_auditivo') |> pull(beta_mu),
+          sd = mort_priors_beta |> filter( sex == 'masculino', category == 'deficiente_auditivo') |> pull(beta_sd)
+        )
+      ), # deficiente_auditivo/male
+      female = list(
+        alpha = list(
+          mu = mort_priors_alpha |> filter( sex == 'feminino', category == 'deficiente_auditivo') |> pull(alpha_mu),
+          sd = mort_priors_alpha |> filter( sex == 'feminino', category == 'deficiente_auditivo') |> pull(alpha_sd)
+        ),
+        beta  = list(
+          mu = mort_priors_beta |> filter( sex == 'feminino', category == 'deficiente_auditivo') |> pull(beta_mu),
+          sd = mort_priors_beta |> filter( sex == 'feminino', category == 'deficiente_auditivo') |> pull(beta_sd)
+        )
+      ) # deficiente_auditivo/female
+    ) # deficiente_auditivo
+  )
+toc()
+
+
+tic()
+message("exportando tabela de prioris em disco para latex...")
+OUTPUT_FILE <- paste0(results_dir, "mort_priors_table.tex")
+
+cat('\n% Tabela de prioris para a análise do logito de Brass\n', file = OUTPUT_FILE, append=FALSE)
+
+cat(
+  paste0(
+    '\\multirow{3}{=}{Feminino} & ',
+    'Surdo & ',
+    formata_br(mort_brass_logit_priors$surdo$female$alpha$mu),
+    ' & ',
+    formata_br(mort_brass_logit_priors$surdo$female$alpha$sd),
+    ' & ',
+    formata_br(mort_brass_logit_priors$surdo$female$beta$mu),
+    ' & ',
+    formata_br(mort_brass_logit_priors$surdo$female$beta$sd),
+    ' \\\\ '
+  ),
+  file = OUTPUT_FILE,
+  sep = '\n',
+  append=TRUE
+)
+
+cat(
+  paste0(
+    ' & ',
+    'Surdocego & ',
+    formata_br(mort_brass_logit_priors$surdocego$female$alpha$mu),
+    ' & ',
+    formata_br(mort_brass_logit_priors$surdocego$female$alpha$sd),
+    ' & ',
+    formata_br(mort_brass_logit_priors$surdocego$female$beta$mu),
+    ' & ',
+    formata_br(mort_brass_logit_priors$surdocego$female$beta$sd),
+    ' \\\\ '
+  ),
+  file = OUTPUT_FILE,
+  sep = '\n',
+  append=TRUE
+)
+
+cat(
+  paste0(
+    ' & ',
+    'Deficiente Auditivo & ',
+    formata_br(mort_brass_logit_priors$deficiente_auditivo$female$alpha$mu),
+    ' & ',
+    formata_br(mort_brass_logit_priors$deficiente_auditivo$female$alpha$sd),
+    ' & ',
+    formata_br(mort_brass_logit_priors$deficiente_auditivo$female$beta$mu),
+    ' & ',
+    formata_br(mort_brass_logit_priors$deficiente_auditivo$female$beta$sd),
+    ' \\\\ \\midrule '
+  ),
+  file = OUTPUT_FILE,
+  sep = '\n',
+  append=TRUE
+)
+
+cat(
+  paste0(
+    '\\multirow{3}{=}{Masculino} & ',
+    'Surdo & ',
+    formata_br(mort_brass_logit_priors$surdo$male$alpha$mu),
+    ' & ',
+    formata_br(mort_brass_logit_priors$surdo$male$alpha$sd),
+    ' & ',
+    formata_br(mort_brass_logit_priors$surdo$male$beta$mu),
+    ' & ',
+    formata_br(mort_brass_logit_priors$surdo$male$beta$sd),
+    ' \\\\ '
+  ),
+  file = OUTPUT_FILE,
+  sep = '\n',
+  append=TRUE
+)
+
+cat(
+  paste0(
+    ' & ',
+    'Surdocego & ',
+    formata_br(mort_brass_logit_priors$surdocego$male$alpha$mu),
+    ' & ',
+    formata_br(mort_brass_logit_priors$surdocego$male$alpha$sd),
+    ' & ',
+    formata_br(mort_brass_logit_priors$surdocego$male$beta$mu),
+    ' & ',
+    formata_br(mort_brass_logit_priors$surdocego$male$beta$sd),
+    ' \\\\ '
+  ),
+  file = OUTPUT_FILE,
+  sep = '\n',
+  append=TRUE
+)
+
+cat(
+  paste0(
+    ' & ',
+    'Deficiente Auditivo & ',
+    formata_br(mort_brass_logit_priors$deficiente_auditivo$male$alpha$mu),
+    ' & ',
+    formata_br(mort_brass_logit_priors$deficiente_auditivo$male$alpha$sd),
+    ' & ',
+    formata_br(mort_brass_logit_priors$deficiente_auditivo$male$beta$mu),
+    ' & ',
+    formata_br(mort_brass_logit_priors$deficiente_auditivo$male$beta$sd),
+    ' \\\\ \\bottomrule '
+  ),
+  file = OUTPUT_FILE,
+  sep = '\n',
+  append=TRUE
+)
+toc()
 
 
 
 
+tic()
+message("iniciando as análises do logito de brass...")
 
-# https://www.lifetable.de/Country/Country?cntr=BRA
-# https://www.lifetable.de/File/GetDocument/data/BRA/BRA.zip
-
-# sex: 1 males 2 females
-# https://www.lifetable.de/File/GetDocument/formats.pdf
-
-install.packages("MortalityLaws")
-
-library(dplyr)
-library(readr)
-library(MortalityLaws)
+message("baixando os arquivos de https://www.lifetable.de/File/GetDocument/data/BRA/BRA.zip ...") 
 
 temp <- tempfile()
 download.file("https://www.lifetable.de/File/GetDocument/data/BRA/BRA.zip", temp)
@@ -368,6 +589,7 @@ bra_lt <-
 
 unlink(temp)
 rm(temp)
+toc()
 
 mort_male_censo2000 <-
   bra_lt |> 
@@ -386,22 +608,6 @@ output$lt[1,'ex']
 
 
 # priors
-mort_priors <-
-  list(
-    surdo = list(
-      alpha = list(median = 1.00, mad = 1.0035),
-      beta  = list(median = 0.78, mad = 1.0035)
-    ),
-    surdocego = list(
-      alpha = list(median = 1.00, mad = 1.0035),
-      beta  = list(median = 0.78, mad = 1.0035)
-    ),
-    deficiente_auditivo = list(
-      alpha = list(median = 1.00, mad = 1.0035),
-      beta  = list(median = 0.78, mad = 1.0035)
-    )
-  )
-
 
 mort_priors[["surdo"]][["alpha"]][["median"]]
 
