@@ -364,6 +364,10 @@ toc()
 
 tic()
 message("criando a lista de prioris por categoria e por sexo...")
+
+# https://demographicestimation.iussp.org/content/fitting-model-life-tables-pair-estimates-child-and-adult-mortality#:~:text=This%20section%20describes%20methods%20than,and%20mortality%20in%20old%20age.
+
+
 mort_brass_logit_priors <-
   list(
     surdo = list(
@@ -433,6 +437,23 @@ mort_brass_logit_priors <-
       ) # deficiente_auditivo/female
     ) # deficiente_auditivo
   )
+
+mort_brass_logit_priors <-
+  list(
+    surdo = list(
+      male   = list(alpha = list(mu = -0.150, sd = 0.10), beta  = list(mu = 1.00, sd = 0.05)), # surdo/male
+      female = list(alpha = list(mu = -0.250, sd = 0.10), beta  = list(mu = 1.00, sd = 0.05))  # surdo/female
+    ), 
+    surdocego = list(
+      male   = list(alpha = list(mu = 0.450, sd = 0.05), beta  = list(mu = 1.00, sd = 0.05)), # surdocego/male
+      female = list(alpha = list(mu = 0.300, sd = 0.05), beta  = list(mu = 1.00, sd = 0.05))  # surdocego/female
+    ), 
+    deficiente_auditivo = list(
+      male   = list(alpha = list(mu = 0.150, sd = 0.02), beta  = list(mu = 1.00, sd = 0.05)), # deficiente_auditivo/male
+      female = list(alpha = list(mu = 0.200, sd = 0.02), beta  = list(mu = 1.00, sd = 0.05))  # deficiente_auditivo/female
+    )
+  )
+
 toc()
 
 
@@ -568,10 +589,20 @@ message("baixando os arquivos de ", URL," ...")
 temp <- tempfile()
 download.file(URL, temp)
 
-bra_lt <- 
+raw_lt <- 
   read_csv(
     unz(temp, "BRA.csv"),
     show_col_types = FALSE
+  ) 
+
+bra_lt <- 
+  raw_lt |> 
+  filter(
+    Region==0, 
+    Residence==0, 
+    Ethnicity==0, 
+    SocDem==0, 
+    Version==1
   ) |>
   transmute(
     type = case_when(
@@ -698,19 +729,6 @@ export_life_table <- function(input_lt, output_file) {
 }
 
 
-export_life_table(
-  input_lt = mcmc_life_table$lt,
-  output_file=paste0(
-    results_dir,
-    "mort_lt_",
-    arg_year, "_",
-    arg_categ, "_",
-    arg_sex, ".tex"
-  )
-)
-
-
-
 if(MCMC_SIMS){
   tic()
   message("simulando esperanças de vida por ano, sexo e categoria via MCMC...")
@@ -733,7 +751,7 @@ if(MCMC_SIMS){
     )
   
   
-  # arg_year <- 2000      # 2000 / 2010
+  # arg_year <- 2010      # 2000 / 2010
   # arg_sex <- 'male'     # male / female
   # arg_categ <- 'surdo'  # surdo / surdocego / deficiente_auditivo
   # arg_mcmc_id <- 1
@@ -845,8 +863,35 @@ mcmc_e0 <-
   )
 
 
-mcmc_e0 |>
+mcmc_e0 |> 
   ggplot(aes(x = mcmc_ex, color = categ, fill=categ)) +
   geom_density(alpha = 0.2) +
   facet_wrap( ano ~ sexo, scales = "free")
+  
+bra_lt |>
+  filter(type == 'abridged', year == 2010, sex=='female') |>
+  transmute(
+    year, 
+    x, 
+    lx_std = lx/1e5
+  ) |>
+  mutate(
+    lx_am05_b1 = inv_logit( 
+      -0.5 + 1*logit(lx_std)
+    ),
+    lx_ap05_b1 = inv_logit( 
+      0.5 + 1*logit(lx_std)
+    ),
+    lx_am05_b08 = inv_logit( 
+      -0.5 + 0.8*logit(lx_std)
+    ),
+    lx_ap05_b12 = inv_logit( 
+      -0.5 + 1.2*logit(lx_std)
+    )
+  ) |>
+  pivot_longer(
+    cols =-c(year,x)
+  ) |> 
+  ggplot( aes(x=x, y=value, linetype = name, color=name)) + 
+  geom_line()
   
