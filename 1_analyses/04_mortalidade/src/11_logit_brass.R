@@ -838,6 +838,9 @@ mcmc_e0 <-
   )
 
 
+
+
+
 e0_ibge <- 
   bra_lt |>
   filter(x==0, year %in% c(2000,2010), type=='abridged') |>
@@ -848,13 +851,127 @@ e0_ibge <-
   )
 
 
+tic()
+message("exportando resultados do e_0 em disco para LaTeX...")
+mort_e0_summary <-
+  mcmc_e0 |> 
+  mutate(
+    sexo = case_match(
+      sexo, 
+      'male' ~ 'Masculino',
+      'female' ~ 'Feminino'
+    ),
+    categ = case_match(
+      categ,
+      'deficiente_auditivo' ~ 'Deficiente Auditivo',
+      'surdo' ~ 'Surdo',
+      'surdocego' ~ 'Surdocego'
+    )
+  ) |>
+  group_by( ano, sexo, categ) |>
+  reframe(
+    e0 = mean(mcmc_ex, na.rm = TRUE),
+    e0_low = hdi(mcmc_ex, credMass = 0.95)[1],
+    e0_upp = hdi(mcmc_ex, credMass = 0.95)[2]
+  ) |>
+  ungroup() |>
+  mutate(
+    across( c(e0, e0_low, e0_upp), \(x) round(x, 1))
+  ) |>
+  bind_rows(
+    e0_ibge |> 
+      transmute(
+        ano, 
+        sexo = case_match(
+          sexo,
+          'male' ~ 'Masculino',
+          'female' ~ 'Feminino'
+        ),
+        categ = 'População geral',
+        e0 = mcmc_ex,
+        e0_low = NA_real_,
+        e0_upp = NA_real_
+      )
+  ) |>
+  pivot_wider(
+    id_cols = c(sexo, categ),
+    names_from = ano,
+    values_from = c(e0, e0_low, e0_upp)
+  ) |> 
+  mutate(
+    across( where(is.numeric), \(x) format(x, nsmall=1, decimal.mark=","))
+  ) |>
+  transmute(
+    sexo,
+    categ = factor(
+      categ,
+      levels = c('Surdo', 'Surdocego', 'Deficiente Auditivo', 'População geral')
+    ),
+    e0_2000,
+    e0_2000_hdi = ifelse(
+      categ == 'População geral', 
+      '-', 
+      paste0(
+        "[",
+        e0_low_2000,
+        "; ",
+        e0_upp_2000,
+        "]"
+      )
+    ),
+    e0_2010,
+    e0_2010_hdi = ifelse(
+      categ == 'População geral', 
+      '-', 
+      paste0(
+        "[",
+        e0_low_2010,
+        "; ",
+        e0_upp_2010,
+        "]"
+      )
+    )
+  ) |>
+  arrange( sexo, categ) |>
+  mutate(
+    sexo = ifelse(
+      !duplicated(sexo), 
+      paste0("\\multirow{4}{=}{", sexo, "}"), 
+      ""
+    )
+  )
+
+linhas <- apply(mort_e0_summary, 1, function(x) paste(x, collapse = " & "))
+
+n <- length(linhas)
+linhas[1:(n-1)] <- paste0(linhas[1:(n-1)], " \\\\")
+
+idx_masc <- 5
+
+if (!is.na(idx_masc)) {
+  linhas[idx_masc] <- paste0("\\midrule\n", linhas[idx_masc])
+}
+
+writeLines(
+  linhas, 
+  paste0(
+    results_dir,
+    "mort_e0_summary.tex"
+  )
+  )
+toc()  
+
+
+
+tic()
+message("exportando facets em disco com densidades de probabilidade para e0...")
 e0_plot <-
   mcmc_e0 |> 
   mutate(
     sexo = case_match(
       sexo, 
-      'male' ~ 'masculino',
-      'female' ~ 'feminino'
+      'male' ~ 'Masculino',
+      'female' ~ 'Feminino'
     ),
     categ = case_match(
       categ,
@@ -866,12 +983,12 @@ e0_plot <-
   ggplot(aes(x = mcmc_ex, color = categ, fill=categ)) +
   geom_density(alpha = 0.2) +
   geom_vline(
-    data = e0_ibge |> mutate(sexo = case_match(sexo, 'male' ~ 'masculino', 'female' ~ 'feminino')), 
+    data = e0_ibge |> mutate(sexo = case_match(sexo, 'male' ~ 'Masculino', 'female' ~ 'Feminino')), 
     aes(xintercept = mcmc_ex), 
     color = "black", 
     linetype = "dashed",
     linewidth = 0.6) +
-  facet_grid( ano ~ sexo, scales = "free") + 
+  facet_grid( sexo ~ ano, scales = "free") + 
   scale_fill_grey(start = 0.1, end = 0.7) +
   scale_color_grey(start = 0.1, end = 0.7) +
   theme_bw() + 
@@ -890,10 +1007,13 @@ e0_plot |>
       results_dir,
       "mort_e0_densities.pdf"
     ),
-    width = 10,
-    height = 8
+    width = 8,
+    height = 6
   )
-  
+toc()
+
+
+
 # bra_lt |>
 #   filter(type == 'abridged', year == 2010, sex=='female') |>
 #   transmute(

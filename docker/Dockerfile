@@ -67,7 +67,8 @@ RUN Rscript -e "install.packages(\
     'embed', \
     'remotes', \
     'tidytext', \
-    'MortalityLaws' \
+    'MortalityLaws', \
+    'HDInterval' \
     )\
     )"
 
