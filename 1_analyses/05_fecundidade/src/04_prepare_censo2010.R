@@ -51,11 +51,6 @@ censo2010_fecundidade_subset <-
   filter(
     sexo == 'feminino',
     !is.na(fx_idade)
-  ) |> 
-  select(
-    categ_ouvinte, categ_deficiente_auditivo, categ_surdo, categ_surdocego,
-    ano, sexo, idade, fx_idade, fx_idade_elb, peso_amostral,
-    idade_ultimo_filho, filhos_nascidos_vivos, filhos_ultimos_12meses
   )
 toc()
 
@@ -285,8 +280,7 @@ rm(
 
 rm(
   censo2010_abt,
-  censo2010_abt_parquet,
-  censo2010_fecundidade_subset
+  censo2010_abt_parquet
 )
 
 toc()

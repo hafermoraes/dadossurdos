@@ -72,3 +72,9 @@ source(paste0(src_dir, '04_prepare_censo2010.R'))
 source(paste0(src_dir, '04_prepare_pns2019.R'))
 
 source(paste0(src_dir, '05_unify_treated_sources.R'))
+
+source(paste0(src_dir, '06_adjust_el_badry.R'))
+
+source(paste0(src_dir, '07_parity.R'))
+
+
