@@ -75,6 +75,8 @@ source(paste0(src_dir, '05_unify_treated_sources.R'))
 
 source(paste0(src_dir, '06_adjust_el_badry.R'))
 
-source(paste0(src_dir, '07_parity.R'))
+source(paste0(src_dir, '07_cohort_measures.R'))
+
+source(paste0(src_dir, '08_period_measures.R'))
 
 

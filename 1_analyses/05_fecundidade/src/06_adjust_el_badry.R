@@ -121,9 +121,9 @@ elbadry_upper_latex <-
     linha = filhos_nascidos_vivos,
     latex = case_when(
       nas != 0 ~ paste0(
-        "\\bcancelto{0}{", 
+        "$\\cancelto{0}{", 
         format(round( nas,0), big.mark = ".", decimal.mark = ",", trim=TRUE), 
-        "}"
+        "}$"
       ),
       TRUE ~ format(round( n_new, 0), big.mark = ".", decimal.mark = ",", trim=TRUE)
     )
@@ -132,7 +132,7 @@ elbadry_upper_latex <-
     id_cols = c(ano,subgrp, linha),
     names_from = fx_idade,
     values_from = latex,
-    values_fill = '-'
+    values_fill = '0'
   ) |>
   arrange(ano,subgrp,linha) |>
   select(-`10-14`)
@@ -151,7 +151,7 @@ elbadry_na <-
     id_cols = c(ano,subgrp, linha),
     names_from = fx_idade,
     values_from = latex,
-    values_fill = '-'
+    values_fill = '0'
   ) |>
   arrange(ano,subgrp,linha) |>
   select(-`10-14`)
@@ -172,7 +172,7 @@ elbadry_N <-
     id_cols = c(ano,subgrp, linha),
     names_from = fx_idade,
     values_from = N,
-    values_fill = '-'
+    values_fill = '0'
   ) |>
   arrange(ano,subgrp,linha) |>
   select(-`10-14`)
@@ -199,7 +199,7 @@ elbadry_na_pct <-
     id_cols = c(ano,subgrp, linha),
     names_from = fx_idade,
     values_from = pct_na,
-    values_fill = '-'
+    values_fill = '0'
   ) |>
   arrange(ano,subgrp,linha) |>
   select(-`10-14`)
@@ -226,7 +226,7 @@ elbadry_zero_pct <-
     id_cols = c(ano,subgrp, linha),
     names_from = fx_idade,
     values_from = pct_z,
-    values_fill = '-'
+    values_fill = '0'
   ) |>
   arrange(ano,subgrp,linha) |>
   select(-`10-14`)
@@ -250,7 +250,7 @@ elbadry_avg_parity <-
     id_cols = c(ano,subgrp, linha),
     names_from = fx_idade,
     values_from = Pi,
-    values_fill = '-'
+    values_fill = '0'
   ) |>
   arrange(ano,subgrp,linha) |>
   select(-`10-14`)
@@ -297,7 +297,7 @@ for(arg_ano in c(2000,2010)){
     arg_append <- TRUE
 
     cat(
-      "\n\n",
+      "\\\\\n\n",
       file = paste0(
         results_dir,
         "fec_table_elbadry_",
