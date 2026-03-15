@@ -66,7 +66,8 @@ elbadry |>
   ) |> 
   # calculando a TFT de coorte
   mutate(
-    prod_acum = cumprod(coalesce(razao, 1)), # substitui NA por 1 para o cumprod funcionar
+    prod_acum = cumprod(razao),
+    x_tick = paste0(fnv_reclass, "-", lead(fnv_reclass)),
     resultado_final = ifelse(is.na(razao), NA, cumsum(prod_acum))
   ) |> 
   drop_na() |>

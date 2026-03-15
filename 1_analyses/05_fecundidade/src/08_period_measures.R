@@ -13,16 +13,16 @@ censos_fecundidade |>
   group_by(ano, subgrp, fx_idade, idade_central) |>
   summarise(
     # age specific fertility rate
-    asfr = sum( fnv_12m, na.rm=TRUE) / sum( nr_mulheres, na.rm = TRUE),
+    tef = sum( fnv_12m, na.rm = TRUE) / sum( nr_mulheres, na.rm = TRUE),
     .groups='drop'
   ) |>
   mutate(
-    num_imf = asfr * idade_central
+    num_imf = tef * idade_central
   ) |>
   group_by(ano,subgrp) |>
   summarise(
-    tft_periodo = 5.0 * sum(asfr, na.rm=TRUE),
-    imf = sum(num_imf, na.rm = TRUE) / sum(asfr, na.rm=TRUE)
+    tft_periodo = 5.0 * sum(tef, na.rm=TRUE),
+    idade_media_a_fecundidade = sum(num_imf, na.rm = TRUE) / sum(tef, na.rm=TRUE)
   )
   
   
