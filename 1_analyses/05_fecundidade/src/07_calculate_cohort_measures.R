@@ -1,43 +1,9 @@
 
-tic()
-message("calculando a paridade média...")
-censos_paridade_Pi <-
-  elbadry |> 
-  filter( !is.na(filhos_nascidos_vivos)) |>
-  mutate(
-    num = filhos_nascidos_vivos * n,
-    den = n
-  ) |>
-  group_by(ano, subgrp, fx_idade) |>
-  summarise(
-    Pi = sum(num, na.rm=TRUE)/sum(den, na.rm=TRUE),
-    .groups = "drop"
-  ) 
-
-
-censos_paridade_Pi |> 
-  ggplot(
-    aes( x = fx_idade, y=Pi, color=subgrp, group=subgrp)
-    ) + 
-    geom_line() + 
-    facet_grid( . ~ ano)
-
-
-  ggsave(
-    filename = paste0(
-      results_dir,
-      "fec_parities.pdf"
-    ),
-    width = 12,
-    height = 8
-  )
-toc()
-
 
 tic()
 message("calculando a TFT de coorte a partir da razão de progressão de parturições...")
-
-elbadry |> 
+fec_coorte <-
+  elbadry |> 
   filter(
     !is.na(filhos_nascidos_vivos),
     fx_idade != '10-14'
@@ -76,8 +42,53 @@ elbadry |>
     .groups = 'drop'
   ) |>
   filter(fx_idade == '45-49')
-   
-  
-  
-  
 toc()
+
+
+if(FALSE){
+  tic()
+  message("calculando a paridade média...")
+  censos_paridade_Pi <-
+    elbadry |>
+    filter( !is.na(filhos_nascidos_vivos)) |>
+    mutate(
+      num = filhos_nascidos_vivos * n,
+      den = n
+    ) |>
+    group_by(ano, subgrp, fx_idade) |>
+    summarise(
+      Pi = sum(num, na.rm=TRUE)/sum(den, na.rm=TRUE),
+      .groups = "drop"
+    )
+  
+  
+  censos_paridade_Pi |>
+    ggplot(
+      aes( x = fx_idade, y=Pi, color=subgrp, group=subgrp)
+    ) +
+    geom_line() +
+    facet_grid( . ~ ano)
+  
+  ggsave(
+    filename = paste0(
+      results_dir,
+      "fec_parities.pdf"
+    ),
+    width = 12,
+    height = 8
+  )
+  toc()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

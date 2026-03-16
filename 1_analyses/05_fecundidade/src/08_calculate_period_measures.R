@@ -1,5 +1,7 @@
-
-censos_elbadry |>
+tic()
+message("calculando as medidas de fecundidade de período...")
+fec_periodo <-
+  censos_elbadry |>
   mutate(
     fnv_12m = filhos_ultimos_12meses * nr_mulheres,
     idade_central = map_dbl(
@@ -24,5 +26,5 @@ censos_elbadry |>
     tft_periodo = 5.0 * sum(tef, na.rm=TRUE),
     idade_media_a_fecundidade = sum(num_imf, na.rm = TRUE) / sum(tef, na.rm=TRUE)
   )
-  
+toc()
   

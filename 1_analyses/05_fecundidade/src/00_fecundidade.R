@@ -1,4 +1,7 @@
 
+
+RUN_BOOTSTRAP <- FALSE
+
 message("removendo todos os objetos prévios...")
 rm(list = ls(all.names = TRUE))
 
@@ -75,14 +78,13 @@ source(paste0(src_dir, '05_unify_treated_sources.R'))
 
 source(paste0(src_dir, '06_adjust_el_badry.R'))
 
-source(paste0(src_dir, '07_cohort_measures.R'))
+source(paste0(src_dir, '07_calculate_cohort_measures.R'))
 
-source(paste0(src_dir, '08_period_measures.R'))
+source(paste0(src_dir, '08_calculate_period_measures.R'))
 
-source(paste0(src_dir, '09_eda_period_measures.R'))
+source(paste0(src_dir, '09_simulate_bootstrap_samples.R'))
 
-source(paste0(src_dir, '10_simulate_bootstrap_samples.R'))
+source(paste0(src_dir, '10_graphical_analyses.R'))
 
-source(paste0(src_dir, '11_graphical_bootstrap_analyses.R'))
 
 

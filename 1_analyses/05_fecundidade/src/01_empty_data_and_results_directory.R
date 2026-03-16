@@ -1,4 +1,13 @@
 
+drop_file <- function(f){
+  if(!grepl("bootstrap", f, ignore.case = TRUE)){
+    file.remove(f)
+  } else{
+    message("evitando a exclusão de arquivos bootstrap...")
+  }
+}
+
+
 message("removendo quaisquer arquivos previamente existentes em ", results_dir)
 FILES <- 
   list.files(
@@ -9,7 +18,7 @@ FILES <-
   )
 
 for( f in FILES) {
-  file.remove(f)
+  drop_file(f)
 }
 
 
@@ -24,6 +33,6 @@ FILES <-
   )
 
 for( f in FILES) {
-  file.remove(f)
+  drop_file(f)
 }
 
