@@ -50,7 +50,7 @@ if(RUN_BOOTSTRAP){
         period_measures$tef_df |>
           transmute(
             bootstrap_id = arg_bootstrap_id,
-            subgrp = sub(".*_", "", arg_categ),
+            subgrp = sub("categ_", "", arg_categ),
             ano = arg_ano,
             fx_idade = key,
             value
@@ -68,7 +68,7 @@ if(RUN_BOOTSTRAP){
         period_measures$semfilhos_df |>
           transmute(
             bootstrap_id = arg_bootstrap_id,
-            subgrp = sub(".*_", "", arg_categ),
+            subgrp = sub("categ_", "", arg_categ),
             ano = arg_ano,
             fx_idade = key,
             value
@@ -85,7 +85,7 @@ if(RUN_BOOTSTRAP){
         #message("      escrevendo tft de período em disco...")
         tibble(
           bootstrap_id = arg_bootstrap_id,
-          subgrp = sub(".*_", "", arg_categ),
+          subgrp = sub("categ_", "", arg_categ),
           ano = arg_ano,
           value = period_measures$tft_periodo
         ) |>
@@ -101,7 +101,7 @@ if(RUN_BOOTSTRAP){
         #message("      escrevendo imf em disco...")
         tibble(
           bootstrap_id = arg_bootstrap_id,
-          subgrp = sub(".*_", "", arg_categ),
+          subgrp = sub("categ_", "", arg_categ),
           ano = arg_ano,
           value = period_measures$imf
         ) |>
@@ -117,7 +117,7 @@ if(RUN_BOOTSTRAP){
         #message("      escrevendo tft de coorte em disco...")
         tibble(
           bootstrap_id = arg_bootstrap_id,
-          subgrp = sub(".*_", "", arg_categ),
+          subgrp = sub("categ_", "", arg_categ),
           ano = arg_ano,
           value = cohort_measures$tft_coorte
         ) |>
@@ -134,7 +134,7 @@ if(RUN_BOOTSTRAP){
         cohort_measures$ppr_df |>
           transmute(
             bootstrap_id = arg_bootstrap_id,
-            subgrp = sub(".*_", "", arg_categ),
+            subgrp = sub("categ_", "", arg_categ),
             ano = arg_ano,
             fx_idade = key,
             value
