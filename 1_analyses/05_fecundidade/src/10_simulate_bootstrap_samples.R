@@ -1,7 +1,7 @@
 
 set.seed(19821117)
 
-N_SIMULATIONS <- 1e3
+N_SIMULATIONS <- 1e4
 
 append_flag <- FALSE
 
@@ -16,36 +16,38 @@ for(arg_ano in c(2000,2010)){
     if(arg_ano == 2010) { subset_df <- censo2010_fecundidade_subset }
 
     message("  preparando input_df para ", arg_categ, " ano ", arg_ano)    
-    input_df <-
+    input_df <- 
       subset_df |>
-      filter(.data[[arg_categ]] == 1) |>
+      #filter(.data[[arg_categ]] == 1) |>
+      filter(!!sym(arg_categ) == 1) |>
       group_by(fx_idade,filhos_nascidos_vivos,filhos_ultimos_12meses) |>
       summarise(nr_mulheres = sum(peso_amostral, na.rm=TRUE), .groups = 'drop') |>
       mutate(subgrp = arg_categ, ano = arg_ano) |>
       collect() |>
       mutate(subgrp = sub(".*_", "", subgrp))
     
-    for(arg_mcmc_id in seq_len(N_SIMULATIONS)){
+    for(arg_bootstrap_id in seq_len(N_SIMULATIONS)){
       
-      if(arg_mcmc_id %% 100 == 0) {
-        message("    reamostragem número ", arg_mcmc_id, " do input_df para ", arg_categ, " ano ", arg_ano)
+      if(arg_bootstrap_id %% 100 == 0) {
+        message("    reamostragem número ", arg_bootstrap_id, " do input_df para ", arg_categ, " ano ", arg_ano)
       }
       
-      mcmc_df <- 
+      bootstrap_df <- 
         slice_sample(
           input_df,
           prop=1,
+          weight_by = nr_mulheres,
           replace=TRUE
         )
       
-      period_measures <- fert_period_measures(input_df = mcmc_df)
-      cohort_measures <- fert_cohort_measures(input_df = mcmc_df)
+      period_measures <- fert_period_measures(input_df = bootstrap_df)
+      cohort_measures <- fert_cohort_measures(input_df = bootstrap_df)
 
       
       #message("      escrevendo tef_df em disco...")
       period_measures$tef_df |>
         transmute(
-          mcmc_id = arg_mcmc_id,
+          bootstrap_id = arg_bootstrap_id,
           subgrp = sub(".*_", "", arg_categ),
           ano = arg_ano,
           fx_idade = key,
@@ -54,7 +56,7 @@ for(arg_ano in c(2000,2010)){
         write_csv(
           file = paste0(
             results_dir,
-            "fec_mcmc_periodo_tef_df.csv"
+            "fec_bootstrap_periodo_tef_df.csv"
             ),
           append = append_flag
         )
@@ -63,7 +65,7 @@ for(arg_ano in c(2000,2010)){
       #message("      escrevendo semfilhos_df em disco...")
       period_measures$semfilhos_df |>
         transmute(
-          mcmc_id = arg_mcmc_id,
+          bootstrap_id = arg_bootstrap_id,
           subgrp = sub(".*_", "", arg_categ),
           ano = arg_ano,
           fx_idade = key,
@@ -72,7 +74,7 @@ for(arg_ano in c(2000,2010)){
         write_csv(
           file = paste0(
             results_dir,
-            "fec_mcmc_periodo_semfilhos_df.csv"
+            "fec_bootstrap_periodo_semfilhos_df.csv"
           ),
           append = append_flag
         )
@@ -80,7 +82,7 @@ for(arg_ano in c(2000,2010)){
       
       #message("      escrevendo tft de período em disco...")
       tibble(
-        mcmc_id = arg_mcmc_id,
+        bootstrap_id = arg_bootstrap_id,
         subgrp = sub(".*_", "", arg_categ),
         ano = arg_ano,
         value = period_measures$tft_periodo
@@ -88,7 +90,7 @@ for(arg_ano in c(2000,2010)){
         write_csv(
           file = paste0(
             results_dir,
-            "fec_mcmc_periodo_tft.csv"
+            "fec_bootstrap_periodo_tft.csv"
           ),
           append = append_flag
         )
@@ -96,7 +98,7 @@ for(arg_ano in c(2000,2010)){
       
       #message("      escrevendo imf em disco...")
       tibble(
-        mcmc_id = arg_mcmc_id,
+        bootstrap_id = arg_bootstrap_id,
         subgrp = sub(".*_", "", arg_categ),
         ano = arg_ano,
         value = period_measures$imf
@@ -104,7 +106,7 @@ for(arg_ano in c(2000,2010)){
         write_csv(
           file = paste0(
             results_dir,
-            "fec_mcmc_periodo_imf.csv"
+            "fec_bootstrap_periodo_imf.csv"
           ),
           append = append_flag
         )
@@ -112,7 +114,7 @@ for(arg_ano in c(2000,2010)){
       
       #message("      escrevendo tft de coorte em disco...")
       tibble(
-        mcmc_id = arg_mcmc_id,
+        bootstrap_id = arg_bootstrap_id,
         subgrp = sub(".*_", "", arg_categ),
         ano = arg_ano,
         value = cohort_measures$tft_coorte
@@ -120,7 +122,7 @@ for(arg_ano in c(2000,2010)){
         write_csv(
           file = paste0(
             results_dir,
-            "fec_mcmc_coorte_tft.csv"
+            "fec_bootstrap_coorte_tft.csv"
           ),
           append = append_flag
         )
@@ -129,7 +131,7 @@ for(arg_ano in c(2000,2010)){
       #message("      escrevendo rpp_df em disco...")
       cohort_measures$ppr_df |>
         transmute(
-          mcmc_id = arg_mcmc_id,
+          bootstrap_id = arg_bootstrap_id,
           subgrp = sub(".*_", "", arg_categ),
           ano = arg_ano,
           fx_idade = key,
@@ -138,14 +140,14 @@ for(arg_ano in c(2000,2010)){
         write_csv(
           file = paste0(
             results_dir,
-            "fec_mcmc_coorte_rpp_df.csv"
+            "fec_bootstrap_coorte_rpp_df.csv"
           ),
           append = append_flag
         )
       
       append_flag <- TRUE
       
-    } # for(mcmc_id in seq_len(N_SIMULATIONS)
+    } # for(bootstrap_id in seq_len(N_SIMULATIONS)
     
   } # for(arg_categ in c('categ_surdo','categ_surdocego','categ_deficiente_auditivo','categ_ouvinte'))
   

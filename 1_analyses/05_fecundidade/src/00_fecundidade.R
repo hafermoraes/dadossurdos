@@ -79,4 +79,10 @@ source(paste0(src_dir, '07_cohort_measures.R'))
 
 source(paste0(src_dir, '08_period_measures.R'))
 
+source(paste0(src_dir, '09_eda_period_measures.R'))
+
+source(paste0(src_dir, '10_simulate_bootstrap_samples.R'))
+
+source(paste0(src_dir, '11_graphical_bootstrap_analyses.R'))
+
 
