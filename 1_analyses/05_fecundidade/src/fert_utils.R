@@ -323,7 +323,8 @@ export_cohort_tfr_plot <- function(input_file,arg_ano,arg_categ,output_file,plot
     ) +
     scale_x_continuous(
       breaks = sort(c(pretty(plt_data$value), low_val, med_val, high_val)),
-      labels = function(x) round(x, 2) # Arredonda para 2 casas decimais
+      labels = function(x) round(x, 2),
+      guide = guide_axis(n.dodge = 2)
     ) + 
     labs(
       title = "",
@@ -339,3 +340,243 @@ export_cohort_tfr_plot <- function(input_file,arg_ano,arg_categ,output_file,plot
   )
 
 } # export_cohort_tfr_plot <- function(input_file,arg_ano,arg_categ,output_file,plot_width,plot_height)
+
+
+
+
+
+
+
+export_period_tfr_plot <- function(input_file,arg_ano,arg_categ,output_file,plot_width,plot_height){
+  
+  plt_data <-
+    read_csv(
+      file = input_file, 
+      show_col_types = FALSE
+    ) |>
+    filter(ano == arg_ano, subgrp == arg_categ) |>
+    filter(value < quantile(value, 0.999)) |>
+    mutate(ano = factor(ano))
+
+  dens <- density(plt_data$value)
+  df_dens <- data.frame(x = dens$x, y = dens$y)
+  
+  low_val  <- hdi(plt_data$value, credMass = 0.95)[1]
+  high_val <- hdi(plt_data$value, credMass = 0.95)[2]
+
+  med_val <- median(plt_data$value)
+  med_dens <- approx(dens$x, dens$y, xout = med_val)$y
+  
+
+  plt <-
+    plt_data |>
+    ggplot(aes(x = value)) +
+    geom_density() +
+    geom_ribbon(
+      data = df_dens[df_dens$x >= low_val & df_dens$x <= high_val, ],
+      aes(x = x, ymin = 0, ymax = y),
+      fill = "black", 
+      alpha = 0.2
+    ) +
+    # 3. Linha da densidade (contorno)
+    geom_density(color = "black") +
+    # 4. Apenas a linha da mediana tracejada parando na curva
+    annotate(
+      "segment", 
+      x = med_val, xend = med_val, 
+      y = 0, yend = med_dens, 
+      linetype = "dashed", 
+      color = "black"
+    ) +
+    scale_x_continuous(
+      breaks = sort(c(pretty(plt_data$value), low_val, med_val, high_val)),
+      labels = function(x) round(x, 2),
+      guide = guide_axis(n.dodge = 2)
+    ) + 
+    labs(
+      title = "",
+      x = "TFT de Período",
+      y = "Densidade de probabilidade"
+    )
+
+  ggsave(
+    file = output_file,
+    plot = plt,
+    width = plot_width,
+    height = plot_height
+  )
+
+} # export_period_tfr_plot <- function(input_file,arg_ano,arg_categ,output_file,plot_width,plot_height)
+
+
+
+
+
+
+
+
+export_period_avg_fert_age_plot <- function(input_file,arg_ano,arg_categ,output_file,plot_width,plot_height){
+  
+  plt_data <-
+    read_csv(
+      file = input_file, 
+      show_col_types = FALSE
+    ) |>
+    filter(ano == arg_ano, subgrp == arg_categ) |>
+    mutate(ano = factor(ano)) |>
+    drop_na()
+
+  dens <- density(plt_data$value)
+  df_dens <- data.frame(x = dens$x, y = dens$y)
+  
+  low_val  <- hdi(plt_data$value, credMass = 0.95)[1]
+  high_val <- hdi(plt_data$value, credMass = 0.95)[2]
+
+  med_val <- median(plt_data$value)
+  med_dens <- approx(dens$x, dens$y, xout = med_val)$y
+  
+
+  plt <-
+    plt_data |>
+    ggplot(aes(x = value)) +
+    geom_density() +
+    geom_ribbon(
+      data = df_dens[df_dens$x >= low_val & df_dens$x <= high_val, ],
+      aes(x = x, ymin = 0, ymax = y),
+      fill = "black", 
+      alpha = 0.2
+    ) +
+    # 3. Linha da densidade (contorno)
+    geom_density(color = "black") +
+    # 4. Apenas a linha da mediana tracejada parando na curva
+    annotate(
+      "segment", 
+      x = med_val, xend = med_val, 
+      y = 0, yend = med_dens, 
+      linetype = "dashed", 
+      color = "black"
+    ) +
+    scale_x_continuous(
+      breaks = sort(c(pretty(plt_data$value), low_val, med_val, high_val)),
+      labels = function(x) round(x, 2),
+      guide = guide_axis(n.dodge = 2)
+    ) + 
+    labs(
+      title = "",
+      x = "Idade média à fecundidade",
+      y = "Densidade de probabilidade"
+    )
+
+  ggsave(
+    file = output_file,
+    plot = plt,
+    width = plot_width,
+    height = plot_height
+  )
+
+} # export_period_avg_fert_age_plot <- function(input_file,arg_ano,arg_categ,output_file,plot_width,plot_height)
+
+
+
+
+export_period_childless_plot <- function(input_file, arg_ano, arg_categ, output_file, plot_width, plot_height){
+
+  plt_data <-
+    read_csv(
+      file = input_file,
+      show_col_types = FALSE
+    ) |>
+    mutate(fx_idade = factor(fx_idade)) |>
+    filter(ano == arg_ano, subgrp == arg_categ) |>
+    group_by(subgrp, ano, fx_idade) |>
+    summarise(
+      ppr = median(value),
+      ppr_low = hdi(value, credMass = 0.95)[1],
+      ppr_upp = hdi(value, credMass = 0.95)[2],
+      .groups = 'drop'
+    )
+
+  plt <-
+    plt_data |>
+    ggplot(
+      aes(x = fx_idade, group = subgrp)
+    ) +
+    geom_ribbon(
+      aes(
+        ymin = ppr_low,
+        ymax = ppr_upp,
+        ),
+      alpha = 0.2
+    ) +
+    geom_line(
+      aes(y = ppr), 
+      size = 1
+    ) +
+    labs(
+      fill = "",
+      title = "",
+      x = "Faixa etária",
+      y = "Proporção de mulheres sem filhos"
+    )
+
+  ggsave(
+    file = output_file,
+    plot = plt,
+    width = plot_width,
+    height = plot_height
+  )
+  
+} # export_period_childless_plot <- function(input_file, arg_ano, arg_categ, output_file, plot_width, plot_height)
+
+
+
+
+export_period_asfr_plot <- function(input_file, arg_ano, arg_categ, output_file, plot_width, plot_height){
+
+  plt_data <-
+    read_csv(
+      file = input_file,
+      show_col_types = FALSE
+    ) |>
+    mutate(fx_idade = factor(fx_idade)) |>
+    filter(ano == arg_ano, subgrp == arg_categ) |>
+    group_by(subgrp, ano, fx_idade) |>
+    summarise(
+      ppr = median(value),
+      ppr_low = hdi(value, credMass = 0.95)[1],
+      ppr_upp = hdi(value, credMass = 0.95)[2],
+      .groups = 'drop'
+    )
+
+  plt <-
+    plt_data |>
+    ggplot(
+      aes(x = fx_idade, group = subgrp)
+    ) +
+    geom_ribbon(
+      aes(
+        ymin = ppr_low,
+        ymax = ppr_upp,
+        ),
+      alpha = 0.2
+    ) +
+    geom_line(
+      aes(y = ppr), 
+      size = 1
+    ) +
+    labs(
+      fill = "",
+      title = "",
+      x = "Faixa etária",
+      y = "Taxa Específica de Fecundidade (TEF)"
+    )
+
+  ggsave(
+    file = output_file,
+    plot = plt,
+    width = plot_width,
+    height = plot_height
+  )
+  
+} # export_period_asfr_plot <- function(input_file, arg_ano, arg_categ, output_file, plot_width, plot_height)
+
