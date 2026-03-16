@@ -35,40 +35,27 @@ censo2010_fecundidade_subset <-
       idade >= 45 & idade <= 49 ~ "45-49",
       TRUE ~ NA_character_
     ),
-    fx_idade_elb = case_when(
-      idade >= 10 & idade <= 14 ~ "P0", # 10-14
-      idade >= 15 & idade <= 19 ~ "P1", # 15-19
-      idade >= 20 & idade <= 24 ~ "P2", # 20-24
-      idade >= 25 & idade <= 29 ~ "P3", # 25-29
-      idade >= 30 & idade <= 34 ~ "P4", # 30-34
-      idade >= 35 & idade <= 39 ~ "P5", # 35-39
-      idade >= 40 & idade <= 44 ~ "P6", # 40-44
-      idade >= 45 & idade <= 49 ~ "P7", # 45-49
-      TRUE ~ NA_character_
-    ),
     ano = ANO_CENSO
   ) |> 
+  # ajuste el badry na coluna filhos nascidos vivos
+  mutate(
+    fnv_elbadry = case_when( 
+      idade >= 10 & idade <= 14 & filhos_nascidos_vivos > 2.0/3.0 * 15 - 8.0 ~ 0, 
+      idade >= 15 & idade <= 19 & filhos_nascidos_vivos > 2.0/3.0 * 20 - 8.0 ~ 0, 
+      idade >= 20 & idade <= 24 & filhos_nascidos_vivos > 2.0/3.0 * 25 - 8.0 ~ 0, 
+      idade >= 25 & idade <= 29 & filhos_nascidos_vivos > 2.0/3.0 * 30 - 8.0 ~ 0, 
+      idade >= 30 & idade <= 34 & filhos_nascidos_vivos > 2.0/3.0 * 35 - 8.0 ~ 0, 
+      idade >= 35 & idade <= 39 & filhos_nascidos_vivos > 2.0/3.0 * 40 - 8.0 ~ 0, 
+      idade >= 40 & idade <= 44 & filhos_nascidos_vivos > 2.0/3.0 * 45 - 8.0 ~ 0, 
+      idade >= 45 & idade <= 49 & filhos_nascidos_vivos > 2.0/3.0 * 50 - 8.0 ~ 0, 
+      TRUE ~ filhos_nascidos_vivos
+    )
+  ) |>
   filter(
     sexo == 'feminino',
     !is.na(fx_idade)
   )
 toc()
-
-
-# censo2010_fecundidade_subset |>
-#   group_by(ano, filhos_nascidos_vivos, fx_idade_elb) |>
-#   summarise( 
-#     n = sum(peso_amostral, na.rm=TRUE)
-#   ) |> 
-#   pivot_wider(
-#     id_cols = c(ano, filhos_nascidos_vivos),
-#     names_from = fx_idade_elb,
-#     values_from = n,
-#     values_fill = 0
-#   ) |>
-#   arrange(ano, filhos_nascidos_vivos) |>
-#   select( ano, filhos_nascidos_vivos, P0, P1, P2, P3, P4, P5, P6, P7) |>
-#   collect() |>   View()
 
 
 
@@ -80,12 +67,12 @@ censo2010_fert_total <-
   group_by(
     ano,
     fx_idade,
-    fx_idade_elb,
     filhos_nascidos_vivos,
     filhos_ultimos_12meses
   ) |>
   summarise(
-    nr_mulheres = sum(peso_amostral, na.rm = TRUE)
+    nr_mulheres = sum(peso_amostral, na.rm = TRUE),
+    .groups = 'drop'
   ) |>
   mutate(
     subgrp = 'total'
@@ -117,12 +104,12 @@ censo2010_fert_ouvinte <-
   group_by(
     ano,
     fx_idade,
-    fx_idade_elb,
     filhos_nascidos_vivos,
     filhos_ultimos_12meses
   ) |>
   summarise(
-    nr_mulheres = sum(peso_amostral, na.rm = TRUE)
+    nr_mulheres = sum(peso_amostral, na.rm = TRUE),
+    .groups = 'drop'
   ) |>
   mutate(
     subgrp = 'ouvinte'
@@ -155,12 +142,12 @@ censo2010_fert_deficiente_auditivo <-
   group_by(
     ano,
     fx_idade,
-    fx_idade_elb,
     filhos_nascidos_vivos,
     filhos_ultimos_12meses
   ) |>
   summarise(
-    nr_mulheres = sum(peso_amostral, na.rm = TRUE)
+    nr_mulheres = sum(peso_amostral, na.rm = TRUE),
+    .groups = 'drop'
   ) |>
   mutate(
     subgrp = 'deficiente_auditivo'
@@ -192,12 +179,12 @@ censo2010_fert_surdo <-
   group_by(
     ano,
     fx_idade,
-    fx_idade_elb,
     filhos_nascidos_vivos,
     filhos_ultimos_12meses
   ) |>
   summarise(
-    nr_mulheres = sum(peso_amostral, na.rm = TRUE)
+    nr_mulheres = sum(peso_amostral, na.rm = TRUE),
+    .groups = 'drop'
   ) |>
   mutate(
     subgrp = 'surdo'
@@ -230,12 +217,12 @@ censo2010_fert_surdocego <-
   group_by(
     ano,
     fx_idade,
-    fx_idade_elb,
     filhos_nascidos_vivos,
     filhos_ultimos_12meses
   ) |>
   summarise(
-    nr_mulheres = sum(peso_amostral, na.rm = TRUE)
+    nr_mulheres = sum(peso_amostral, na.rm = TRUE),
+    .groups = 'drop'
   ) |>
   mutate(
     subgrp = 'surdocego'
@@ -261,7 +248,7 @@ toc()
 tic()
 message("consolidando informações de fecundidade do censo", ANO_CENSO,"...")
 
-censo2010_fecundidade <-
+censo2010_elbadry <-
   bind_rows(
     censo2010_fert_total,
     censo2010_fert_ouvinte,

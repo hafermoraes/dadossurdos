@@ -2,8 +2,8 @@
 # ajuste el badry para remover informações inconsistentes
 # isso introduzirá NAs nos dados originais para não mexermos nos totais
 tmp <-
-  censos_fecundidade |>
-  group_by(subgrp, ano, fx_idade, fx_idade_elb, filhos_nascidos_vivos) |>
+  censos_elbadry |>
+  group_by(subgrp, ano, fx_idade, filhos_nascidos_vivos) |>
   summarise(
     n_old = round(sum(nr_mulheres),0), 
     .groups = 'drop'
@@ -20,17 +20,17 @@ tmp <-
 
 n_na <- 
   tmp |>
-  group_by( subgrp, ano, fx_idade, fx_idade_elb) |>
+  group_by( subgrp, ano, fx_idade) |>
   summarise(na_count = sum(nas), .groups = "drop") |>
   transmute(
-    subgrp, ano, fx_idade, fx_idade_elb,
+    subgrp, ano, fx_idade,
     filhos_nascidos_vivos = NA_real_,
     n = na_count
   )
   
 n_new <-
   tmp |>
-  group_by( subgrp, ano, fx_idade, fx_idade_elb, filhos_nascidos_vivos) |>
+  group_by( subgrp, ano, fx_idade, filhos_nascidos_vivos) |>
   summarise(n = sum(n_new), .groups = "drop")
 
 
@@ -44,11 +44,11 @@ elbadry <-
 assert_that(
   all.equal(
     tolerance = 0.0001,
-    censos_fecundidade |>
-      group_by(subgrp, ano, fx_idade, fx_idade_elb) |>
+    censos_elbadry |>
+      group_by(subgrp, ano, fx_idade) |>
       summarise(n = sum(nr_mulheres), .groups = "drop"),
     elbadry |>
-      group_by(subgrp, ano, fx_idade, fx_idade_elb) |>
+      group_by(subgrp, ano, fx_idade) |>
       summarise(n = sum(n), .groups = "drop")
   )
 )

@@ -8,7 +8,7 @@ censos_paridade_Pi <-
     num = filhos_nascidos_vivos * n,
     den = n
   ) |>
-  group_by(ano, subgrp, fx_idade, fx_idade_elb) |>
+  group_by(ano, subgrp, fx_idade) |>
   summarise(
     Pi = sum(num, na.rm=TRUE)/sum(den, na.rm=TRUE),
     .groups = "drop"
