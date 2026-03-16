@@ -213,17 +213,14 @@ export_eda_period_tef <- function(arg_ano, arg_var, output_file, plot_width, plo
     )
   
   ggsave(
-    filename = paste0(
-      results_dir,
-      output_file
-    ),
+    filename = output_file,
     plot = plt,
     width = plot_width,
     height = plot_height
   )
   
   
-} # export_eda_period_tef <- function(ano, var, output_file, plot_width, plot_height)
+} # export_eda_period_tef <- function(arg_ano, arg_var, output_file, plot_width, plot_height)
 
 
 
