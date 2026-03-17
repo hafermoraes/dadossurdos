@@ -263,7 +263,7 @@ export_ppr_plot <- function(input_file, arg_ano, arg_categ, output_file, plot_wi
       fill = "",
       title = "",
       x = "Progressão de parturição",
-      y = "Probabilidade"
+      y = "Razão"
     )
 
   ggsave(

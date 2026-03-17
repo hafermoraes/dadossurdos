@@ -19,10 +19,11 @@ toc()
 
 
 
-
+PLOT_WIDTH <- 5
+PLOT_HEIGHT <- 4
 
 tic()
-for(arg_ano in c(2010)){
+for(arg_ano in c(2000,2010)){
   for(arg_categ in c('surdo','surdocego','deficiente_auditivo','ouvinte')){
     
   message("exportando em disco o gráfico da razão de progressão de parturição para ", arg_categ, " ano ", arg_ano)
@@ -31,8 +32,8 @@ for(arg_ano in c(2010)){
     arg_ano = arg_ano,
     arg_categ = arg_categ,
     output_file = paste0(results_dir,"fec_plot_ppr_", arg_categ, '_', arg_ano, '.pdf'),
-    plot_width = 8,
-    plot_height = 5
+    plot_width = PLOT_WIDTH,
+    plot_height = PLOT_HEIGHT
   )
   
   message("exportando em disco o gráfico da TFT de coorte para ", arg_categ, " ano ", arg_ano)
@@ -41,8 +42,8 @@ for(arg_ano in c(2010)){
     arg_ano = arg_ano,
     arg_categ = arg_categ,
     output_file = paste0(results_dir,"fec_plot_cohort_tfr_", arg_categ, '_', arg_ano, '.pdf'),
-    plot_width = 8,
-    plot_height = 5
+    plot_width = PLOT_WIDTH,
+    plot_height = PLOT_HEIGHT
   )
   
   
@@ -54,8 +55,8 @@ for(arg_ano in c(2010)){
     arg_ano = arg_ano,
     arg_categ = arg_categ,
     output_file = paste0(results_dir,"fec_plot_period_tfr_", arg_categ, '_', arg_ano, '.pdf'),
-    plot_width = 8,
-    plot_height = 5
+    plot_width = PLOT_WIDTH,
+    plot_height = PLOT_HEIGHT
   )
   
   
@@ -69,8 +70,8 @@ for(arg_ano in c(2010)){
     arg_ano = arg_ano,
     arg_categ = arg_categ,
     output_file = paste0(results_dir,"fec_plot_period_avg_fert_age_", arg_categ, '_', arg_ano, '.pdf'),
-    plot_width = 8,
-    plot_height = 5
+    plot_width = PLOT_WIDTH,
+    plot_height = PLOT_HEIGHT
   )
   
   
@@ -82,8 +83,8 @@ for(arg_ano in c(2010)){
     arg_ano = arg_ano,
     arg_categ = arg_categ,
     output_file = paste0(results_dir,"fec_plot_childless_", arg_categ, '_', arg_ano, '.pdf'),
-    plot_width = 8,
-    plot_height = 5
+    plot_width = PLOT_WIDTH,
+    plot_height = PLOT_HEIGHT
   )
   
   message("exportando em disco o gráfico das taxas específicas de fecundidade (TEF) para ", arg_categ, " ano ", arg_ano)
@@ -92,8 +93,8 @@ for(arg_ano in c(2010)){
     arg_ano = arg_ano,
     arg_categ = arg_categ,
     output_file = paste0(results_dir,"fec_plot_asfr_", arg_categ, '_', arg_ano, '.pdf'),
-    plot_width = 8,
-    plot_height = 5
+    plot_width = PLOT_WIDTH,
+    plot_height = PLOT_HEIGHT
   )
 
   } # for(arg_categ in c('surdo','surdocego','deficiente_auditivo','ouvinte','total'))
