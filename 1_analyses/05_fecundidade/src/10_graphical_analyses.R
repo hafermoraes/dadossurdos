@@ -67,6 +67,31 @@ toc()
 
 
 
+tic()
+message("comparando a razão de progressão de parturição por ano e entre categorias...")
+export_bs_comp_lineplot(
+  file = "fec_bootstrap_coorte_rpp_df",
+  x_label = "Progressão de parturição",
+  y_label = "Razão",
+  plot_width = 7,
+  plot_height = 8 
+)
+toc()
+
+
+
+tic()
+message("comparando a proporção de mulheres sem filhos por ano e entre categorias...")
+export_bs_comp_lineplot(
+  file = "fec_bootstrap_periodo_semfilhos_df",
+  x_label = "Faixa Etária",
+  y_label = "Proporção de mulheres sem filhos",
+  plot_width = 7,
+  plot_height = 8 
+)
+toc()
+
+
 
 
 PLOT_WIDTH <- 5
