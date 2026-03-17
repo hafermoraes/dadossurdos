@@ -352,7 +352,7 @@ export_period_tfr_plot <- function(input_file,arg_ano,arg_categ,output_file,plot
       show_col_types = FALSE
     ) |>
     filter(ano == arg_ano, subgrp == arg_categ) |>
-    filter(value < quantile(value, 0.999)) |>
+    filter(value < mean(value) + 3*sd(value)) |>
     mutate(ano = factor(ano))
 
   dens <- density(plt_data$value)
@@ -577,3 +577,114 @@ export_period_asfr_plot <- function(input_file, arg_ano, arg_categ, output_file,
   
 } # export_period_asfr_plot <- function(input_file, arg_ano, arg_categ, output_file, plot_width, plot_height)
 
+
+
+
+
+
+export_bs_comp_density <- function(file, x_label, plot_width, plot_height){
+  plt_data <-
+    read_csv(
+      file = paste0(results_dir, file, ".csv"),
+      show_col_types = FALSE
+    ) |>
+    mutate(
+      ano = factor(ano),
+      subgrp = case_match(
+        subgrp,
+        "deficiente_auditivo" ~ "Deficiente Auditivo",
+        "surdo" ~ "Surdo",
+        "surdocego" ~ "Surdocego",
+        "ouvinte" ~ "Ouvinte"
+      )
+    ) |>
+    filter( value < mean(value, na.rm=TRUE) + 3*sd(value, na.rm=TRUE))
+
+  plt <-
+    plt_data |>
+    ggplot( aes(x=value, fill = subgrp, color = subgrp)) +
+    geom_density(aes(y = after_stat(count / sum(count))), alpha=0.2)+
+    facet_wrap( . ~ ano , ncol=1)  + 
+    theme(
+      legend.position="top"
+    ) +
+    labs(
+      x = x_label,
+      y = "densidade de probabilidade",
+      fill = "",
+      color = ""
+    )
+
+  ggsave(
+    filename = paste0(results_dir, file, ".pdf"),
+    plot = plt,
+    width = plot_width,
+    height = plot_height
+  )
+
+} # export_bs_comp_density <- function(file, x_label, plot_width, plot_height)
+
+
+
+
+
+
+export_bs_comp_lineplot <- function(file, x_label, y_label, plot_width, plot_height){
+
+  plt_data <-
+    read_csv(
+      file = paste0(results_dir, file, ".csv"),
+      show_col_types = FALSE
+    ) |>
+    mutate(
+      ano = factor(ano),
+      subgrp = case_match(
+        subgrp,
+        "deficiente_auditivo" ~ "Deficiente Auditivo",
+        "surdo" ~ "Surdo",
+        "surdocego" ~ "Surdocego",
+        "ouvinte" ~ "Ouvinte"
+      )
+    ) |>
+    group_by(subgrp, ano, fx_idade) |>
+    summarise(
+      avg = mean(value, na.rm=TRUE),
+      low = hdi(value, credMass=0.95)[1],
+      upp = hdi(value, credMass=0.95)[2],
+      .groups = 'drop'
+    )
+
+  plt <-
+    plt_data |>
+    ggplot( 
+      aes(
+        x = fx_idade, 
+        y = avg, 
+        group = subgrp, 
+        color = subgrp, 
+        fill = subgrp
+      )
+    ) +
+    geom_ribbon(
+      aes(ymin = low, ymax = upp), alpha = 0.2, color = NA) +
+    geom_line(size = 1) +
+    facet_wrap(~ ano, ncol=1) +
+    theme(
+      legend.position = 'top'
+    ) + 
+    labs(
+      x = x_label, 
+      y = y_label, 
+      color = "", 
+      fill = ""
+    )
+
+  ggsave(
+    filename = paste0(results_dir, file, ".pdf"),
+    plot = plt,
+    width = plot_width,
+    height = plot_height
+  )
+
+  
+} # export_bs_comp_lineplot <- function(file, x_label, y_label, plot_width, plot_height)

@@ -18,6 +18,56 @@ for(ano in c(2000,2010)){
 toc()
 
 
+tic()
+message("comparando a taxa de fecundidade total de coorte por ano e entre categorias...")
+export_bs_comp_density(
+  file = "fec_bootstrap_coorte_tft",
+  x_label = "Taxa de Fecundidade Total de Coorte",
+  plot_width = 7,
+  plot_height = 8 
+)
+toc()
+
+
+tic()
+message("comparando a taxa de fecundidade total de período por ano e entre categorias...")
+export_bs_comp_density(
+  file = "fec_bootstrap_periodo_tft",
+  x_label = "Taxa de Fecundidade Total de Período",
+  plot_width = 7,
+  plot_height = 8 
+)
+toc()
+
+
+tic()
+message("comparando a idade média à fecundidade por ano e entre categorias...")
+export_bs_comp_density(
+  file = "fec_bootstrap_periodo_imf",
+  x_label = "Idade média à fecundidade",
+  plot_width = 7,
+  plot_height = 8 
+)
+toc()
+
+
+source(paste0(src_dir, "fert_utils.R"))
+
+
+tic()
+message("comparando a taxa específica de fecundidade por ano e entre categorias...")
+export_bs_comp_lineplot(
+  file = "fec_bootstrap_periodo_tef_df",
+  x_label = "Faixa etária",
+  y_label = "Taxa específica de fecundidade (TEF)",
+  plot_width = 7,
+  plot_height = 8 
+)
+toc()
+
+
+
+
 
 PLOT_WIDTH <- 5
 PLOT_HEIGHT <- 4
