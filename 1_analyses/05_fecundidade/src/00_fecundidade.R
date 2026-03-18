@@ -86,5 +86,8 @@ source(paste0(src_dir, '09_simulate_bootstrap_samples.R'))
 
 source(paste0(src_dir, '10_graphical_analyses.R'))
 
+source(paste0(src_dir, '11_summaries_latex.R'))
+
+
 
 

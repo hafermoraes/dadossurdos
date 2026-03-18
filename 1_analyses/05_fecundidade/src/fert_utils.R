@@ -688,3 +688,107 @@ export_bs_comp_lineplot <- function(file, x_label, y_label, plot_width, plot_hei
 
   
 } # export_bs_comp_lineplot <- function(file, x_label, y_label, plot_width, plot_height)
+
+
+
+bootstrap_summary <- function(csv_file, measure){
+
+  key_expression <- if (grepl('df', csv_file)) sym("fx_idade") else NA_character_
+
+  aux <-
+    read_csv(
+      file = paste0(
+        results_dir,
+        csv_file
+      ),
+      show_col_types = FALSE
+    ) |>
+    mutate( 
+      key = !!key_expression,
+      measure = measure
+    ) |>
+    group_by(ano, subgrp, measure, key) |>
+    summarise( 
+      avg = mean(value, na.rm=TRUE),
+      low = hdi(value, credMass = 0.95)[1],
+      upp = hdi(value, credMass = 0.95)[2],
+      .groups = 'drop'
+    )
+
+  return(aux)
+} # bootstrap_summary <- function(csv_file, measure, key)
+
+
+export_bs_latex <- function(bs_df, categ, output_file){
+  
+  bs_latex <- 
+    bs_df |>
+    filter(subgrp == categ) |>
+    mutate(
+      key = if_else( is.na(key), '', key)
+    ) |>
+    pivot_wider(
+      names_from = ano,
+      values_from = c(avg, low, upp),
+      names_glue = "{.value}_{ano}"
+    ) |> 
+    select(subgrp, measure, key, avg_2000, low_2000, upp_2000, avg_2010, low_2010, upp_2010) |>
+    mutate(
+      measure = case_match(
+        measure,
+        'cohort_tfr' ~ 'Taxa de Fecundidade Total (TFT) de coorte',
+        'period_tfr' ~ 'Taxa de Fecundidade Total (TFT) de período',
+        'period_afa' ~ 'Idade média à fecundidade',
+        'period_asfr' ~ 'Taxa Específica de Fecundidade (TEF)',
+        'cohort_ppr' ~ 'Razão de progressão de parturição',
+        'period_childless' ~ 'Proporção de mulheres sem filhos'
+      ),
+      across(where(is.numeric), \(x) format(round(x, 3), big.mark='.', decimal.mark=','))
+    ) |>
+    arrange(subgrp, measure, key) |>
+    group_by(subgrp, measure) |>
+    mutate(
+      n_linhas = n(),
+      row_idx = row_number(),
+      measure = if_else(
+        row_idx == 1, 
+        if_else(
+          n_linhas == 1,
+          paste0("\\midrule ", measure),
+          paste0("\\midrule \\multirow{", n_linhas, "}{=}{", measure, "}")
+        ),
+        ""
+      )
+    ) |>
+    ungroup() |>
+    # REMOVE O MIDRULE APENAS DA LINHA 1 DA TABELA
+    mutate(
+      measure = if_else(row_number() == 1, sub("\\\\midrule ", "", measure), measure)
+    ) |>
+    select(-n_linhas, -row_idx, -subgrp)
+
+  res_table <- xtable::xtable(bs_latex)
+
+  tab_out <- 
+    capture.output(
+      print(
+        res_table, 
+        include.rownames = FALSE, 
+        include.colnames = FALSE,
+        only.contents = TRUE,
+        sanitize.text.function = identity,
+        hline.after = NULL
+      )
+    )
+
+  idx <- max(which(grepl("\\\\\\\\", tab_out)))
+
+  tab_out[idx] <- sub("\\\\\\\\\\s*$", "", tab_out[idx])
+
+  cat(
+    tab_out, 
+    sep = "\n", 
+    file = output_file
+  )
+
+} # export_bs_latex <- function(bs_df, categ, output_file)
