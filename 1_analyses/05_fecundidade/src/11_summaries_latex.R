@@ -96,4 +96,72 @@ select(
   observed_2000, bs_avg_2000, bs_low_2000, bs_upp_2000,
   observed_2010, bs_avg_2010, bs_low_2010, bs_upp_2010
 )
+
+fec_comp_grp_measures_latex <-
+  fec_comp_grp_measures |> 
+  mutate(
+    subgrp = case_match(
+      subgrp,
+      'deficiente_auditivo' ~ 'Deficiente Auditivo',
+      'surdo' ~ 'Surdo',
+      'surdocego' ~ 'Surdocego',
+      'ouvinte' ~ 'Ouvinte'
+    ),
+    measure = case_match(
+      measure,
+      'cohort_tfr' ~ 'Taxa de Fecundidade Total (TFT) de Coorte',
+      'period_tfr' ~ 'Taxa de Fecundidade Total (TFT) de Período',
+      'period_afa' ~ 'Idade média à fecundidade'
+    ),
+    across(where(is.numeric), \(x) format(round(x, 2), big.mark='.', decimal.mark=','))
+  ) |>
+  arrange(measure, subgrp) |>
+  group_by(measure) |>
+  mutate(
+    n_linhas = n(),
+    row_idx = row_number(),
+    measure = if_else(
+      row_idx == 1, 
+      if_else(
+        n_linhas == 1,
+        paste0("\\midrule ", measure),
+        paste0("\\midrule \\multirow{", n_linhas, "}{=}{", measure, "}")
+      ),
+      ""
+    )
+  ) |>
+  ungroup() |>
+  mutate(
+    measure = if_else(row_number() == 1, sub("\\\\midrule ", "", measure), measure)
+  ) |>
+  select(-n_linhas, -row_idx)
+
+
+res_latex <- xtable::xtable(fec_comp_grp_measures_latex)
+
+tab_out <- 
+  capture.output(
+    print(
+      res_latex, 
+      include.rownames = FALSE, 
+      include.colnames = FALSE,
+      only.contents = TRUE,
+      sanitize.text.function = identity,
+      hline.after = NULL
+    )
+  )
+
+idx <- max(which(grepl("\\\\\\\\", tab_out)))
+
+tab_out[idx] <- sub("\\\\\\\\\\s*$", "", tab_out[idx])
+
+cat(
+  tab_out, 
+  sep = "\n", 
+  file = paste0(
+    results_dir,
+    "fec_comp_grp_measures_latex.tex"
+  )
+)
+
 toc()

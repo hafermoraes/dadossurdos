@@ -18,7 +18,7 @@ fert_period_measures <- function(input_df){
     filter(fx_idade != '10-14') |>
     mutate(
       fnv_12m = if_else(is.na(filhos_ultimos_12meses),0,filhos_ultimos_12meses) * nr_mulheres,
-      semfilhos = if_else( filhos_nascidos_vivos == 0,1,0) * nr_mulheres,
+      semfilhos = if_else( filhos_nascidos_vivos == 0 | is.na(filhos_nascidos_vivos) ,1,0) * nr_mulheres,
       idade_central = map_dbl(
         str_extract_all(fx_idade, "\\d+"), 
         ~ {
@@ -578,7 +578,15 @@ export_period_asfr_plot <- function(input_file, arg_ano, arg_categ, output_file,
 } # export_period_asfr_plot <- function(input_file, arg_ano, arg_categ, output_file, plot_width, plot_height)
 
 
-
+ggplot(plt_data, aes(x = subgrp, y = value, fill = subgrp)) +
+  geom_boxplot() +
+  facet_wrap(~ ano, scales = 'free') +
+  labs(x = "Subgrupo", 
+       y = "Valor",
+       fill = "") + 
+  theme(
+    legend.position = 'top'
+  )
 
 
 
@@ -602,18 +610,19 @@ export_bs_comp_density <- function(file, x_label, plot_width, plot_height){
 
   plt <-
     plt_data |>
-    ggplot( aes(x=value, fill = subgrp, color = subgrp)) +
-    geom_density(aes(y = after_stat(count / sum(count))), alpha=0.2)+
-    facet_wrap( . ~ ano , ncol=1)  + 
-    theme(
-      legend.position="top"
+    ggplot(
+      aes(x = subgrp, y = value, fill = subgrp, color=subgrp)
     ) +
+    geom_boxplot(alpha=0.3) + 
+    facet_wrap(~ ano, ncol=1) +
     labs(
-      x = x_label,
-      y = "densidade de probabilidade",
-      fill = "",
-      color = ""
-    )
+      title = "",
+      x = "",
+      y = x_label,
+      fill = ""
+    ) +
+    coord_flip() +
+    theme(legend.position = "none")
 
   ggsave(
     filename = paste0(results_dir, file, ".pdf"),

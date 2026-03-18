@@ -1,6 +1,6 @@
 
 
-RUN_BOOTSTRAP <- FALSE
+RUN_BOOTSTRAP <- TRUE
 
 message("removendo todos os objetos prévios...")
 rm(list = ls(all.names = TRUE))

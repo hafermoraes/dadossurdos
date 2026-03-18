@@ -20,13 +20,16 @@ if(RUN_BOOTSTRAP){
       message("  preparando input_df para ", arg_categ, " ano ", arg_ano)    
       input_df <- 
         subset_df |>
-        #filter(.data[[arg_categ]] == 1) |>
         filter(!!sym(arg_categ) == 1) |>
         group_by(fx_idade,filhos_nascidos_vivos,filhos_ultimos_12meses) |>
         summarise(nr_mulheres = sum(peso_amostral, na.rm=TRUE), .groups = 'drop') |>
         mutate(subgrp = arg_categ, ano = arg_ano) |>
         collect() |>
-        mutate(subgrp = sub(".*_", "", subgrp))
+        mutate(subgrp = sub("categ_", "", subgrp))
+
+      # Parâmetros da Multinomial baseados no Censo observado
+      n_total <- sum(input_df$nr_mulheres)
+      prob_v <- input_df$nr_mulheres / n_total
       
       for(arg_bootstrap_id in seq_len(N_SIMULATIONS)){
         
@@ -34,12 +37,18 @@ if(RUN_BOOTSTRAP){
           message("    reamostragem número ", arg_bootstrap_id, " do input_df para ", arg_categ, " ano ", arg_ano)
         }
         
-        bootstrap_df <- 
-          slice_sample(
-            input_df,
-            prop=1,
-            weight_by = nr_mulheres,
-            replace=TRUE
+        ## bootstrap_df <- 
+        ##   slice_sample(
+        ##     input_df,
+        ##     prop=1,
+        ##     weight_by = nr_mulheres,
+        ##     replace=TRUE
+        ##   )
+
+        bootstrap_df <-
+          input_df |>
+          mutate(
+            nr_mulheres = as.numeric(rmultinom(1, size = n_total, prob = prob_v))
           )
         
         period_measures <- fert_period_measures(input_df = bootstrap_df)
