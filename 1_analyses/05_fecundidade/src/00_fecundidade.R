@@ -88,6 +88,10 @@ source(paste0(src_dir, '10_graphical_analyses.R'))
 
 source(paste0(src_dir, '11_summaries_latex.R'))
 
+source(paste0(src_dir, '12_prepare_fertility_models.R'))
+
+
+
 
 
 
