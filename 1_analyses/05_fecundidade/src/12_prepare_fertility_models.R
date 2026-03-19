@@ -7,19 +7,27 @@ fecund_data_relational_models <-
       summarise(
         m = sum(nr_mulheres, na.rm=TRUE),
         fnv = sum(filhos_nascidos_vivos*nr_mulheres, na.rm=TRUE),
-        f12m = sum(filhos_ultimos_12meses*nr_mulheres, na.rm=TRUE)
+        f12m = sum(filhos_ultimos_12meses*nr_mulheres, na.rm=TRUE),
+        Pi = sum(filhos_nascidos_vivos*nr_mulheres, na.rm=TRUE) / sum(nr_mulheres, na.rm=TRUE),
+        .groups = 'drop'
       ),
-      # Linhas de totais
-      censos_elbadry |>
-        filter(subgrp != 'total', subgrp != 'ouvinte', fx_idade != '10-14') |>
-        mutate(fx_idade = 'Total') |>
-        group_by(ano, subgrp, fx_idade) |>
-        summarise(
-          m = sum(nr_mulheres, na.rm=TRUE),
-          fnv = sum(filhos_nascidos_vivos*nr_mulheres, na.rm=TRUE),
-          f12m = sum(filhos_ultimos_12meses*nr_mulheres, na.rm=TRUE)
-        )
-   ) |>
+    # Linhas de totais
+    censos_elbadry |>
+      filter(subgrp != 'total', subgrp != 'ouvinte', fx_idade != '10-14') |>
+      mutate(fx_idade = 'Total') |>
+      group_by(ano, subgrp, fx_idade) |>
+      summarise(
+        m = sum(nr_mulheres, na.rm=TRUE),
+        fnv = sum(filhos_nascidos_vivos*nr_mulheres, na.rm=TRUE),
+        f12m = sum(filhos_ultimos_12meses*nr_mulheres, na.rm=TRUE),
+        Pi = NA_real_,
+        .groups = 'drop'
+      )
+  )
+
+
+fecund_data_relational_models_wide <-
+  fecund_data_relational_models |>
   mutate(
     subgrp = case_match(
       subgrp,
@@ -45,7 +53,7 @@ fecund_data_relational_models <-
 
 
 res_table <-
-  fecund_data_relational_models |>
+  fecund_data_relational_models_wide |>
   group_by(subgrp) |>
   mutate(
     n_linhas = n(),
@@ -93,5 +101,116 @@ cat(
     "fec_data_relational_models.tex"
   )
 )
+
+
+
+
+tic()
+message("preparando dados para P/F de Brass...")
+for(arg_categ in c('surdo','surdocego','deficiente_auditivo')){
+  for(arg_ano in c(2000,2010)){
+    
+    fecund_data_relational_models |>
+      filter(ano == arg_ano, subgrp == arg_categ) |>
+      transmute(
+        idade = fx_idade,
+        mulheres = round(m, 0),
+        nasc.v = round(fnv, 0),
+        nasc.12 = round(f12m, 0)
+      ) |>
+      write_tsv(
+        file = paste0(
+          results_dir,
+          'fec_dados_PFbrass_', arg_categ, '_', arg_ano, '.txt'
+        )
+      )
+  } # for(arg_ano in c(2000,2010))
+} # for(arg_categ in c('surdo','surdocego','deficiente_auditivo'))
+toc()
+
+
+tic()
+message("preparando dados para Gompertz Relacional Modificado...")
+for(arg_categ in c('surdo','surdocego','deficiente_auditivo')){
+  for(arg_ano in c(2000,2010)){
+    
+    bind_rows(
+      tribble(
+        ~Idade, ~Pi, ~TEF,
+        '10-14', NA_real_, NA_real_,
+      ),
+      fecund_data_relational_models |>
+        filter(ano == arg_ano, subgrp == arg_categ, fx_idade != 'Total') |>
+        transmute(
+          Idade = if_else(fx_idade=='Total', NA_character_, fx_idade),
+          Pi = round(Pi, 3),
+          TEF = round( f12m / m, 3)
+        ),
+      # Linha dos Totais
+      fecund_data_relational_models |>
+        filter(ano == arg_ano, subgrp == arg_categ, fx_idade != 'Total') |>
+        transmute(
+          Idade = NA_character_,
+          Pi = NA_real_,
+          TEF = round( 5.0 * sum(f12m/m), 3)
+        ) |>
+        unique()
+    ) |>
+      write_tsv(
+        file = paste0(
+          results_dir,
+          'fec_dados_GompertzRelMod_', arg_categ, '_', arg_ano, '.txt'
+        )
+      )
+  } # for(arg_ano in c(2000,2010))
+} # for(arg_categ in c('surdo','surdocego','deficiente_auditivo'))
+toc()
+
+
+
+tic()
+message("preparando dados para Gompertz Relacional Sintético...")
+for(arg_categ in c('surdo','surdocego','deficiente_auditivo')){
+
+    bind_rows(
+      tribble(
+        ~Idades, ~Pm1, ~Pm2, ~f1, ~f2,
+        '10-14', NA_real_, NA_real_, NA_real_, NA_real_,
+      ),
+      fecund_data_relational_models |>
+        filter(ano == 2000 | ano == 2010, subgrp == arg_categ, fx_idade != 'Total') |>
+        mutate(
+          Fi = f12m / m
+        ) |>
+        pivot_wider(
+          id_cols = c(fx_idade),
+          names_from = ano,
+          values_from = c(Pi,Fi)
+        ) |>
+        mutate(
+          across( where(is.numeric), \(x) round(x, 4))
+        ) |>
+        rename(
+          Idades = fx_idade,
+          Pm1 = Pi_2000,
+          Pm2 = Pi_2010,
+          f1 = Fi_2000,
+          f2 = Fi_2010
+        ),
+      # Linha dos Totais
+      tribble(
+        ~Idades, ~Pm1, ~Pm2, ~f1, ~f2,
+        '50+', NA_real_, NA_real_, NA_real_, NA_real_,
+      )
+    ) |>
+      write_tsv(
+        file = paste0(
+          results_dir,
+          'fec_dados_GompertzSintetico_2000_2010_', arg_categ, '.txt'
+        )
+      )
+} # for(arg_categ in c('surdo','surdocego','deficiente_auditivo'))
+toc()
+
 
 

@@ -352,7 +352,7 @@ export_period_tfr_plot <- function(input_file,arg_ano,arg_categ,output_file,plot
       show_col_types = FALSE
     ) |>
     filter(ano == arg_ano, subgrp == arg_categ) |>
-    filter(value < mean(value) + 3*sd(value)) |>
+    ## filter(value < mean(value) + 3*sd(value)) |>
     mutate(ano = factor(ano))
 
   dens <- density(plt_data$value)
