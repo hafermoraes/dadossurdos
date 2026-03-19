@@ -1,13 +1,28 @@
 
+ANALYSIS <- 'fec_GompertzSintetico_2000_2010_deficiente_auditivo'
+
 #################################
 #### Aula Gompertz Sintetico ####
 #################################
 options(scipen=999)
 
 ### Vizualizacao dos dados ####
-dado=read.csv('dado_gompertz_sintetico.csv', sep=';',header=T)
-
-View(dado)
+dado=read.table(
+  # results/fec_dados_GompertzSintetico_2000_2010_deficiente_auditivo.txt
+  sep='\t',
+  header=T,
+  text="
+Idades	Pm1	Pm2	f1	f2
+10-14	NA	NA	NA	NA
+15-19	0.1216	0.1301	0.0449	0.0435
+20-24	0.5187	0.5582	0.0782	0.0761
+25-29	1.0141	1.0644	0.0749	0.0696
+30-34	1.5312	1.5834	0.0503	0.048
+35-39	2.209	1.911	0.0297	0.0237
+40-44	2.6764	2.2782	0.0146	0.0092
+45-49	3.3727	2.6163	0.002	0.0018
+50+	NA	NA	NA	NA
+")
 
 dado=dado[-9,]
 
@@ -50,9 +65,22 @@ for(i in 4:8){dado$Pis[i]=(sum(ifelse(i>=6,dado$Pm2[i-6],0),
 dado$fm=(dado$f1+dado$f2)/2
 
 ### Valores padrao tabulado
-padrao=read.csv('padrao_Booth_GS.csv',sep=',',header=T)
-
-View(padrao)
+padrao=read.csv(
+  # 'padrao_Booth_GS.csv'
+  sep=',',
+  header=T,
+  text="
+grupos,Pp,grupos1,Fp_des,grupos2,Fp_semdes
+10-14,0.0003,14.5,0.00128,15,0.00313
+15-19,0.0522,19.5,0.11404,20,0.13584
+20-24,0.2549,24.5,0.35277,25,0.37731
+25-29,0.4957,29.5,0.58724,30,0.60861
+30-34,0.7067,34.5,0.78001,35,0.79618
+35-39,0.8681,39.5,0.9199,40,0.93019
+40-44,0.9679,44.5,0.9893,45,0.99188
+45-49,0.9977,49.5,0.999999,50,0.999999
+50-54,1,,,,
+")
 
 ### Para F(x), ou Pontos F
 
@@ -67,8 +95,6 @@ names(padrao)
 
 ## Selecionando idades e fatores
 dat=padrao[-9,c('grupos1','Fp_des')]
-
-View(dat)
 
 ## Fazendo o primeiro logito
 dat$Ys.x = -log(-log(dat$Fp_des))
@@ -127,9 +153,10 @@ gx=dat$phi.1
 PontsF=as.data.frame(cbind(idade=seq(14.5,49.5,5),gx,zx.ex))
 
 ## Grafico, lembrando g(x) = X e z(x)-e(x) = Y
-windows(height = 15,width = 15)
+pdf(file = paste0(results_dir, ANALYSIS, '_PontosF.pdf'), width = 7, height = 4)
 plot(gx[2:7],zx.ex[2:7],pch=10,col='blue',xlab='g(x)',ylab='z(x)-e(x)', main='Pontos F')
 abline(lm(zx.ex[2:7]~gx[2:7]), col='blue', lwd=2)
+dev.off()
 #####
 
 ### 2.2) Procedimento parecido P(i) => P(i)/P(i+1), os Pontos P ####
@@ -140,8 +167,6 @@ names(padrao)
 
 ## Selecionando idades e fatores
 dat.p=padrao[-9,c('grupos','Pp')]
-
-View(dat.p)
 
 ## Fazendo o primeiro logito
 dat.p$Ys.i=-log(-log(dat.p$Pp))
@@ -194,10 +219,11 @@ gi=dat.p$phi.1
 PontsP=as.data.frame(cbind(idade=seq(14.5,49.5,5),gi,zi.ei))
 
 ## Grafico
-windows(height = 10,width = 10)
+pdf(file = paste0(results_dir, ANALYSIS, '_gi_zi_m_ei.pdf'), width = 7, height = 4)
 plot(gi[2:6],zi.ei[2:6], pch=10, col='red', xlab='g(i)', 
      ylab='z(i)-e(i)')
 abline(lm(zi.ei[2:6]~gi[2:6]), col='red', lwd=2)
+dev.off()
 #####
 
 ### Passo 3) Analise grafica ####
@@ -207,19 +233,16 @@ lim.y=range(PontsP$zi.ei[2:6],PontsF$zx.ex[2:7])
 lim.x=range(dat.p$gi[1:8],PontsF$gx[1:7])
 
 # Pontos F
-windows(height = 20,width = 20)
+pdf(file = paste0(results_dir, ANALYSIS, '_PontosFeP.pdf'), width = 7, height = 4)
 plot(PontsF$gx[2:7],PontsF$zx.ex[2:7], pch=10, col='blue', ylim = lim.y, xlim=lim.x, xlab='g()', ylab='z()-e()')
 abline(lm(PontsF$zx.ex[2:7]~PontsF$gx[2:7]), col='blue', lwd=2)
 text(PontsF$gx[2:7],PontsF$zx.ex[2:7], labels=round(PontsF$zx.ex[2:7],digits=3),cex=0.6,pos=3)
-
 # Pontos P
 points(PontsP$gi[2:6],PontsP$zi.ei[2:6], pch=10, col='red')
 abline(lm(PontsP$zi.ei[2:6]~PontsP$gi[2:6]), col='red', lwd=2)
 text(PontsP$gi[2:6],PontsP$zi.ei[2:6], labels=round(PontsP$zi.ei[2:6],digits=3),cex=0.6,pos=3)
-
+dev.off()
 ### RMSE
-install.packages('hydroGOF')
-library(hydroGOF)
 
 pontos.P=cbind(y=PontsP$zi.ei[2:6],x=PontsP$gi[2:6])
 pontos.F=cbind(y=PontsF$zx.ex[2:7],x=PontsF$gx[2:7])
@@ -246,11 +269,12 @@ l.y=range(Pontos[,'y'])
 l.x=range(Pontos[,'x'])
 
 # Pontos combinados
-windows(height = 20,width = 20)
+pdf(file = paste0(results_dir, ANALYSIS, '_PontosComb.pdf'), width = 7, height = 4)
 plot(Pontos[,'x'],Pontos[,'y'], pch=10, col='blue', ylim = lim.y, 
      xlim=lim.x,xlab='g()', ylab='z()-e()', 
      main='Grafico de diagnostico entre Pontos F e P')
 abline(lm(Pontos[,'y']~Pontos[,'x']), col='black', lwd=2)
+dev.off()
 
 ### Passo 4) Regressao para encontrar o alfa e o beta ######
 #numero de pontos F = 4 (20 a 40 anos)
@@ -283,7 +307,7 @@ alfa=soma.y['FP']/7-beta*soma.x['FP']/7
 
 ## Re-estimando o P
 dados.P=dat.p[,c('grupos','Ys.i')]
-View(dados.P)
+
 
 ### Re-estimando o logito com base no alfa e beta
 dados.P$Yjust=alfa+beta*dados.P$Ys.i
@@ -302,7 +326,7 @@ dados.P$Pm.novo = dados.P$Pi_P*ajust.n
 
 ### Re-estimando o F (para grupos de idades convencionais)
 dados.F=padrao[-9,c('grupos2','Fp_semdes')]
-View(dados.F)
+
 
 dados.F$Ys.x=-log(-log(dados.F$Fp_semdes))
 
@@ -329,9 +353,10 @@ sum(dado$fxm[2:8], na.rm = T)*5
 
 y.lim=range(dado$fm,dado$fxm,na.rm = T)
 ### Comparando as duas distribuicoes
-windows(height = 10,width = 10)
+pdf(file = paste0(results_dir, ANALYSIS, '_CompDistr.pdf'), width = 7, height = 4)
 plot(seq(15,45,5),dado$fm[2:8], ylim=y.lim, type = 'l', col='red',lwd=2,xlab='idades',ylab = 'TEF intercensitaria')
 lines(seq(15,45,5),dado$fxm[2:8], lwd=2, col='blue')
 legend('topright',c('taxa media no periodo', 'taxa ajustada'),col=c('red','blue'),lwd=c(2))
+dev.off()
 #####
 
