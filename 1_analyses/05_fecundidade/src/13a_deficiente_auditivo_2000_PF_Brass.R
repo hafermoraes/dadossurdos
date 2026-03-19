@@ -1,4 +1,6 @@
 
+ANALYSIS <- "fec_PFbrass_deficiente_auditivo_2000"
+
 ####################################
 ##### Aula de correcao de dados ####
 ########### P/F-Brass    ###########
@@ -72,11 +74,13 @@ Idade   Int1	Int2	Int3	Int4	Int5	Int6	Int7	Int8
 ## Encontrando os parametros dentro do intervalo
 
 ### Para as razoes entre P's ###
-findInterval(razao.p,mult[8,2:9]);mult[8,2:9]
+findInterval(razao.p, mult[8,2:9])
+mult[8,2:9]
 # Ponto no terceiro intervalo, entre 0.205 e 0.268
 
 ### Para idade media ###
-findInterval(idad.m,sort(mult[10,2:9])); sort(mult[10,2:9])
+findInterval(idad.m, sort(mult[10,2:9] |> unlist()))
+sort(mult[10,2:9] |> unlist())
 # Entre intervalo 1 e 2, entre 27.7 e 26.7
 #####
 
@@ -160,15 +164,17 @@ TFT.c=sum(resultado[,'fi.aj'])*5
 y=range(resultado[,'fi.aj'],resultado[,'fi'])
 
 ## Das taxas
-windows(height = 10,width=10)
+pdf(file = paste0(results_dir, ANALYSIS, '_TEF_comp.pdf'), width = 7, height = 4)
 plot(resultado[,'idade'],resultado[,'fi'], xlab='Grupos de Idade',type='l', ylim=y,      ylab='TEF', lwd=2,main='Gráfico comparativo entre \n TEF observadas e ajustadas pelo P/F')
 lines(resultado[,'idade'],resultado[,'fi.aj'], lwd=2, col='red')
 legend('topright',c('TEF observada','TEF ajustada pelo P/F'),
        bty='n',lwd=c(2,2), col=c('black','red'))
+dev.off()
 
 ## Grafico da serie P/F
-windows(height = 10,width = 10)
+pdf(file = paste0(results_dir, ANALYSIS, '_seriePF.pdf'), width = 7, height = 4)
 plot(resultado[,'idade'],dado$P_F, ylab='Razão P/F', xlab='Grupos de Idade',type='l',main='Série P/F - evolução',ylim=c(0.5,2.5),lwd=2)
+dev.off()
 
 ### Serie PF para v?rios tempos ###
 serie <-
@@ -186,7 +192,7 @@ Idade	PF.t1	PF.t2	PF.t3	PF.t4	PF.t5
 45	1.40	1.69	2.22	1.75	1.70
 ")
 
-windows(height = 20,width = 20)
+pdf(file = paste0(results_dir, ANALYSIS, '_DistPF.pdf'), width = 7, height = 4)
 matplot(serie[,-1],type ='l',col=c('black','red','blue','grey','forestgreen'),
         lwd=2, ylim=c(0.5,2.5), lty=c(1,2,3,4,5), main='Séries PF no tempo',
         xlab='Distribuição da série P/F', ylab='Razão PF') 
@@ -194,4 +200,5 @@ grid(7,5,lwd=2)
 legend("topleft", legend=c('tempo 1','tempo 2','tempo 3','tempo 4','tempo 5'),
        col=c('black','red','blue','grey','forestgreen'), 
        lty=c(1,2,3,4,5)) 
+dev.off()
 #####

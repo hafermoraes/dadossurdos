@@ -68,7 +68,8 @@ RUN Rscript -e "install.packages(\
     'remotes', \
     'tidytext', \
     'MortalityLaws', \
-    'HDInterval' \
+    'HDInterval', \
+    'hydroGOF' \
     )\
     )"
 

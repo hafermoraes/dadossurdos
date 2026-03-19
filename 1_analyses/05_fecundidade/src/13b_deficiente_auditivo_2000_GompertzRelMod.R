@@ -1,10 +1,28 @@
+
+ANALYSIS <- 'fec_GompertzRelMod_deficiente_auditivo_2000'
+
 #############################################
 #### Aula Gompertz Relacional modificado ####
 #############################################
 options(scipen=999)
 
 ### Vizualizacao dos dados ####
-dado=read.csv('dado_gompertz_relacional.csv', sep=',',header=T)
+dado=read.csv(
+  # results/fec_dados_GompertzRelMod_deficiente_auditivo_2000.txt
+  sep='\t',
+  header=T,
+  text="
+Idade	Pi	TEF
+10-14	NA	NA
+15-19	0.122	0.045
+20-24	0.519	0.078
+25-29	1.014	0.075
+30-34	1.531	0.05
+35-39	2.209	0.03
+40-44	2.676	0.015
+45-49	3.373	0.002
+NA	NA	1.473
+")
 
 ## Retira TFT
 dado=dado[-9,]
@@ -107,9 +125,11 @@ PontsF = as.data.frame(cbind(idade=seq(14.5,49.5,5),gx,zx.ex))
 
 ## Grafico, lembrando os eixos, g(x) = X e z(x)-e(x) = Y
 
-windows(height = 15,width = 15)
+#window(height = 15,width = 15)
+pdf(file = paste0(results_dir, ANALYSIS, '_PontosF.pdf'), width = 7, height = 4)
 plot(PontsF$gx[2:7],PontsF$zx.ex[2:7], pch=10, col='blue', xlab='g(x)', ylab='z(x)-e(x)', main='Pontos F')
 abline(lm(PontsF$zx.ex[2:7]~PontsF$gx[2:7]), col='blue', lwd=2)
+dev.off()
 #####
 
 ### Procedimento parecido P(i) => P(i)/P(i+1), os Pontos P ####
@@ -175,10 +195,11 @@ gi = dat.p$phi.1
 PontsP = as.data.frame(cbind(idade=seq(14.5,49.5,5),gi,zi.ei))
 
 ## Grafico, lembrando os eixos g(i) = X e z(i)-e(i) = Y
-windows(height = 10,width = 10)
+pdf(file = paste0(results_dir, ANALYSIS, '_PontosP.pdf'), width = 7, height = 4)
 plot(PontsP$gi[2:6],PontsP$zi.ei[2:6], pch=10, col='red', xlab='g(i)', 
      ylab='z(i)-e(i)', main='Pontos P')
 abline(lm(PontsP$zi.ei[2:6]~PontsP$gi[2:6]), col='red', lwd=2)
+dev.off()
 #####
 
 ### Passo 3) Analise grafica ####
@@ -188,7 +209,7 @@ lim.y=range(PontsP$zi.ei[2:7],PontsF$zx.ex[2:7])
 lim.x=range(PontsP$gi[1:8],PontsF$gx[1:7])
 
 # Pontos F
-windows(height = 20,width = 20)
+pdf(file = paste0(results_dir, ANALYSIS, '_PontosFeP.pdf'), width = 7, height = 4)
 plot(PontsF$gx[2:7],PontsF$zx.ex[2:7], pch=10, col='blue', ylim = lim.y, 
      xlim=lim.x,xlab='g()', ylab='z()-e()', 
      main='Gráfico de diagnóstico entre Pontos F e P')
@@ -200,12 +221,12 @@ points(PontsP$gi[2:7],PontsP$zi.ei[2:7], pch=10, col='red')
 abline(lm(PontsP$zi.ei[2:7]~PontsP$gi[2:7]), col='red', lwd=2)
 text(PontsP$gi[2:7],PontsP$zi.ei[2:7], 
      labels=round(PontsP$zi.ei[2:7],digits=3),cex=0.6,pos=3)
-
+dev.off()
 ### O que o grafico me diz? Quais pontos considero?
 #####
 
 ### Analise em base estatistica, RMSE ####
-install.packages('hydroGOF')
+#install.packages('hydroGOF')
 library(hydroGOF)
 
 pontos.P=cbind(y=PontsP$zi.ei[2:7],x=PontsP$gi[2:7])
@@ -230,11 +251,12 @@ l.y=range(Pontos[,'y'])
 l.x=range(Pontos[,'x'])
 
 # Pontos combinados
-windows(height = 20,width = 20)
+pdf(file = paste0(results_dir, ANALYSIS, '_PontosCombinados.pdf'), width = 7, height = 4)
 plot(Pontos[,'x'],Pontos[,'y'], pch=10, col='blue', ylim = lim.y, 
      xlim=lim.x,xlab='g()', ylab='z()-e()', 
      main='Grafico de diagnostico entre Pontos F e P')
 abline(lm(Pontos[,'y']~Pontos[,'x']), col='black', lwd=2)
+dev.off()
 #####
 
 ### Regressao para encontrar o alfa e o beta ######
@@ -332,11 +354,12 @@ sum(dado$fxm[2:8], na.rm = T)*5
 y.lim=range(dado$TEF,dado$fxm,na.rm = T)
 
 ### Comparando as duas distribuicoes
-windows(height = 10,width = 10)
+pdf(file = paste0(results_dir, ANALYSIS, '_CompDistr.pdf'), width = 7, height = 4)
 plot(seq(15,45,5),dado$TEF[2:8], ylim=y.lim, type = 'l', col='red',lwd=2,
      xlab='idades',ylab = 'TEF')
 lines(seq(15,45,5),dado$fxm[2:8], lwd=2, col='blue')
 legend('topright',c('taxa com desvio', 'taxa ajustada'),col=c('red','blue'),lwd=c(2))
+dev.off()
 ####
 
 ## Qual é a diferença com o PF original?
@@ -489,3 +512,4 @@ PF$P.F=(PF$P/PF$F)
 PF
 #####
 dado$PF=PF$P.F
+
