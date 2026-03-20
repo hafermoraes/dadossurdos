@@ -7,7 +7,7 @@ ANALYSIS <- 'fec_GompertzRelMod_deficiente_auditivo_2000'
 options(scipen=999)
 
 ### Vizualizacao dos dados ####
-dado=read.csv(
+dado=read.table(
   # results/fec_dados_GompertzRelMod_deficiente_auditivo_2000.txt
   sep='\t',
   header=T,
