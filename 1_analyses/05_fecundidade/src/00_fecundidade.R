@@ -1,9 +1,8 @@
 
-
-RUN_BOOTSTRAP <- FALSE
-
 message("removendo todos os objetos prévios...")
 rm(list = ls(all.names = TRUE))
+
+RUN_BOOTSTRAP <- FALSE
 
 base_dir <-
   paste0(
@@ -92,6 +91,39 @@ source(paste0(src_dir, '12_prepare_fertility_models.R'))
 
 
 
+source(paste0(src_dir, '13a_deficiente_auditivo_2000_PF_Brass.R'))
+
+source(paste0(src_dir, '13b_deficiente_auditivo_2000_GompertzRelMod.R'))
+
+source(paste0(src_dir, '13c_deficiente_auditivo_2010_PF_Brass.R'))
+
+source(paste0(src_dir, '13d_deficiente_auditivo_2010_GompertzRelMod.R'))
+
+source(paste0(src_dir, '13e_deficiente_auditivo_2000_2010_GompertzSintetico.R'))
+
+
+
+source(paste0(src_dir, '14a_surdo_2000_PF_Brass.R'))
+
+source(paste0(src_dir, '14b_surdo_2000_GompertzRelMod.R'))
+
+source(paste0(src_dir, '14c_surdo_2010_PF_Brass.R'))
+
+source(paste0(src_dir, '14d_surdo_2010_GompertzRelMod.R'))
+
+source(paste0(src_dir, '14e_surdo_2000_2010_GompertzSintetico.R'))
+
+
+
+source(paste0(src_dir, '15a_surdocego_2000_PF_Brass.R'))
+
+source(paste0(src_dir, '15b_surdocego_2000_GompertzRelMod.R'))
+
+source(paste0(src_dir, '15c_surdocego_2010_PF_Brass.R'))
+
+source(paste0(src_dir, '15d_surdocego_2010_GompertzRelMod.R'))
+
+source(paste0(src_dir, '15e_surdocego_2000_2010_GompertzSintetico.R'))
 
 
 

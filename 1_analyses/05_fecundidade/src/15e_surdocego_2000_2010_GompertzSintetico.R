@@ -1,5 +1,12 @@
 
-ANALYSIS <- 'fec_GompertzSintetico_2000_2010_deficiente_auditivo'
+ARG_SUBGRP <- 'surdocego'
+ARG_ANO <- 2005 # Intercensitário
+ARG_KEY <- 'gompertz_sintetico'
+
+ARG_OUTPUT_FILE <- fec_models_output_file
+ARG_APPEND <- TRUE
+
+ANALYSIS <- 'fec_GompertzSintetico_2000_2010_surdocego'
 
 #################################
 #### Aula Gompertz Sintetico ####
@@ -8,19 +15,19 @@ options(scipen=999)
 
 ### Vizualizacao dos dados ####
 dado=read.table(
-  # results/fec_dados_GompertzSintetico_2000_2010_deficiente_auditivo.txt
+  # results/fec_dados_GompertzSintetico_2000_2010_surdocego.txt
   sep='\t',
   header=T,
   text="
 Idades	Pm1	Pm2	f1	f2
 10-14	NA	NA	NA	NA
-15-19	0.1216	0.1301	0.0449	0.0435
-20-24	0.5187	0.5582	0.0782	0.0761
-25-29	1.0141	1.0644	0.0749	0.0696
-30-34	1.5312	1.5834	0.0503	0.048
-35-39	2.209	1.911	0.0297	0.0237
-40-44	2.6764	2.2782	0.0146	0.0092
-45-49	3.3727	2.6163	0.002	0.0018
+15-19	0.2342	0.1564	0.0722	0.0536
+20-24	0.568	0.5295	0.0701	0.0733
+25-29	1.1481	1.0835	0.066	0.0589
+30-34	1.664	1.6606	0.0544	0.0471
+35-39	2.6004	2.1343	0.0265	0.0373
+40-44	3.2825	2.5838	0.0235	0.0088
+45-49	4.2047	2.8922	0.0051	2e-4
 50+	NA	NA	NA	NA
 ")
 
@@ -152,12 +159,12 @@ gx=dat$phi.1
 ## Resumo dos pontos F
 PontsF=as.data.frame(cbind(idade=seq(14.5,49.5,5),gx,zx.ex))
 
-## Grafico, lembrando g(x) = X e z(x)-e(x) = Y
-pdf(file = paste0(results_dir, ANALYSIS, '_PontosF.pdf'), width = 7, height = 4)
-plot(gx[2:7],zx.ex[2:7],pch=10,col='blue',xlab='g(x)',ylab='z(x)-e(x)', main='Pontos F')
-abline(lm(zx.ex[2:7]~gx[2:7]), col='blue', lwd=2)
-dev.off()
-#####
+# ## Grafico, lembrando g(x) = X e z(x)-e(x) = Y
+# pdf(file = paste0(results_dir, ANALYSIS, '_PontosF.pdf'), width = 7, height = 4)
+# plot(gx[2:7],zx.ex[2:7],pch=10,col='blue',xlab='g(x)',ylab='z(x)-e(x)', main='Pontos F')
+# abline(lm(zx.ex[2:7]~gx[2:7]), col='blue', lwd=2)
+# dev.off()
+# #####
 
 ### 2.2) Procedimento parecido P(i) => P(i)/P(i+1), os Pontos P ####
 ### e(i), g(i) e z(i)
@@ -218,13 +225,13 @@ gi=dat.p$phi.1
 
 PontsP=as.data.frame(cbind(idade=seq(14.5,49.5,5),gi,zi.ei))
 
-## Grafico
-pdf(file = paste0(results_dir, ANALYSIS, '_gi_zi_m_ei.pdf'), width = 7, height = 4)
-plot(gi[2:6],zi.ei[2:6], pch=10, col='red', xlab='g(i)', 
-     ylab='z(i)-e(i)')
-abline(lm(zi.ei[2:6]~gi[2:6]), col='red', lwd=2)
-dev.off()
-#####
+# ## Grafico
+# pdf(file = paste0(results_dir, ANALYSIS, '_gi_zi_m_ei.pdf'), width = 7, height = 4)
+# plot(gi[2:6],zi.ei[2:6], pch=10, col='red', xlab='g(i)', 
+#      ylab='z(i)-e(i)')
+# abline(lm(zi.ei[2:6]~gi[2:6]), col='red', lwd=2)
+# dev.off()
+# #####
 
 ### Passo 3) Analise grafica ####
 ## Dois graficos juntos para encontrar uma sequencia de pontos F e P
@@ -232,17 +239,17 @@ dev.off()
 lim.y=range(PontsP$zi.ei[2:6],PontsF$zx.ex[2:7])
 lim.x=range(dat.p$gi[1:8],PontsF$gx[1:7])
 
-# Pontos F
-pdf(file = paste0(results_dir, ANALYSIS, '_PontosFeP.pdf'), width = 7, height = 4)
-plot(PontsF$gx[2:7],PontsF$zx.ex[2:7], pch=10, col='blue', ylim = lim.y, xlim=lim.x, xlab='g()', ylab='z()-e()')
-abline(lm(PontsF$zx.ex[2:7]~PontsF$gx[2:7]), col='blue', lwd=2)
-text(PontsF$gx[2:7],PontsF$zx.ex[2:7], labels=round(PontsF$zx.ex[2:7],digits=3),cex=0.6,pos=3)
-# Pontos P
-points(PontsP$gi[2:6],PontsP$zi.ei[2:6], pch=10, col='red')
-abline(lm(PontsP$zi.ei[2:6]~PontsP$gi[2:6]), col='red', lwd=2)
-text(PontsP$gi[2:6],PontsP$zi.ei[2:6], labels=round(PontsP$zi.ei[2:6],digits=3),cex=0.6,pos=3)
-dev.off()
-### RMSE
+# # Pontos F
+# pdf(file = paste0(results_dir, ANALYSIS, '_PontosFeP.pdf'), width = 7, height = 4)
+# plot(PontsF$gx[2:7],PontsF$zx.ex[2:7], pch=10, col='blue', ylim = lim.y, xlim=lim.x, xlab='g()', ylab='z()-e()')
+# abline(lm(PontsF$zx.ex[2:7]~PontsF$gx[2:7]), col='blue', lwd=2)
+# text(PontsF$gx[2:7],PontsF$zx.ex[2:7], labels=round(PontsF$zx.ex[2:7],digits=3),cex=0.6,pos=3)
+# # Pontos P
+# points(PontsP$gi[2:6],PontsP$zi.ei[2:6], pch=10, col='red')
+# abline(lm(PontsP$zi.ei[2:6]~PontsP$gi[2:6]), col='red', lwd=2)
+# text(PontsP$gi[2:6],PontsP$zi.ei[2:6], labels=round(PontsP$zi.ei[2:6],digits=3),cex=0.6,pos=3)
+# dev.off()
+# ### RMSE
 
 pontos.P=cbind(y=PontsP$zi.ei[2:6],x=PontsP$gi[2:6])
 pontos.F=cbind(y=PontsF$zx.ex[2:7],x=PontsF$gx[2:7])
@@ -268,13 +275,13 @@ Pontos=rbind(cbind(x=pontos.F[2:5,'x'],y=pontos.F[2:5,'y']),
 l.y=range(Pontos[,'y'])
 l.x=range(Pontos[,'x'])
 
-# Pontos combinados
-pdf(file = paste0(results_dir, ANALYSIS, '_PontosComb.pdf'), width = 7, height = 4)
-plot(Pontos[,'x'],Pontos[,'y'], pch=10, col='blue', ylim = lim.y, 
-     xlim=lim.x,xlab='g()', ylab='z()-e()', 
-     main='Grafico de diagnostico entre Pontos F e P')
-abline(lm(Pontos[,'y']~Pontos[,'x']), col='black', lwd=2)
-dev.off()
+# # Pontos combinados
+# pdf(file = paste0(results_dir, ANALYSIS, '_PontosComb.pdf'), width = 7, height = 4)
+# plot(Pontos[,'x'],Pontos[,'y'], pch=10, col='blue', ylim = lim.y, 
+#      xlim=lim.x,xlab='g()', ylab='z()-e()', 
+#      main='Grafico de diagnostico entre Pontos F e P')
+# abline(lm(Pontos[,'y']~Pontos[,'x']), col='black', lwd=2)
+# dev.off()
 
 ### Passo 4) Regressao para encontrar o alfa e o beta ######
 #numero de pontos F = 4 (20 a 40 anos)
@@ -352,11 +359,171 @@ sum(dado$fm, na.rm = T)*5
 sum(dado$fxm[2:8], na.rm = T)*5
 
 y.lim=range(dado$fm,dado$fxm,na.rm = T)
-### Comparando as duas distribuicoes
-pdf(file = paste0(results_dir, ANALYSIS, '_CompDistr.pdf'), width = 7, height = 4)
-plot(seq(15,45,5),dado$fm[2:8], ylim=y.lim, type = 'l', col='red',lwd=2,xlab='idades',ylab = 'TEF intercensitaria')
-lines(seq(15,45,5),dado$fxm[2:8], lwd=2, col='blue')
-legend('topright',c('taxa media no periodo', 'taxa ajustada'),col=c('red','blue'),lwd=c(2))
-dev.off()
-#####
+# ### Comparando as duas distribuicoes
+# pdf(file = paste0(results_dir, ANALYSIS, '_CompDistr.pdf'), width = 7, height = 4)
+# plot(seq(15,45,5),dado$fm[2:8], ylim=y.lim, type = 'l', col='red',lwd=2,xlab='idades',ylab = 'TEF intercensitaria')
+# lines(seq(15,45,5),dado$fxm[2:8], lwd=2, col='blue')
+# legend('topright',c('taxa media no periodo', 'taxa ajustada'),col=c('red','blue'),lwd=c(2))
+# dev.off()
+# #####
+
+
+
+
+
+
+
+
+
+
+# refatoração dos gráficos em ggplot2
+
+
+message("exportando Gompertz Sintético em Disco para ", ARG_SUBGRP, " ano ", ARG_ANO)
+dado |>
+  as_tibble() |>
+  filter(Idades != '10-14') |>
+  transmute(
+    subgrp = ARG_SUBGRP,
+    fx_idade = Idades,
+    ano = ARG_ANO,
+    key = ARG_KEY,
+    value = fxm
+  ) |>
+  write_csv(
+    file = ARG_OUTPUT_FILE,
+    append = ARG_APPEND
+  )
+
+
+message("exportando gráfico dos pontos F em disco para ", ARG_SUBGRP, " ano ", ARG_ANO)
+(
+  PontsF |>
+    as_tibble() |>
+    drop_na() |> #filter( idade != 14.5, idade != 49.5) |>
+    ggplot( aes(x=gx, y=zx.ex)) + 
+    geom_point(size=4, shape=10, color = 'blue') + 
+    geom_text(aes(label = round(zx.ex, 3)), vjust = -1, size = 3, show.legend = FALSE, color='blue') +
+    geom_smooth(method = "lm", se = FALSE, color = "blue", linewidth=0.5) + 
+    labs(
+      x = 'g(x)',
+      y = 'z(x) - e(x)'
+    )
+) |>
+  ggsave(
+    file = paste0(results_dir, ANALYSIS, '_PontosF.pdf'),
+    width = 7,
+    height = 4
+  )
+
+
+message("exportando gráfico dos pontos P em disco para ", ARG_SUBGRP, " ano ", ARG_ANO)
+(
+  PontsP |>
+    as_tibble() |>
+    drop_na() |> #filter( idade != 14.5, idade != 49.5) |>
+    ggplot( aes(x=gi, y=zi.ei)) + 
+    geom_point(size=4, shape=10, color = 'red') + 
+    geom_text(aes(label = round(zi.ei, 3)), vjust = -1, size = 3, show.legend = FALSE, color='red') +
+    geom_smooth(method = "lm", se = FALSE, color = "red", linewidth=0.5) + 
+    labs(
+      x = 'g(i)',
+      y = 'z(i) - e(i)'
+    )
+) |>
+  ggsave(
+    file = paste0(results_dir, ANALYSIS, '_PontosP.pdf'),
+    width = 7,
+    height = 4
+  )
+
+
+
+message("exportando gráfico dos pontos F e P em disco para ", ARG_SUBGRP, " ano ", ARG_ANO)
+(
+  bind_rows(
+    PontsF[2:7, ] |> transmute(g = gx, z_e = zx.ex, tipo = "Pontos F"), 
+    PontsP[2:7, ] |> transmute(g = gi, z_e = zi.ei, tipo = "Pontos P")
+  ) |>
+  drop_na() |>
+  ggplot(aes(x = g, y = z_e, color = tipo)) +
+  geom_point(shape = 10, size = 3) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 0.5) +
+  geom_text(aes(label = round(z_e, 3)), vjust = -1, size = 3, show.legend = FALSE) +
+  scale_color_manual(values = c("Pontos F" = "blue", "Pontos P" = "red")) +
+  scale_y_continuous(limits = lim.y*1.1) +
+  scale_x_continuous(limits = lim.x*1.1) +
+  labs(
+    title = "",
+    x = "g()", 
+    y = "z()-e()",
+    color = ""
+  ) + 
+  theme(
+    legend.position = 'top'
+  )
+) |>
+  ggsave(
+    file = paste0(results_dir, ANALYSIS, '_PontosFeP.pdf'),
+    width = 7,
+    height = 4
+  )
+
+
+
+message("exportando gráfico dos pontos F e P combinados em disco para ", ARG_SUBGRP, " ano ", ARG_ANO)
+(
+  Pontos |>
+    as_tibble() |>
+    ggplot( aes(x=x, y=y)) + 
+    geom_point(size=4, shape=1, color = 'black') + 
+    geom_text(aes(label = round(y, 3)), vjust = -1, size = 3, show.legend = FALSE, color='black') +
+    geom_smooth(method = "lm", se = FALSE, color = "black", linewidth=0.5) + 
+    labs(
+      x = 'g()',
+      y = 'z() - e()'
+    )
+) |>
+  ggsave(
+    file = paste0(results_dir, ANALYSIS, '_PontosCombinados.pdf'),
+    width = 7,
+    height = 4
+  )
+
+
+
+message("exportando gráfico compartativo das TEF observadas e ajustadas GRM em disco para ", ARG_SUBGRP, " ano ", ARG_ANO)
+plt <-
+  dado |>
+  as_tibble() |>
+  filter( Idades != '10-14') |>
+  rename(fx_idade = Idades) |>
+  select(fx_idade, fm, fxm) |>
+  pivot_longer(
+    cols = c(fm, fxm)
+  ) |>
+  mutate(
+    name = case_match(
+      name,
+      'fm' ~ 'TEF Média no Período',
+      'fxm' ~ 'TEF Ajustada Gompertz Sintético'
+    )
+  ) |>
+  ggplot(aes(x = fx_idade, y=value, group = name, linetype = name)) + 
+  geom_line() + 
+  labs(
+    x = 'Faixa etária',
+    title = '',
+    y = 'Taxa Específica de Fecundidade',
+    linetype = ''
+  ) + 
+  theme( legend.position = 'top')
+
+ggsave(
+  filename = paste0(results_dir, ANALYSIS, '_TEF_comp.pdf'),
+  plot = plt,
+  width = 7,
+  height = 4
+)
+
 

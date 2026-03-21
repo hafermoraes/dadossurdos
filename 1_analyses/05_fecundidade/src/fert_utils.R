@@ -578,17 +578,6 @@ export_period_asfr_plot <- function(input_file, arg_ano, arg_categ, output_file,
 } # export_period_asfr_plot <- function(input_file, arg_ano, arg_categ, output_file, plot_width, plot_height)
 
 
-ggplot(plt_data, aes(x = subgrp, y = value, fill = subgrp)) +
-  geom_boxplot() +
-  facet_wrap(~ ano, scales = 'free') +
-  labs(x = "Subgrupo", 
-       y = "Valor",
-       fill = "") + 
-  theme(
-    legend.position = 'top'
-  )
-
-
 
 export_bs_comp_density <- function(file, x_label, plot_width, plot_height){
   plt_data <-

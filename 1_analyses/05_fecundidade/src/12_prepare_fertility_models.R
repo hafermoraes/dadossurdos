@@ -1,7 +1,7 @@
 
 fecund_data_relational_models <-
   bind_rows(
-    censos_elbadry |>
+    censos_elbadry |> 
       filter(subgrp != 'total', subgrp != 'ouvinte', fx_idade != '10-14') |>
       group_by(ano, subgrp, fx_idade) |>
       summarise(
@@ -213,4 +213,34 @@ for(arg_categ in c('surdo','surdocego','deficiente_auditivo')){
 toc()
 
 
+fec_models_output_file <- 
+  paste0(
+    results_dir,
+    "fec_data_asfr_relational_models.csv"
+  )
 
+asfrs_tmp <-
+  fecund_data_relational_models |> 
+  filter(fx_idade != 'Total') |>
+  transmute(
+    subgrp, fx_idade, ano, 
+    key = 'original',
+    value = f12m / m
+  )
+
+bind_rows(
+  asfrs_tmp,
+  asfrs_tmp |>
+    group_by(subgrp, ano, key) |>
+    summarise(
+      tfr = 5.0 * sum(value),
+      .groups = 'drop'
+    ) |>
+    transmute(
+      subgrp, fx_idade = 'total', ano, key, value = tfr
+    )
+  ) |>
+  write_csv(
+    fec_models_output_file,
+    append = FALSE
+  )

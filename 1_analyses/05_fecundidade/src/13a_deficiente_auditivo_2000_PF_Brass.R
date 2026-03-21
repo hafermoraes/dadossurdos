@@ -1,4 +1,11 @@
 
+ARG_SUBGRP <- 'deficiente_auditivo'
+ARG_ANO <- 2000
+ARG_KEY <- 'pf_brass'
+
+ARG_OUTPUT_FILE <- fec_models_output_file
+ARG_APPEND <- TRUE
+
 ANALYSIS <- "fec_PFbrass_deficiente_auditivo_2000"
 
 ####################################
@@ -163,18 +170,18 @@ TFT.c=sum(resultado[,'fi.aj'])*5
 ### Graficos de analise #####
 y=range(resultado[,'fi.aj'],resultado[,'fi'])
 
-## Das taxas
-pdf(file = paste0(results_dir, ANALYSIS, '_TEF_comp.pdf'), width = 7, height = 4)
-plot(resultado[,'idade'],resultado[,'fi'], xlab='Grupos de Idade',type='l', ylim=y,      ylab='TEF', lwd=2,main='Gráfico comparativo entre \n TEF observadas e ajustadas pelo P/F')
-lines(resultado[,'idade'],resultado[,'fi.aj'], lwd=2, col='red')
-legend('topright',c('TEF observada','TEF ajustada pelo P/F'),
-       bty='n',lwd=c(2,2), col=c('black','red'))
-dev.off()
+# ## Das taxas
+# pdf(file = paste0(results_dir, ANALYSIS, '_TEF_comp.pdf'), width = 7, height = 4)
+# plot(resultado[,'idade'],resultado[,'fi'], xlab='Grupos de Idade',type='l', ylim=y,      ylab='TEF', lwd=2,main='Gráfico comparativo entre \n TEF observadas e ajustadas pelo P/F')
+# lines(resultado[,'idade'],resultado[,'fi.aj'], lwd=2, col='red')
+# legend('topright',c('TEF observada','TEF ajustada pelo P/F'),
+#        bty='n',lwd=c(2,2), col=c('black','red'))
+# dev.off()
 
-## Grafico da serie P/F
-pdf(file = paste0(results_dir, ANALYSIS, '_seriePF.pdf'), width = 7, height = 4)
-plot(resultado[,'idade'],dado$P_F, ylab='Razão P/F', xlab='Grupos de Idade',type='l',main='Série P/F - evolução',ylim=c(0.5,2.5),lwd=2)
-dev.off()
+# ## Grafico da serie P/F
+# pdf(file = paste0(results_dir, ANALYSIS, '_seriePF.pdf'), width = 7, height = 4)
+# plot(resultado[,'idade'],dado$P_F, ylab='Razão P/F', xlab='Grupos de Idade',type='l',main='Série P/F - evolução',ylim=c(0.5,2.5),lwd=2)
+# dev.off()
 
 ### Serie PF para v?rios tempos ###
 serie <-
@@ -192,13 +199,87 @@ Idade	PF.t1	PF.t2	PF.t3	PF.t4	PF.t5
 45	1.40	1.69	2.22	1.75	1.70
 ")
 
-pdf(file = paste0(results_dir, ANALYSIS, '_DistPF.pdf'), width = 7, height = 4)
-matplot(serie[,-1],type ='l',col=c('black','red','blue','grey','forestgreen'),
-        lwd=2, ylim=c(0.5,2.5), lty=c(1,2,3,4,5), main='Séries PF no tempo',
-        xlab='Distribuição da série P/F', ylab='Razão PF') 
-grid(7,5,lwd=2)
-legend("topleft", legend=c('tempo 1','tempo 2','tempo 3','tempo 4','tempo 5'),
-       col=c('black','red','blue','grey','forestgreen'), 
-       lty=c(1,2,3,4,5)) 
-dev.off()
-#####
+# pdf(file = paste0(results_dir, ANALYSIS, '_DistPF.pdf'), width = 7, height = 4)
+# matplot(serie[,-1],type ='l',col=c('black','red','blue','grey','forestgreen'),
+#         lwd=2, ylim=c(0.5,2.5), lty=c(1,2,3,4,5), main='Séries PF no tempo',
+#         xlab='Distribuição da série P/F', ylab='Razão PF') 
+# grid(7,5,lwd=2)
+# legend("topleft", legend=c('tempo 1','tempo 2','tempo 3','tempo 4','tempo 5'),
+#        col=c('black','red','blue','grey','forestgreen'), 
+#        lty=c(1,2,3,4,5)) 
+# dev.off()
+# #####
+
+message("exportando resultados do P/F de Brass para ", ARG_SUBGRP, " ano ", ARG_ANO)
+resultado |>
+  as_tibble() |>
+  transmute(
+    subgrp = ARG_SUBGRP,
+    fx_idade = paste0(idade,'-',idade+5-1),
+    ano = ARG_ANO,
+    key = ARG_KEY,
+    value = fi.aj
+  ) |>
+  write_csv(
+    file = ARG_OUTPUT_FILE,
+    append = ARG_APPEND
+  )
+
+message("gráfico comparativo da TEF original e TEF P/F Brass para ", ARG_SUBGRP, " ano ", ARG_ANO)
+plt <-
+  resultado |>
+  as_tibble() |>
+  mutate(
+    fx_idade = paste0(idade, '-', idade+5-1)
+  ) |>
+  pivot_longer(
+    cols = c(fi, fi.aj)
+  ) |>
+  mutate(
+    name = case_match(
+      name,
+      'fi' ~ 'TEF Observada',
+      'fi.aj' ~ 'TEF Ajustada P/F Brass'
+    )
+  ) |>
+  ggplot(aes(x = fx_idade, y=value, group = name, linetype = name)) + 
+  geom_line() + 
+  labs(
+    x = 'Faixa etária',
+    title = '',
+    y = 'Taxa Específica de Fecundidade',
+    linetype = ''
+  ) + 
+  theme( legend.position = 'top')
+  
+ggsave(
+  filename = paste0(results_dir, ANALYSIS, '_TEF_comp.pdf'),
+  plot = plt,
+  width = 7,
+  height = 4
+)
+
+
+message("gráfico da série P/F Brass para ", ARG_SUBGRP, " ano ", ARG_ANO)
+plt <- 
+  dado |>
+  as_tibble() |>
+  transmute(
+    fx_idade = factor(idade),
+    serie_pf = P_F
+  ) |>
+  ggplot( aes(x=fx_idade, y=serie_pf, group = 1)) + 
+  ylim(0, max(dado$P_F*1.1)) + 
+  geom_line() + 
+  labs(
+    x = "Faixa etária",
+    y = 'Razão P/F'
+  )
+
+ggsave(
+  filename = paste0(results_dir, ANALYSIS, '_seriePF.pdf'),
+  plot = plt,
+  width = 7,
+  height = 4
+)
+
