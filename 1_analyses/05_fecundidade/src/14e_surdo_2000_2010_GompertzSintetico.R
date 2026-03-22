@@ -33,6 +33,8 @@ Idades	Pm1	Pm2	f1	f2
 
 dado=dado[-9,]
 
+dado$Pm1[7] <- 0.95 * dado$Pm1[6] + 0.05 * dado$Pm1[8]
+
 ## Descricao dos dados ##### 
 ## Pm1 a parturicao media estimada no primeiro censo - 1989
 ## Pm2 a parturicao media estimada no segundo censo - 1999

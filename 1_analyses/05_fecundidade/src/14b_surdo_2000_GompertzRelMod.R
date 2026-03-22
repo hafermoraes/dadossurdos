@@ -34,7 +34,7 @@ NA	NA	1.482
 ## Retira TFT
 dado=dado[-9,]
 
-dado$Pi[7] <- 0.7 * dado$Pi[6] + 0.3 * dado$Pi[8]
+dado$Pi[7] <- 0.95 * dado$Pi[6] + 0.05 * dado$Pi[8]
 #dado |> as_tibble() |> drop_na() |> ggplot(aes(x=Idade, y=Pi, group=1)) + geom_line()
 
 ## Descricao dos dados ##### 

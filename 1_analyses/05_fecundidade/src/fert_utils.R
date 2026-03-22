@@ -790,3 +790,121 @@ export_bs_latex <- function(bs_df, categ, output_file){
   )
 
 } # export_bs_latex <- function(bs_df, categ, output_file)
+
+
+
+
+prevalence_all_ages <- function(arg_var, arg_output_file, arg_append){
+
+  message("calculando prevalência de ",arg_var, "...")
+
+  # (re)inicializa tabela de resultados em branco
+  outer_table <-
+    tibble(
+      n = numeric(),          # número de pessoas com arg_var == 1
+      n_low = numeric(),      # limite inferior do número de pessoas com arg_var == 1
+      n_upp = numeric(),      # limite superior do número de pessoas com arg_var == 1
+      p = numeric(),          # percentual de pessoas com arg_var == 1
+      p_low = numeric(),      # limite inferior do percentual de pessoas com arg_var == 1
+      p_upp = numeric(),      # limite superior do número de pessoas com arg_var == 1
+      subgrp = character(),   # categoria (total/ouvinte/deficiente_auditivo/surdo/surdocego)
+      var = character()       # arg_var (atributo mensurado na PNS 2019)
+    )
+
+  # itera cada subgrupo de interesse da tese
+  SUBGRPS <-
+    c(
+      "categ_total",
+      "categ_ouvinte",
+      "categ_surdo",
+      "categ_surdocego",
+      "categ_deficiente_auditivo"
+    )
+
+  svy_proportion <- TRUE
+  svy_prop_method <- 'xlogit'
+
+  for(arg_subgrp in SUBGRPS){
+
+    tic()
+
+    message("   para o grupo ", arg_subgrp, "...")
+
+    if(arg_subgrp == 'categ_total'){
+
+      inner_table <-
+        pns2019_posterior |>
+        as_survey() |>
+        ## filter(sexo=='feminino') |>
+        summarise(
+          n = survey_total(
+            .data[[arg_var]],
+            na.rm=TRUE,
+            vartype='ci'
+          ),
+          p = survey_mean(
+            .data[[arg_var]],
+            na.rm=TRUE,
+            proportion = svy_proportion,
+            prop_method = svy_prop_method,
+            vartype='ci'
+          )
+        ) |>
+        mutate(
+          n_low = pmax(0, n_low),
+          subgrp = arg_subgrp,
+          var = arg_var
+        )
+
+    } else {
+
+      inner_table <-
+        pns2019_posterior |>
+        as_survey() |>
+        ## filter(sexo=='feminino') |>
+        filter( .data[[arg_subgrp]] == 1) |>
+        summarise(
+          n = survey_total(
+            .data[[arg_var]],
+            na.rm=TRUE,
+            vartype='ci'
+          ),
+          p = survey_mean(
+            .data[[arg_var]],
+            na.rm=TRUE,
+            proportion = svy_proportion,
+            prop_method = svy_prop_method,
+            vartype='ci'
+          )
+        ) |>
+        mutate(
+          n_low = pmax(0, n_low),
+          subgrp = arg_subgrp,
+          var = arg_var
+        )
+
+    } # if(arg_subgrp == 'categ_total')
+
+    outer_table <-
+      bind_rows(
+        outer_table,
+        inner_table
+      )
+
+    toc()
+
+    message("     salvando dados de ", arg_var, " em disco em ", arg_output_file, "...")
+    inner_table |>
+      write_csv(
+        file = arg_output_file,
+        append = arg_append
+      )
+    arg_append <- TRUE # sobrescreve arg_append daqui pra frente...
+    
+  } # for(arg_subgrp in SUBGRPS)
+
+  return(outer_table)
+
+} # prevalence_all_ages <- function(arg_var, output_file, append)
+
+# ===================

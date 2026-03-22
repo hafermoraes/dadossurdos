@@ -1,6 +1,6 @@
 
 drop_file <- function(f){
-  if(!grepl("bootstrap", f, ignore.case = TRUE)){
+  if(!grepl("bootstrap|prevalencias", f, ignore.case = TRUE)){
     file.remove(f)
   } else{
     message("evitando a exclusão de arquivos bootstrap...")

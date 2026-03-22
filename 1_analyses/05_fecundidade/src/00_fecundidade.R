@@ -4,6 +4,8 @@ rm(list = ls(all.names = TRUE))
 
 RUN_BOOTSTRAP <- FALSE
 
+PNS2019_PREVALENCES_DATA <- TRUE
+
 base_dir <-
   paste0(
     '/home/rstudio/',
@@ -125,5 +127,8 @@ source(paste0(src_dir, '15d_surdocego_2010_GompertzRelMod.R'))
 
 source(paste0(src_dir, '15e_surdocego_2000_2010_GompertzSintetico.R'))
 
+
+
+source(paste0(src_dir, '16_pns2019_modulo_fecundidade.R'))
 
 
