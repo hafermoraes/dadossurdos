@@ -257,7 +257,7 @@ export_ppr_plot <- function(input_file, arg_ano, arg_categ, output_file, plot_wi
     ) +
     geom_line(
       aes(y = ppr), 
-      size = 1
+      size = 0.5
     ) +
     labs(
       fill = "",
@@ -507,7 +507,7 @@ export_period_childless_plot <- function(input_file, arg_ano, arg_categ, output_
     ) +
     geom_line(
       aes(y = ppr), 
-      size = 1
+      size = 0.5
     ) +
     labs(
       fill = "",
@@ -559,7 +559,7 @@ export_period_asfr_plot <- function(input_file, arg_ano, arg_categ, output_file,
     ) +
     geom_line(
       aes(y = ppr), 
-      size = 1
+      size = 0.5
     ) +
     labs(
       fill = "",
@@ -665,7 +665,7 @@ export_bs_comp_lineplot <- function(file, x_label, y_label, plot_width, plot_hei
     ) +
     geom_ribbon(
       aes(ymin = low, ymax = upp), alpha = 0.2, color = NA) +
-    geom_line(size = 1) +
+    geom_line(size = 0.5) +
     facet_wrap(~ ano, ncol=1) +
     theme(
       legend.position = 'top'

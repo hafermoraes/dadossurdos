@@ -51,9 +51,6 @@ export_bs_comp_density(
 toc()
 
 
-source(paste0(src_dir, "fert_utils.R"))
-
-
 tic()
 message("comparando a taxa específica de fecundidade por ano e entre categorias...")
 export_bs_comp_lineplot(

@@ -129,6 +129,8 @@ source(paste0(src_dir, '15e_surdocego_2000_2010_GompertzSintetico.R'))
 
 
 
-source(paste0(src_dir, '16_pns2019_modulo_fecundidade.R'))
+source(paste0(src_dir, '16a_pns2019_modulo_fecundidade.R'))
+
+source(paste0(src_dir, '16b_pns2019_modulo_fecundidade_dif_ouvir.R'))
 
 
