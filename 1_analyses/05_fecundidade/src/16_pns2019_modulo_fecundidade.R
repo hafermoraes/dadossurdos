@@ -42,7 +42,7 @@ if(PNS2019_PREVALENCES_DATA){
       var = character()
     )
   
-  for(var in VARS){
+    for(var in VARS){
     
     gc()
     

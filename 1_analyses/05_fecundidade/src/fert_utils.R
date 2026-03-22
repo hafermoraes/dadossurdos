@@ -908,3 +908,93 @@ prevalence_all_ages <- function(arg_var, arg_output_file, arg_append){
 } # prevalence_all_ages <- function(arg_var, output_file, append)
 
 # ===================
+
+
+
+
+
+
+
+prevalence_dif_ouvir <- function(arg_var, arg_output_file, arg_append){
+
+  message("calculando prevalência de ",arg_var, "...")
+
+  # (re)inicializa tabela de resultados em branco
+  outer_table <-
+    tibble(
+      n = numeric(),           # número de pessoas com arg_var == 1
+      n_low = numeric(),       # limite inferior do número de pessoas com arg_var == 1
+      n_upp = numeric(),       # limite superior do número de pessoas com arg_var == 1
+      p = numeric(),           # percentual de pessoas com arg_var == 1
+      p_low = numeric(),       # limite inferior do percentual de pessoas com arg_var == 1
+      p_upp = numeric(),       # limite superior do número de pessoas com arg_var == 1
+      dif_ouvir = character(), # dif_ouvir (nenhuma/alguma/grande/incapaz)
+      var = character()        # arg_var (atributo mensurado na PNS 2019)
+    )
+
+  # itera cada subgrupo de interesse da tese
+  DIF_OUVIR <-
+    c(
+      "nenhuma",
+      "alguma",
+      "grande",
+      "incapaz"
+    )
+
+  svy_proportion <- TRUE
+  svy_prop_method <- 'xlogit'
+
+  for(arg_dif_ouvir in DIF_OUVIR){
+
+    tic()
+
+    message("   para a dificuldade de ouvir ", arg_dif_ouvir, "...")
+
+    inner_table <-
+      pns2019_posterior |>
+      as_survey() |>
+      ## filter(sexo=='feminino') |>
+      filter( dif_ouvir == arg_dif_ouvir) |>
+      summarise(
+        n = survey_total(
+          .data[[arg_var]],
+          na.rm=TRUE,
+          vartype='ci'
+        ),
+        p = survey_mean(
+          .data[[arg_var]],
+          na.rm=TRUE,
+          proportion = svy_proportion,
+          prop_method = svy_prop_method,
+          vartype='ci'
+        )
+      ) |>
+      mutate(
+        n_low = pmax(0, n_low),
+        dif_ouvir = arg_dif_ouvir,
+        var = arg_var
+      )
+
+    outer_table <-
+      bind_rows(
+        outer_table,
+        inner_table
+      )
+
+    toc()
+
+    message("     salvando dados de ", arg_var, " em disco em ", arg_output_file, "...")
+    inner_table |>
+      write_csv(
+        file = arg_output_file,
+        append = arg_append
+      )
+    arg_append <- TRUE # sobrescreve arg_append daqui pra frente...
+    
+  } # for(arg_dif_ouvir in DIF_OUVIR)
+
+  return(outer_table)
+
+} # prevalence_dif_ouvir <- function(arg_var, output_file, append)
+
+# ===================
