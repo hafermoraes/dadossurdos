@@ -244,3 +244,32 @@ bind_rows(
     fec_models_output_file,
     append = FALSE
   )
+
+
+message("placeholder para P/F (parâmetros)...")
+
+tibble(
+  ano = as.numeric(),
+  categ = as.character(),
+  key = as.character(),
+  value = as.numeric()
+) |>
+  write_csv(
+    paste0(results_dir, "fec_params_pf.csv"),
+    append=FALSE
+  )
+
+
+message("placeholder para Gompertz Relacionais (Modificado e Sintético) (métricas)...")
+
+tibble(
+  ano = as.numeric(),
+  categ = as.character(),
+  model = as.character(),
+  key = as.character(),
+  value = as.numeric()
+) |>
+  write_csv(
+    paste0(results_dir, "fec_metrics_gompertz_models.csv"),
+    append=FALSE
+  )

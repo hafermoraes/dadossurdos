@@ -283,3 +283,28 @@ ggsave(
   height = 4
 )
 
+message("exportando parâmetros P/F Brass em disco...")
+bind_rows(
+  tibble(
+    ano = ARG_ANO,
+    categ = ARG_SUBGRP,
+    key = 'P1/P2',
+    value = dado$P[1]/dado$P[2]
+  ),
+  tibble(
+    ano = ARG_ANO,
+    categ = ARG_SUBGRP,
+    key = 'F1/F2',
+    value = dado$F[1]/dado$F[2]
+  ),
+  tibble(
+    ano = ARG_ANO,
+    categ = ARG_SUBGRP,
+    key = 'm',
+    value = idad.m
+  )
+) |>
+  write_csv(
+    file = paste0(results_dir, "fec_params_pf.csv"),
+    append=TRUE
+  )

@@ -685,3 +685,61 @@ ggsave(
   height = 4
 )
 
+
+
+message("exportando em disco os parâmetros da regressão linear de gompertz")
+
+models <- list()
+
+models[["F"]] <- lm( y ~ x, data = as.data.frame(pontos.F[1:5,])) # ok, validado
+models[["P"]] <- lm( y ~ x, data = as.data.frame(pontos.P[1:5,])) # ok, validado
+models[["FP"]] <- lm( y ~ x, data = as.data.frame(Pontos)) # ok, validado
+
+alfa <- list()
+beta <- list()
+rsquared <- list()
+mse <- list()
+
+for(arg_point in c('F','P','FP')){
+  alfa[[arg_point]] <- coef(models[[arg_point]])[1] |> as.numeric()
+  beta[[arg_point]] <- coef(models[[arg_point]])[2] |> as.numeric()
+  rsquared[[arg_point]] <- summary(models[[arg_point]])$r.squared |> as.numeric()
+  mse[[arg_point]] <- mean(residuals(models[[arg_point]])^2)
+}
+
+ARG_MODEL <- "GRM"
+
+bind_rows(
+  tibble(
+    ano = ARG_ANO,
+    categ = ARG_SUBGRP,
+    model = ARG_MODEL,
+    key = "alpha",
+    value = alfa$FP
+  ),
+  tibble(
+    ano = ARG_ANO,
+    categ = ARG_SUBGRP,
+    model = ARG_MODEL,
+    key = "beta",
+    value = beta$FP
+  ),
+  tibble(
+    ano = ARG_ANO,
+    categ = ARG_SUBGRP,
+    model = ARG_MODEL,
+    key = "rsquared",
+    value = rsquared$FP
+  ),
+  tibble(
+    ano = ARG_ANO,
+    categ = ARG_SUBGRP,
+    model = ARG_MODEL,
+    key = "mse",
+    value = mse$FP
+  )
+) |>
+  write_csv(
+    file = paste0(results_dir, "fec_metrics_gompertz_models.csv"),
+    append=TRUE
+  )
