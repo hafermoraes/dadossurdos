@@ -134,3 +134,6 @@ source(paste0(src_dir, '16a_pns2019_modulo_fecundidade.R'))
 source(paste0(src_dir, '16b_pns2019_modulo_fecundidade_dif_ouvir.R'))
 
 
+
+source(paste0(src_dir, '17_annex_diagnostics.R'))
+
