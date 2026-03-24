@@ -481,8 +481,8 @@ message("exportando gráfico dos pontos F e P combinados em disco para ", ARG_SU
   Pontos |>
     as_tibble() |>
     ggplot( aes(x=x, y=y)) + 
-    geom_point(size=4, shape=1, color = 'black') + 
-    geom_text(aes(label = round(y, 3)), vjust = -1, size = 3, show.legend = FALSE, color='black') +
+    geom_point(size=3, shape=20, color = 'black') + 
+    #geom_text(aes(label = round(y, 3)), vjust = -1, size = 3, show.legend = FALSE, color='black') +
     geom_smooth(method = "lm", se = FALSE, color = "black", linewidth=0.5) + 
     labs(
       x = 'g()',
@@ -491,8 +491,8 @@ message("exportando gráfico dos pontos F e P combinados em disco para ", ARG_SU
 ) |>
   ggsave(
     file = paste0(results_dir, ANALYSIS, '_PontosCombinados.pdf'),
-    width = 7,
-    height = 4
+    width = 4,
+    height = 3
   )
 
 
