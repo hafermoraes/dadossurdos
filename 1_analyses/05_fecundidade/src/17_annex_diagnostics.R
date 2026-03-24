@@ -23,20 +23,37 @@ for(arg_categ in fec_params_pf$categ |> unique()){
       values_from = value
     )
   
-  print(
-    xtable(fec_res_pf, type = 'latex'),
-    only.contents = TRUE,
-    hline.after = NULL,
-    include.colnames = FALSE,
-    include.rownames = FALSE,
-    comment = FALSE,
-    file = paste0(
-      results_dir,
-      'fec_params_pf_',
-      arg_categ,
-      '.tex'
+  res <- capture.output(
+    print(
+      xtable(fec_res_pf, type = 'latex'),
+      only.contents = TRUE,
+      hline.after = NULL,
+      include.colnames = FALSE,
+      include.rownames = FALSE,
+      comment = FALSE,
+      sanitize.text.function = identity
     )
   )
+  
+  res_clean <- paste(res, collapse = "\n")
+  res_clean <- sub("\\\\\\\\(?=[\\s\\n]*$)", "", res_clean, perl = TRUE)
+  
+  cat(res_clean, file = paste0(results_dir, 'fec_params_pf_', arg_categ, '.tex'))
+  
+  # print(
+  #   xtable(fec_res_pf, type = 'latex'),
+  #   only.contents = TRUE,
+  #   hline.after = NULL,
+  #   include.colnames = FALSE,
+  #   include.rownames = FALSE,
+  #   comment = FALSE,
+  #   file = paste0(
+  #     results_dir,
+  #     'fec_params_pf_',
+  #     arg_categ,
+  #     '.tex'
+  #   )
+  # )
 } # for(arg_categ in fec_params_pf$categ |> unique())
 toc()
 
@@ -67,29 +84,52 @@ for(arg_categ in fec_metrics_gompertz_models$categ |> unique()){
     ) |>
     mutate(
       value = format(round(value, 4), big.mark='.', decimal.mark=','),
-      key = paste0('\\', key)
+      key = case_match(
+        key,
+        'alpha' ~ '\\alphaparam',
+        'beta' ~ '\\betaparam',
+        'rsquared' ~ paste0('\\', key),
+        'mse' ~ paste0('\\', key)
+      )
     ) |>
     pivot_wider(
       id_cols = key,
       names_from = ano,
       values_from = value
     )
-    
-  print(
-    xtable(fec_res_grm, type = 'latex'),
-    only.contents = TRUE,
-    hline.after = NULL,
-    include.colnames = FALSE,
-    include.rownames = FALSE,
-    comment = FALSE,
-    sanitize.text.function = identity,
-    file = paste0(
-      results_dir,
-      'fec_metrics_grm_',
-      arg_categ,
-      '.tex'
+
+  res <- capture.output(
+    print(
+      xtable(fec_res_grm, type = 'latex'),
+      only.contents = TRUE,
+      hline.after = NULL,
+      include.colnames = FALSE,
+      include.rownames = FALSE,
+      comment = FALSE,
+      sanitize.text.function = identity
     )
   )
+  
+  res_clean <- paste(res, collapse = "\n")
+  res_clean <- sub("\\\\\\\\(?=[\\s\\n]*$)", "", res_clean, perl = TRUE)
+  
+  cat(res_clean, file = paste0(results_dir, 'fec_metrics_grm_', arg_categ, '.tex'))
+      
+  # print(
+  #   xtable(fec_res_grm, type = 'latex'),
+  #   only.contents = TRUE,
+  #   hline.after = NULL,
+  #   include.colnames = FALSE,
+  #   include.rownames = FALSE,
+  #   comment = FALSE,
+  #   sanitize.text.function = identity,
+  #   file = paste0(
+  #     results_dir,
+  #     'fec_metrics_grm_',
+  #     arg_categ,
+  #     '.tex'
+  #   )
+  # )
 } # for(arg_categ in fec_metrics_gompertz_models$categ |> unique())
 toc()
 
@@ -110,29 +150,52 @@ for(arg_categ in fec_metrics_gompertz_models$categ |> unique()){
     ) |>
     mutate(
       value = format(round(value, 4), big.mark='.', decimal.mark=','),
-      key = paste0('\\', key)
+      key = case_match(
+        key,
+        'alpha' ~ '\\alphaparam',
+        'beta' ~ '\\betaparam',
+        'rsquared' ~ paste0('\\', key),
+        'mse' ~ paste0('\\', key)
+      )
     ) |>
     pivot_wider(
       id_cols = key,
       names_from = ano,
       values_from = value
     )
-  
-  print(
-    xtable(fec_res_grm, type = 'latex'),
-    only.contents = TRUE,
-    hline.after = NULL,
-    include.colnames = FALSE,
-    include.rownames = FALSE,
-    comment = FALSE,
-    sanitize.text.function = identity,
-    file = paste0(
-      results_dir,
-      'fec_metrics_grs_',
-      arg_categ,
-      '.tex'
+
+  res <- capture.output(
+    print(
+      xtable(fec_res_grm, type = 'latex'),
+      only.contents = TRUE,
+      hline.after = NULL,
+      include.colnames = FALSE,
+      include.rownames = FALSE,
+      comment = FALSE,
+      sanitize.text.function = identity
     )
   )
+  
+  res_clean <- paste(res, collapse = "\n")
+  res_clean <- sub("\\\\\\\\(?=[\\s\\n]*$)", "", res_clean, perl = TRUE)
+  
+  cat(res_clean, file = paste0(results_dir, 'fec_metrics_grs_', arg_categ, '.tex'))  
+  
+  # print(
+  #   xtable(fec_res_grm, type = 'latex'),
+  #   only.contents = TRUE,
+  #   hline.after = NULL,
+  #   include.colnames = FALSE,
+  #   include.rownames = FALSE,
+  #   comment = FALSE,
+  #   sanitize.text.function = identity,
+  #   file = paste0(
+  #     results_dir,
+  #     'fec_metrics_grs_',
+  #     arg_categ,
+  #     '.tex'
+  #   )
+  # )
 } # for(arg_categ in fec_metrics_gompertz_models$categ |> unique())
 toc()
 

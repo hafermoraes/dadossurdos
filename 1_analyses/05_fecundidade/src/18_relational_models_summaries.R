@@ -132,3 +132,85 @@ for(arg_categ in fec_data_asfr_relational_models$subgrp |> unique()){
 } # for(arg_categ in fec_data_asfr_relational_models$subgrp |> unique())
 toc()
 
+
+
+
+tic()
+message("resumo gráfico das TEFs...")
+
+PLOT_WIDTH  <- 5
+PLOT_HEIGHT <- 3
+
+for(arg_categ in c('deficiente_auditivo','surdo','surdocego')){
+  for(arg_ano in c(2000,2005,2010)){
+    plt_data <-
+      fec_asfr_models_wide |>
+      rename(orig_2005 = grs_2005_media) |>
+      pivot_longer(
+        cols = -c(subgrp, fx_idade), 
+        names_to = c("key", "ano"), 
+        names_pattern = "(.*)_(.*)", 
+        values_to = "value"
+      ) |>
+      filter(
+        ano == arg_ano,
+        subgrp == arg_categ
+      )
+    
+    plt_labels <- 
+      plt_data |>
+      group_by(key) |>
+      summarise(tft = sum(value) * 5, .groups = 'drop') |>
+      mutate(
+        new_key = case_match(
+          key,
+          'orig' ~ 'Orig.',
+          'grm' ~ 'GRM',
+          'pf' ~ 'P/F',
+          'grs' ~ 'GRS'
+        ),
+        label = paste0(
+          new_key, 
+          " (TFT = ", 
+          format(round(tft, 3), nsmall = 3), 
+          ")"
+        )
+      )
+    
+    plt <-  
+      plt_data |> 
+      left_join(plt_labels, by = "key") |> 
+      ggplot(
+        aes(x=factor(fx_idade), y=value, linetype = label, group=label)
+      ) + 
+      geom_line(size=0.5) +
+      labs(
+        x = 'Faixa etária',
+        y = 'Taxa Específica de Fecundidade',
+        linetype = '',
+        group = ''
+      ) + 
+      theme(
+        legend.title = element_blank(),
+        legend.position = "inside",
+        legend.position.inside = c(0.8, 0.8),
+        legend.background = element_rect(fill = "white", color = "grey80") # Opcional: borda/fundo
+      )  
+    
+    ggsave(
+      filename = paste0(
+        results_dir,
+        'fec_asfr_models_',
+        arg_categ,
+        '_',
+        arg_ano,
+        '.pdf'
+      ),
+      width = PLOT_WIDTH,
+      height = PLOT_HEIGHT
+    )
+    
+  } # for(arg_ano in c(2000,2005,2010))
+} # for(arg_categ in c('deficiente_auditivo','surdo','surdocego'))
+toc()
+

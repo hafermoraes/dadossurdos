@@ -619,7 +619,10 @@ message("exportando gráfico dos pontos F e P em disco para ", ARG_SUBGRP, " ano
     color = ""
   ) + 
   theme(
-    legend.position = 'top'
+    legend.title = element_blank(),
+    legend.position = "inside",
+    legend.position.inside = c(0.8, 0.2),
+    legend.background = element_rect(fill = "white", color = "grey80")
   )
 ) |>
   ggsave(
