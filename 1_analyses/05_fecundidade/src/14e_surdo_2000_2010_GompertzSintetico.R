@@ -425,8 +425,8 @@ message("exportando gráfico dos pontos P em disco para ", ARG_SUBGRP, " ano ", 
     as_tibble() |>
     drop_na() |> #filter( idade != 14.5, idade != 49.5) |>
     ggplot( aes(x=gi, y=zi.ei)) + 
-    geom_point(size=4, shape=10, color = 'red') + 
-    geom_text(aes(label = round(zi.ei, 3)), vjust = -1, size = 3, show.legend = FALSE, color='red') +
+    geom_point(size=3, shape=20, color = 'red') + 
+    #geom_text(aes(label = round(zi.ei, 3)), vjust = -1, size = 3, show.legend = FALSE, color='red') +
     geom_smooth(method = "lm", se = FALSE, color = "red", linewidth=0.5) + 
     labs(
       x = 'g(i)',
@@ -435,8 +435,8 @@ message("exportando gráfico dos pontos P em disco para ", ARG_SUBGRP, " ano ", 
 ) |>
   ggsave(
     file = paste0(results_dir, ANALYSIS, '_PontosP.pdf'),
-    width = 7,
-    height = 4
+    width = 4,
+    height = 3
   )
 
 
@@ -449,9 +449,9 @@ message("exportando gráfico dos pontos F e P em disco para ", ARG_SUBGRP, " ano
   ) |>
   drop_na() |>
   ggplot(aes(x = g, y = z_e, color = tipo)) +
-  geom_point(shape = 10, size = 3) +
+  geom_point(shape = 20, size = 3) +
   geom_smooth(method = "lm", se = FALSE, linewidth = 0.5) +
-  geom_text(aes(label = round(z_e, 3)), vjust = -1, size = 3, show.legend = FALSE) +
+  #geom_text(aes(label = round(z_e, 3)), vjust = -1, size = 3, show.legend = FALSE) +
   scale_color_manual(values = c("Pontos F" = "blue", "Pontos P" = "red")) +
   scale_y_continuous(limits = lim.y*1.1) +
   scale_x_continuous(limits = lim.x*1.1) +
@@ -470,8 +470,8 @@ message("exportando gráfico dos pontos F e P em disco para ", ARG_SUBGRP, " ano
 ) |>
   ggsave(
     file = paste0(results_dir, ANALYSIS, '_PontosFeP.pdf'),
-    width = 7,
-    height = 4
+    width = 4,
+    height = 3
   )
 
 

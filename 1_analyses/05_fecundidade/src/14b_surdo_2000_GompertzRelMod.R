@@ -606,9 +606,9 @@ message("exportando gráfico dos pontos F e P em disco para ", ARG_SUBGRP, " ano
     PontsP[2:7, ] |> transmute(g = gi, z_e = zi.ei, tipo = "Pontos P")
   ) |>
   ggplot(aes(x = g, y = z_e, color = tipo)) +
-  geom_point(shape = 10, size = 3) +
+  geom_point(shape = 20, size = 3) +
   geom_smooth(method = "lm", se = FALSE, linewidth = 0.5) +
-  geom_text(aes(label = round(z_e, 3)), vjust = -1, size = 3, show.legend = FALSE) +
+  #geom_text(aes(label = round(z_e, 3)), vjust = -1, size = 3, show.legend = FALSE) +
   scale_color_manual(values = c("Pontos F" = "blue", "Pontos P" = "red")) +
   scale_y_continuous(limits = lim.y*1.1) +
   scale_x_continuous(limits = lim.x*1.1) +
@@ -627,8 +627,8 @@ message("exportando gráfico dos pontos F e P em disco para ", ARG_SUBGRP, " ano
 ) |>
   ggsave(
     file = paste0(results_dir, ANALYSIS, '_PontosFeP.pdf'),
-    width = 7,
-    height = 4
+    width = 4,
+    height = 3
   )
 
 
@@ -638,8 +638,8 @@ message("exportando gráfico dos pontos F e P combinados em disco para ", ARG_SU
   Pontos |>
     as_tibble() |>
     ggplot( aes(x=x, y=y)) + 
-    geom_point(size=4, shape=1, color = 'black') + 
-    geom_text(aes(label = round(y, 3)), vjust = -1, size = 3, show.legend = FALSE, color='black') +
+    geom_point(size=3, shape=20, color = 'black') + 
+    #geom_text(aes(label = round(y, 3)), vjust = -1, size = 3, show.legend = FALSE, color='black') +
     geom_smooth(method = "lm", se = FALSE, color = "black", linewidth=0.5) + 
     labs(
       x = 'g()',
@@ -648,8 +648,8 @@ message("exportando gráfico dos pontos F e P combinados em disco para ", ARG_SU
 ) |>
   ggsave(
     file = paste0(results_dir, ANALYSIS, '_PontosCombinados.pdf'),
-    width = 7,
-    height = 4
+    width = 4,
+    height = 3
   )
 
 
