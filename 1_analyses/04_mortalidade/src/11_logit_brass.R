@@ -965,7 +965,7 @@ toc()
 
 tic()
 message("exportando facets em disco com densidades de probabilidade para e0...")
-e0_plot <-
+e0_data <-
   mcmc_e0 |> 
   mutate(
     sexo = case_match(
@@ -978,27 +978,80 @@ e0_plot <-
       'deficiente_auditivo' ~ 'Deficiente Auditivo',
       'surdo' ~ 'Surdo',
       'surdocego' ~ 'Surdocego'
+    ),
+    ano_sexo = factor(
+      paste(paste0('Censo ',ano), sexo, sep = "\n"),
+      levels = c(
+        'Censo 2000\nFeminino',
+        'Censo 2000\nMasculino',
+        'Censo 2010\nFeminino',
+        'Censo 2010\nMasculino'
+      )
     )
-  ) |>
-  ggplot(aes(x = mcmc_ex, color = categ, fill=categ)) +
-  geom_density(alpha = 0.2) +
-  geom_vline(
-    data = e0_ibge |> mutate(sexo = case_match(sexo, 'male' ~ 'Masculino', 'female' ~ 'Feminino')), 
-    aes(xintercept = mcmc_ex), 
-    color = "black", 
-    linetype = "dashed",
-    linewidth = 0.6) +
-  facet_grid( sexo ~ ano, scales = "free") + 
-  scale_fill_grey(start = 0.1, end = 0.7) +
-  scale_color_grey(start = 0.1, end = 0.7) +
-  theme_bw() + 
+  )
+
+# e0_plot <-
+#   e0_data |>
+#   ggplot(aes(x = mcmc_ex, color = categ, fill=categ)) +
+#   geom_density(alpha = 0.2) +
+#   geom_vline(
+#     data = e0_ibge |> mutate(sexo = case_match(sexo, 'male' ~ 'Masculino', 'female' ~ 'Feminino')), 
+#     aes(xintercept = mcmc_ex), 
+#     color = "black", 
+#     linetype = "dashed",
+#     linewidth = 0.6) +
+#   facet_grid( sexo ~ ano, scales = "free") + 
+#   #scale_fill_grey(start = 0.1, end = 0.7) +
+#   #scale_color_grey(start = 0.1, end = 0.7) +
+#   theme_bw() + 
+#   theme(
+#     legend.position = "bottom"
+#   ) + 
+#   labs(
+#     x = expression(e[0]),
+#     y = "densidade de probabilidade",
+#     fill = "", color = ""
+#   )
+
+E0_DODGE_FACTOR <- 0.3
+e0_plot <- 
+  e0_data |> 
+  ggplot(
+    aes(x = ano_sexo, y = mcmc_ex, color = categ)
+  ) +
+  stat_summary(
+    fun.min = \(x) hdi(x, credMAss = 0.950)[1],
+    fun.max = \(x) hdi(x, credMAss = 0.950)[2],
+    geom = "linerange",
+    linewidth = 0.5,
+    position = position_dodge(width = E0_DODGE_FACTOR)
+  ) +
+  stat_summary(
+    fun = median,
+    geom = "point",
+    size = 2,
+    position = position_dodge(width = E0_DODGE_FACTOR)
+  ) +
+  coord_flip() +
   theme(
-    legend.position = "bottom"
-  ) + 
+    legend.position = "top"
+  ) +
   labs(
-    x = expression(e[0]),
-    y = "densidade de probabilidade",
-    fill = "", color = ""
+    x = "",
+    y = expression(e[0]),
+    color = ""
+  ) +
+  geom_point(
+    data = e0_ibge |> 
+      mutate(
+        sexo_formatado = case_match(sexo, 'male' ~ 'Masculino', 'female' ~ 'Feminino'),
+        eixo_x = paste(paste0('Censo ', ano), sexo_formatado, sep = "\n")
+      ),
+    aes(x = eixo_x, y = mcmc_ex),
+    color = "black",
+    shape = 2,
+    size = 3,
+    inherit.aes = FALSE
   )
 
 e0_plot |> 
@@ -1007,8 +1060,8 @@ e0_plot |>
       results_dir,
       "mort_e0_densities.pdf"
     ),
-    width = 8,
-    height = 6
+    width = 7,
+    height = 4
   )
 toc()
 

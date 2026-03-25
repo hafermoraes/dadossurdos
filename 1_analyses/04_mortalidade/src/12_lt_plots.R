@@ -84,14 +84,15 @@ lt_plot <-
     linetype = "Sexo"
   ) + 
   theme(
-    legend.position = 'top'
-  )
+    legend.position = 'top',
+    legend.box = 'vertical'
+  ) 
   
   
   ggsave(
     filename = paste0(results_dir, "mort_lt.pdf"),
     plot = lt_plot,
-    width = 10,
-    height = 6
+    width = 7,
+    height = 4
   )
   
