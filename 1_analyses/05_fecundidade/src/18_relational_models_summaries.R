@@ -214,6 +214,46 @@ toc()
 
 
 
-# tic()
-# message("séries P/F de diferentes anos em um mesmo gráfico")
-# toc()
+tic()
+message("séries P/F de diferentes anos em um mesmo gráfico")
+fec_pf_series <- 
+  read_csv(
+    file = paste0(results_dir, "fec_pf_series.csv"),
+    show_col_types = FALSE
+  )
+
+for(arg_categ in fec_pf_series$categ |> unique()){
+  plt_data <-
+    fec_pf_series |>
+    filter(categ == arg_categ) |>
+    transmute(
+      ano = as.factor(ano),
+      fx_idade = factor(key),
+      serie_pf = value
+    )
+  
+  plt <- 
+    plt_data |>
+    ggplot( aes(x=fx_idade, y=serie_pf, group =ano, linetype = ano)) + 
+    geom_line() + 
+    ylim(0, max(plt_data$serie_pf)*1.1) + 
+    labs(
+      x = "Faixa etária",
+      y = 'Razão P/F'
+    ) + 
+    theme(
+      legend.title = element_blank(),
+      legend.position = "inside",
+      legend.position.inside = c(0.2, 0.8),
+      legend.background = element_rect(fill = "white", color = "grey80") # Opcional: borda/fundo
+    )
+  
+  ggsave(
+    filename = paste0(results_dir, 'fec_PFbrass_', arg_categ, '_seriePF.pdf'),
+    plot = plt,
+    width = 7,
+    height = 4
+  )
+  
+}
+toc()

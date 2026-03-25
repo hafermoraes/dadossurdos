@@ -308,3 +308,19 @@ bind_rows(
     file = paste0(results_dir, "fec_params_pf.csv"),
     append=TRUE
   )
+
+tic()
+message("exportando série P/F para gráfico único...")
+dado |>
+  as_tibble() |>
+  transmute(
+    ano = ARG_ANO,
+    categ = ARG_SUBGRP,
+    key = factor(idade),
+    value = P_F
+  ) |>
+  write_csv(
+    paste0(results_dir, "fec_pf_series.csv"),
+    append=TRUE
+  )
+toc()

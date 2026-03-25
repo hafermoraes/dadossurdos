@@ -273,3 +273,15 @@ tibble(
     paste0(results_dir, "fec_metrics_gompertz_models.csv"),
     append=FALSE
   )
+
+
+tibble(
+  ano = as.numeric(),
+  categ = as.character(),
+  key = as.character(),
+  value = as.numeric()
+) |>
+  write_csv(
+    paste0(results_dir, "fec_pf_series.csv"),
+    append=FALSE
+  )
