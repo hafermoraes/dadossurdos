@@ -184,10 +184,7 @@ export_eda_period_tef <- function(arg_ano, arg_var, output_file, plot_width, plo
         filhos_ultimos_12meses * peso_amostral
       ),
       peso_amostral
-    ) 
-  
-  plt <-
-    plt_data |>
+    ) |>
     group_by(var, level, ano, fx_idade) |>
     summarise(
       tef = sum(tef_num, na.rm = TRUE) / sum(peso_amostral, na.rm=TRUE),
@@ -199,16 +196,37 @@ export_eda_period_tef <- function(arg_ano, arg_var, output_file, plot_width, plo
         level,
         levels = c('nenhuma','alguma','grande','incapaz')
       )
-    ) |>
+    )
+  
+  plt_labels <- 
+    plt_data |>
+    group_by(var,level,ano) |>
+    summarise(tft = sum(tef) * 5, .groups = 'drop') |>
+    mutate(
+      label = paste0(
+        level, 
+        " (TFT de Período = ", 
+        format(round(tft, 3), nsmall = 3, big.mark='.', decimal.mark=','), 
+        ")"
+      )
+    )
+  
+  plt <-
+    plt_data |>
+    left_join(plt_labels, by = "level") |>
+    mutate(label = factor(label, levels = plt_labels$label)) |>
     ggplot( 
-      aes(x = fx_idade, y=tef, group = level, color=level)) + 
+      aes(x = fx_idade, y=tef, group = label, color=label)) + 
     geom_line() +
     theme(
-      legend.position = 'top'
+      legend.title = element_blank(),
+      legend.position = "inside",
+      legend.position.inside = c(0.75, 0.8),
+      legend.background = element_rect(fill = "white", color = "grey80") # Opcional: borda/fundo
     ) +
     labs(
       x = "Faixa etária das mulheres",
-      y = "TEF",
+      y = "Taxa Específica de Fecundidade",
       color = ""
     )
   
@@ -598,20 +616,31 @@ export_bs_comp_density <- function(file, x_label, plot_width, plot_height){
     filter( value < mean(value, na.rm=TRUE) + 3*sd(value, na.rm=TRUE))
 
   plt <-
-    plt_data |>
+    plt_data |> 
     ggplot(
-      aes(x = subgrp, y = value, fill = subgrp, color=subgrp)
+      aes(x = as.factor(ano), y = value, color = subgrp)
     ) +
-    geom_boxplot(alpha=0.3) + 
-    facet_wrap(~ ano, ncol=1) +
+    stat_summary(
+      fun.min = \(x) quantile(x, 0.025),
+      fun.max = \(x) quantile(x, 0.975),
+      geom = "linerange",
+      linewidth = 0.5,
+      position = position_dodge(width = 0.6)
+    ) +
+    stat_summary(
+      fun = median,
+      geom = "point",
+      size = 2,
+      position = position_dodge(width = 0.6)
+    ) +
     labs(
-      title = "",
-      x = "",
+      x = "Censo",
       y = x_label,
-      fill = ""
+      color = ""
     ) +
     coord_flip() +
-    theme(legend.position = "none")
+    theme(legend.position = "top")
+  
 
   ggsave(
     filename = paste0(results_dir, file, ".pdf"),
@@ -666,7 +695,7 @@ export_bs_comp_lineplot <- function(file, x_label, y_label, plot_width, plot_hei
     geom_ribbon(
       aes(ymin = low, ymax = upp), alpha = 0.2, color = NA) +
     geom_line(size = 0.5) +
-    facet_wrap(~ ano, ncol=1) +
+    facet_wrap(~ ano, ncol=2) +
     theme(
       legend.position = 'top'
     ) + 

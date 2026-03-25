@@ -4,7 +4,7 @@ rm(list = ls(all.names = TRUE))
 
 RUN_BOOTSTRAP <- FALSE
 
-PNS2019_PREVALENCES_DATA <- TRUE
+PNS2019_PREVALENCES_DATA <- FALSE
 
 base_dir <-
   paste0(
@@ -131,9 +131,12 @@ source(paste0(src_dir, '15e_surdocego_2000_2010_GompertzSintetico.R'))
 
 source(paste0(src_dir, '16a_pns2019_modulo_fecundidade.R'))
 
-source(paste0(src_dir, '16b_pns2019_modulo_fecundidade_dif_ouvir.R'))
+source(paste0(src_dir, '16b_pns2019_fecundidade_dif_ouvir.R'))
 
 
 
 source(paste0(src_dir, '17_annex_diagnostics.R'))
+
+
+source(paste0(src_dir, '18_relational_models_summaries.R'))
 

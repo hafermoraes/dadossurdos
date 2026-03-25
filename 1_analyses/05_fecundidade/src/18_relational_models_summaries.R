@@ -10,8 +10,6 @@ fec_data_asfr_relational_models <-
 
 
 
-
-
 tic()
 message("exportando tabela resumo dos modelos relacionais em disco em latex...")
 
@@ -26,10 +24,10 @@ fec_asfr_models_wide <-
       'gompertz_sintetico' ~ 'grs',
       'pf_brass' ~ 'pf'
     )
-  ) |>
+  ) |> 
   pivot_wider(
     id_cols = c(subgrp,fx_idade),
-    names_from = c(ano,key),
+    names_from = c(ano, key),
     values_from = value,
     names_glue = '{key}_{ano}'
   ) |>
@@ -172,7 +170,7 @@ for(arg_categ in c('deficiente_auditivo','surdo','surdocego')){
         label = paste0(
           new_key, 
           " (TFT = ", 
-          format(round(tft, 3), nsmall = 3), 
+          format(round(tft, 3), nsmall = 3, big.mark='.', decimal.mark=','), 
           ")"
         )
       )
@@ -214,3 +212,8 @@ for(arg_categ in c('deficiente_auditivo','surdo','surdocego')){
 } # for(arg_categ in c('deficiente_auditivo','surdo','surdocego'))
 toc()
 
+
+
+# tic()
+# message("séries P/F de diferentes anos em um mesmo gráfico")
+# toc()

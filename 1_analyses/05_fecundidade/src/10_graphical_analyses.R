@@ -23,8 +23,8 @@ message("comparando a taxa de fecundidade total de coorte por ano e entre catego
 export_bs_comp_density(
   file = "fec_bootstrap_coorte_tft",
   x_label = "Taxa de Fecundidade Total de Coorte",
-  plot_width = 7,
-  plot_height = 8 
+  plot_width = 6,
+  plot_height = 2
 )
 toc()
 
@@ -34,8 +34,8 @@ message("comparando a taxa de fecundidade total de período por ano e entre cate
 export_bs_comp_density(
   file = "fec_bootstrap_periodo_tft",
   x_label = "Taxa de Fecundidade Total de Período",
-  plot_width = 7,
-  plot_height = 8 
+  plot_width = 6,
+  plot_height = 2
 )
 toc()
 
@@ -45,8 +45,8 @@ message("comparando a idade média à fecundidade por ano e entre categorias..."
 export_bs_comp_density(
   file = "fec_bootstrap_periodo_imf",
   x_label = "Idade média à fecundidade",
-  plot_width = 7,
-  plot_height = 8 
+  plot_width = 6,
+  plot_height = 2 
 )
 toc()
 
@@ -56,9 +56,9 @@ message("comparando a taxa específica de fecundidade por ano e entre categorias
 export_bs_comp_lineplot(
   file = "fec_bootstrap_periodo_tef_df",
   x_label = "Faixa etária",
-  y_label = "Taxa específica de fecundidade (TEF)",
+  y_label = "Taxa específica de fecundidade",
   plot_width = 7,
-  plot_height = 8 
+  plot_height = 4
 )
 toc()
 
@@ -71,7 +71,7 @@ export_bs_comp_lineplot(
   x_label = "Progressão de parturição",
   y_label = "Razão",
   plot_width = 7,
-  plot_height = 8 
+  plot_height = 4
 )
 toc()
 
@@ -84,7 +84,7 @@ export_bs_comp_lineplot(
   x_label = "Faixa Etária",
   y_label = "Proporção de mulheres sem filhos",
   plot_width = 7,
-  plot_height = 8 
+  plot_height = 4
 )
 toc()
 

@@ -86,16 +86,22 @@ plot_data <-
 plot_elbadry <- 
   plot_data |>
   ggplot(
-    aes(x=fx_idade, y=pct_missing)
+    aes(x = fx_idade, y = pct_missing, fill = as.factor(ano))
   ) + 
-  geom_col() + 
-  scale_y_continuous(labels = scales::percent) + 
+  geom_col(position = "dodge") + # Borda preta fina para separar as barras
+  scale_y_continuous(
+    labels = scales::percent, 
+    expand = expansion(mult = c(0, 0.1))
+  ) + 
+  scale_fill_grey(start = 0.8, end = 0.2) + # Tons de cinza (do claro ao escuro)
   geom_hline(yintercept = 0.02, linetype = "dashed", color = "red", linewidth = 0.5) +
-  facet_grid(ano ~ subgrp) + 
+  facet_wrap(~ subgrp) + 
   labs(
     x = "Faixa etária das mulheres",
-    y = "Percentual de linhas ausentes (missings)"
-  )
+    y = "Percentual de linhas ausentes",
+    fill = "Censo"
+  ) +
+  theme(legend.position = "top", axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggsave(
   filename = paste0(
@@ -103,8 +109,8 @@ ggsave(
     "fec_elbadry.pdf"
   ),
   plot = plot_elbadry,
-  width = 12,
-  height = 8
+  width = 7,
+  height = 3
 )
 
 toc()

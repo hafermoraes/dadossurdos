@@ -129,7 +129,7 @@ export_plot_pareto <- function(input_df, plot_width, plot_height, output_file){
       size = 4
     ) +
     scale_y_continuous(
-      name = "Total de óbitos na decada",
+      name = "Total de óbitos na década",
       labels = label_number(scale = 1e-6, suffix = " mi."),
       expand = expansion(mult = c(0, 0.3))#,
       # sec.axis = sec_axis(
