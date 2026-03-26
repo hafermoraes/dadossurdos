@@ -621,8 +621,8 @@ export_bs_comp_density <- function(file, x_label, plot_width, plot_height){
       aes(x = as.factor(ano), y = value, color = subgrp)
     ) +
     stat_summary(
-      fun.min = \(x) quantile(x, 0.025),
-      fun.max = \(x) quantile(x, 0.975),
+      fun.min = \(x) hdi(x, credMass = 0.95)[1],
+      fun.max = \(x) hdi(x, credMass = 0.95)[2],
       geom = "linerange",
       linewidth = 0.5,
       position = position_dodge(width = 0.6)
