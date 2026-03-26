@@ -92,7 +92,7 @@ lt_plot <-
   ggsave(
     filename = paste0(results_dir, "mort_lt.pdf"),
     plot = lt_plot,
-    width = 7,
+    width = 6,
     height = 4
   )
   

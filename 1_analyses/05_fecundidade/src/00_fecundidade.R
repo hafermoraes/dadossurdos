@@ -4,7 +4,7 @@ rm(list = ls(all.names = TRUE))
 
 RUN_BOOTSTRAP <- FALSE
 
-PNS2019_PREVALENCES_DATA <- FALSE
+PNS2019_PREVALENCES_DATA <- TRUE
 
 base_dir <-
   paste0(

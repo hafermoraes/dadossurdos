@@ -864,7 +864,11 @@ prevalence_all_ages <- function(arg_var, arg_output_file, arg_append){
       inner_table <-
         pns2019_posterior |>
         as_survey() |>
-        ## filter(sexo=='feminino') |>
+        filter(
+          sexo=='feminino',
+          idade >= 15,
+          idade <= 49
+        ) |>
         summarise(
           n = survey_total(
             .data[[arg_var]],
@@ -890,7 +894,11 @@ prevalence_all_ages <- function(arg_var, arg_output_file, arg_append){
       inner_table <-
         pns2019_posterior |>
         as_survey() |>
-        ## filter(sexo=='feminino') |>
+        filter(
+          sexo=='feminino',
+          idade >= 15,
+          idade <= 49
+        ) |>
         filter( .data[[arg_subgrp]] == 1) |>
         summarise(
           n = survey_total(
@@ -982,7 +990,11 @@ prevalence_dif_ouvir <- function(arg_var, arg_output_file, arg_append){
     inner_table <-
       pns2019_posterior |>
       as_survey() |>
-      ## filter(sexo=='feminino') |>
+      filter(
+          sexo=='feminino',
+          idade >= 15,
+          idade <= 49
+        ) |>
       filter( dif_ouvir == arg_dif_ouvir) |>
       summarise(
         n = survey_total(
