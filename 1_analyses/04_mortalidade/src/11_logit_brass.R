@@ -675,11 +675,27 @@ export_life_table <- function(input_lt, output_file) {
   input_lt[[1]] <- sapply(input_lt[[1]], adjust_range)
   
   # 2. Formatação Numérica Brasileira (4 casas, vírgula decimal e ponto de milhar)
-  N_DIGITS <- 3
+  N_DIGITS <- 0
   for(i in 2:ncol(input_lt)) {
     # Garantir conversão para numérico antes de formatar
     val_num <- as.numeric(as.character(input_lt[[i]]))
-    
+
+    if(i %in% c(2,3,4)){
+      # mx, qx, ax
+      N_DIGITS <- 4
+    }
+
+    if(i %in% c(5,6,7,8)){
+      # lx, dx, Lx, Tx
+      N_DIGITS <- 0
+    }
+
+    if(i %in% c(9)){
+      # ex
+      N_DIGITS <- 2
+    }
+
+
     input_lt[[i]] <- format(
       round(val_num, N_DIGITS), 
       nsmall = N_DIGITS, 
