@@ -461,9 +461,6 @@ for(arg_column in COLUMNS){
   
   eda_summary_table <-
     eda_stats$summary_table |>
-    filter(
-      !is.na(value), value != 'nao_informado' 
-    ) |>
     mutate(
       value = case_when(
         is.na(value) ~ 'nao_informado',
