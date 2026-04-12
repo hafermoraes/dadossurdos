@@ -69,7 +69,7 @@ microdados <-
       c009 == '3' ~ 'amarela',
       c009 == '4' ~ 'parda',
       c009 == '5' ~ 'indigena',
-      c009 == '9' ~ 'outros',
+      c009 == '9' ~ 'nao_informado',
       TRUE ~ NA_character_
     ),
     # . ___ tem dificuldade permanente de enxergar mesmo usando óculos, lentes de contato ou lupas?

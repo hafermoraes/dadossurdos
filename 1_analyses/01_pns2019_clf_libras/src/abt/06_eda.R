@@ -461,6 +461,9 @@ for(arg_column in COLUMNS){
   
   eda_summary_table <-
     eda_stats$summary_table |>
+    filter(
+      !is.na(value), value != 'nao_informado' 
+    ) |>
     mutate(
       value = case_when(
         is.na(value) ~ 'nao_informado',
@@ -518,7 +521,7 @@ tic()
 message("exportando EDA gráfica (facet) em disco...")
 
 eda_plot <-
-  eda_base |> 
+  eda_base |>
   mutate(
     key = factor(
       key,
@@ -540,6 +543,7 @@ eda_plot <-
       TRUE ~ as.character(value)
     )
   ) |> 
+  filter( !(key == 'cor_raca' & value == 'nao_informado')) |>
   mutate(
     rank = case_when(
       # reordenamento para 'uf'
