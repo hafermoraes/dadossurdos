@@ -15,3 +15,7 @@
 
 # talvez esse seja o código que resolva o problema das áreas de aglomeração...
 # https://stackoverflow.com/questions/49354393/r-how-do-i-merge-polygon-features-in-a-shapefile-with-many-polygons-reproducib
+
+
+## https://buscalai.cgu.gov.br/busca/1677278
+## https://buscalai.cgu.gov.br/busca/2267171

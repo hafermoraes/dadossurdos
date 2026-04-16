@@ -41,7 +41,9 @@ export_plot_age_pyramid_comparison <- function(arg_subgrp, plot_width, plot_heig
     group_by(ano, subgrp) |> 
     mutate(pct = n / sum(n)) |> 
     ungroup() |>
-    mutate(n_plot = ifelse(sexo == "feminino", -pct, pct))
+    mutate(
+      n_plot = ifelse(sexo == "feminino", pct, -pct)
+    )
   
   
   plt <- 
@@ -58,7 +60,7 @@ export_plot_age_pyramid_comparison <- function(arg_subgrp, plot_width, plot_heig
     coord_flip() +
     facet_wrap(. ~ ano)+#, scales = "free") +
     #scale_fill_brewer(palette = "Greys") +
-    scale_fill_grey(start = 0.5, end = 0.3) +
+    scale_fill_grey(start = 0.5, end = 0.3, breaks = c('masculino','feminino')) +
     scale_y_continuous(
       labels = function(x) scales::percent(abs(x), accuracy = 0.1, decimal.mark = ",")
     ) +

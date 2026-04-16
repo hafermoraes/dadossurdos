@@ -42,7 +42,7 @@ targets=$(br_ibge_pns_2019) \
 all: $(targets)
 
 # build Rstudio container for analyses
-analyze: $(targets)
+rstudio: $(targets)
 	docker buildx build -t dadossurdos -f ${HOME}/git/dadossurdos/docker/Dockerfile /
 	docker run -it --rm \
 		--detach \
