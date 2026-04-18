@@ -78,7 +78,7 @@ lt_plot <-
   geom_line(size=0.5) + 
   facet_grid(. ~ year) + 
   labs(
-    x = "idade em anos completos (x)",
+    x = "Idade em anos completos (x)",
     y = expression(log(q[x])),
     color = "Categoria",
     linetype = "Sexo"
