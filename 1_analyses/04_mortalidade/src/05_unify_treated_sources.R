@@ -21,7 +21,8 @@ toc()
 
 
 tic("Calculando os índices de atração (Whipple, Myers)...")
-piramides_mortalidade_aux |>
+agepyramid_idxs <-
+  piramides_mortalidade_aux |>
   group_by(subgrp,ano,sexo) |>
   complete(idade = 23:82, fill = list(n = 0)) |>
   summarise(
@@ -56,14 +57,14 @@ piramides_mortalidade_aux |>
     whipple = paste0(
       '\\makecell{',
       format(round(idx_whipple,3), decimal.mark=',', big.mark='.', nsmall=3),
-      '\\n',
+      '\\\\',
       '(', dec_whipple, ')',
       '}'
     ),
     myers = paste0(
       '\\makecell{',
       format(round(idx_myers,3), decimal.mark=',', big.mark='.', nsmall=3),
-      '\\n',
+      '\\\\',
       '(', dec_myers, ')',
       '}'
     )
@@ -75,9 +76,57 @@ piramides_mortalidade_aux |>
     values_from = c(myers,whipple),
     names_glue = '{.value}_{ano}'
   ) |>
-  filter(subgrp != 'total') |>
-  View()
+  filter(subgrp != 'total') 
+
+
+df_export <- 
+  agepyramid_idxs |>
+  mutate(
+    subgrp = case_match(
+      subgrp,
+      'deficiente_auditivo' ~ 'Deficiente Auditivo',
+      'surdo' ~ 'Surdo',
+      'surdocego' ~ 'Surdocego',
+      'ouvinte' ~ 'Ouvinte'
+    )
+  ) |>
+  ungroup() |>
+  arrange(subgrp, sexo) |>
+  mutate(
+    subgrp = ifelse(duplicated(subgrp), "", 
+                    paste0("\\multirow{2}{*}{", subgrp, "}")),
+    sexo = gsub("_", "\\\\_", sexo)
+  )
+
+tab_string <- capture.output(
+  print(xtable(df_export), 
+        include.rownames = FALSE, 
+        include.colnames = FALSE, 
+        only.contents = TRUE, 
+        hline.after = NULL, 
+        sanitize.text.function = identity,
+        comment = FALSE)
+)
+
+tab_string <- tab_string[trimws(tab_string) != ""]
+
+n_linhas <- length(tab_string)
+
+tab_string[n_linhas] <- trimws(tab_string[n_linhas], which = "right")
+
+tab_string[n_linhas] <- sub("\\\\\\\\$", "", tab_string[n_linhas])
+
+writeLines(
+  tab_string, 
+  paste0(results_dir, "agepyramid_idxs.tex")
+)
+
+
 toc()
+
+
+
+
 
 
 
