@@ -18,16 +18,10 @@ life_table_structure <- function(OMEGA, STEP){
 } # life_table_structure <- function(OMEGA, STEP)
 
 
-export_plot_age_pyramid_comparison <- function(arg_subgrp, plot_width, plot_height, output_file){
+export_plot_age_pyramid_comparison <- function(arg_input_df, arg_subgrp, plot_width, plot_height, output_file){
   
   plt_data <-
-    piramides_mortalidade |>
-    pivot_longer(
-      cols = -c(subgrp, fx_idade),
-      names_pattern = "(.*)_(.*)",
-      names_to = c("sexo", "ano"),
-      values_to = "n"
-    ) |>
+    arg_input_df |>
     # filter(ano!=2019) |> # removendo PNS 2019 dos gráficos...
     mutate(
       ano = case_when(
@@ -36,8 +30,6 @@ export_plot_age_pyramid_comparison <- function(arg_subgrp, plot_width, plot_heig
         ano == 2019 ~ 'PNS 2019'
       )
     ) |>
-    group_by(ano, subgrp, fx_idade, sexo) |>
-    summarise(n = sum(n, na.rm = TRUE), .groups = "drop") |>
     group_by(ano, subgrp) |> 
     mutate(pct = n / sum(n)) |> 
     ungroup() |>
@@ -51,7 +43,7 @@ export_plot_age_pyramid_comparison <- function(arg_subgrp, plot_width, plot_heig
     filter(subgrp == arg_subgrp) |>
     ggplot(
       aes(
-        x = fx_idade, 
+        x = idade, 
         y = n_plot, 
         fill = sexo
       )
@@ -81,7 +73,11 @@ export_plot_age_pyramid_comparison <- function(arg_subgrp, plot_width, plot_heig
     width = plot_width,
     height = plot_height
   )
-} # export_plot_age_pyramid_comparison <- function(arg_subgrp, plot_width, plot_height, output_file)
+} # export_plot_age_pyramid_comparison <- function(arg_input_df, arg_subgrp, plot_width, plot_height, output_file)
+
+
+
+
 
 export_plot_pareto <- function(input_df, plot_width, plot_height, output_file){
   plt_data <-
