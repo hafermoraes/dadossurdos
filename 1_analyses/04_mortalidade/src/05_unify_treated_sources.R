@@ -47,25 +47,25 @@ agepyramid_idxs <-
       idx_myers <= 29.9 ~ 'alto',
       idx_myers > 29.9 ~ 'muito alto'
     ),
-    dec_whipple = case_when(
+    dec_whipple = case_when( # https://pt.wikipedia.org/wiki/%C3%8Dndice_de_Whipple
       idx_whipple <= 1.049 ~ 'mínima',
       idx_whipple <= 1.099 ~ 'pequena',
       idx_whipple <= 1.249 ~ 'média',
-      idx_whipple <= 1.479 ~ 'grande',
-      idx_whipple > 1.479 ~ 'muito grande'
+      idx_whipple <= 1.749 ~ 'grande',
+      idx_whipple > 1.749  ~ 'muito grande'
     ),
     whipple = paste0(
       '\\makecell{',
       format(round(idx_whipple,3), decimal.mark=',', big.mark='.', nsmall=3),
-      '\\\\',
-      '(', dec_whipple, ')',
+      '\\\\ ',
+      '\\textcolor{\\cor}{(', dec_whipple, ')}',
       '}'
     ),
     myers = paste0(
       '\\makecell{',
       format(round(idx_myers,3), decimal.mark=',', big.mark='.', nsmall=3),
-      '\\\\',
-      '(', dec_myers, ')',
+      '\\\\ ',
+      '\\textcolor{\\cor}{(', dec_myers, ')}',
       '}'
     )
   ) |>
@@ -93,9 +93,14 @@ df_export <-
   ungroup() |>
   arrange(subgrp, sexo) |>
   mutate(
-    subgrp = ifelse(duplicated(subgrp), "", 
-                    paste0("\\multirow{2}{*}{", subgrp, "}")),
-    sexo = gsub("_", "\\\\_", sexo)
+    ## subgrp = ifelse(duplicated(subgrp), "", 
+    ##                 paste0("\\midrule \\multirow{2}{*}{", subgrp, "}")),
+    subgrp = case_when(
+      duplicated(subgrp) ~ "",
+      row_number() == 1  ~ paste0("\\multirow{2}{=}{", subgrp, "}"),
+      TRUE               ~ paste0("\\midrule \\multirow{2}{=}{", subgrp, "}")
+    ),
+    sexo = ifelse(sexo=='feminino', 'Feminino', 'Masculino')
   )
 
 tab_string <- capture.output(
@@ -120,8 +125,6 @@ writeLines(
   tab_string, 
   paste0(results_dir, "agepyramid_idxs.tex")
 )
-
-
 toc()
 
 
