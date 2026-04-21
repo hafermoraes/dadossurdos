@@ -166,8 +166,34 @@ export_eda_period_tef <- function(arg_ano, arg_var, output_file, plot_width, plo
   if(arg_ano == 2000) { subset_df <- censo2000_fecundidade_subset}
   if(arg_ano == 2010) { subset_df <- censo2010_fecundidade_subset}
   
-  plt_data <-
+  plt_data_brasil <-
     subset_df |>
+    filter( 
+      fx_idade != '10-14',
+      !!sym(arg_var) != 'ignorado'
+    ) |>
+    transmute(
+      var = arg_var,
+      level = 'Brasil',
+      ano,
+      fx_idade,
+      filhos_nascidos_vivos,
+      tef_num = if_else(
+        is.na(filhos_ultimos_12meses),
+        0,
+        filhos_ultimos_12meses * peso_amostral
+      ),
+      peso_amostral
+    ) |>
+    group_by(var, level, ano, fx_idade) |>
+    summarise(
+      tef = sum(tef_num, na.rm = TRUE) / sum(peso_amostral, na.rm=TRUE),
+      .groups = 'drop'
+    ) |>
+    collect()
+
+  plt_data_dif_ouvir <-
+  subset_df |>
     filter( 
       fx_idade != '10-14',
       !!sym(arg_var) != 'ignorado'
@@ -190,16 +216,22 @@ export_eda_period_tef <- function(arg_ano, arg_var, output_file, plot_width, plo
       tef = sum(tef_num, na.rm = TRUE) / sum(peso_amostral, na.rm=TRUE),
       .groups = 'drop'
     ) |>
-    collect() |>
+    collect()
+  
+  plt_data <-
+    bind_rows(
+      plt_data_brasil,
+      plt_data_dif_ouvir
+    ) |>
     mutate(
       level = factor(
         level,
-        levels = c('nenhuma','alguma','grande','incapaz')
+        levels = c('nenhuma','alguma','grande','incapaz','Brasil')
       )
     )
   
   plt_labels <- 
-    plt_data |>
+    plt_data |> 
     group_by(var,level,ano) |>
     summarise(tft = sum(tef) * 5, .groups = 'drop') |>
     mutate(
