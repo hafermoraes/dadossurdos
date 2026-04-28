@@ -1,38 +1,17 @@
 
-library(geobr)
-library(dplyr)
-library(sf)
-library(ggplot2)
-library(ggsvg)
-library(ggspatial)
-
-cil_df <- tribble(
-  ~cidade, ~lat, ~lon,
-  'São Paulo', -23.5489, -46.6388,
-  'Rio de Janeiro', -22.9068, -43.1729,
-)
-
-br <- 
- read_weighting_area()
-
-estados <- 
-  read_state(
-    year = 2020
-  )
 
 
-REGIONS <- c("Norte", "Nordeste", "Sudeste", "Sul", "Centro Oeste")
 
 ARG_REGION <- REGIONS[3]
 
 
-limites_sudeste <- 
+xy_lims <- 
   br %>% 
   filter(name_region == ARG_REGION) %>% 
   st_bbox()
 
 if (ARG_REGION == 'Sudeste') {
-  limites_sudeste["xmax"] <- -38
+  xy_lims["xmax"] <- -38
 }
 
 br %>%
@@ -65,8 +44,8 @@ br %>%
   scale_x_continuous(labels = function(x) paste0(abs(x), "°O")) +
   scale_y_continuous(labels = function(y) paste0(abs(y), "°S")) +
   coord_sf(
-    xlim = c(limites_sudeste["xmin"], limites_sudeste["xmax"]),
-    ylim = c(limites_sudeste["ymin"], limites_sudeste["ymax"]),
+    xlim = c(xy_lims["xmin"], xy_lims["xmax"]),
+    ylim = c(xy_lims["ymin"], xy_lims["ymax"]),
     datum = st_crs(4674),
     expand = TRUE
   ) +
