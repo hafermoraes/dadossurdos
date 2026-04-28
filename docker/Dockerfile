@@ -23,6 +23,7 @@ RUN apt-get update \
     libproj-dev \
     libgdal-dev \
     libglpk-dev \
+    librsvg2-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN Rscript -e "install.packages(\
@@ -69,6 +70,7 @@ RUN Rscript -e "install.packages(\
     'tidytext', \
     'MortalityLaws', \
     'HDInterval', \
+    'rsvg', \
     'hydroGOF' \
     )\
     )"
@@ -79,6 +81,7 @@ RUN Rscript -e "install.packages( \
     ); \
     pak::pak('tidymodels/tailor'); \ 
     remotes::install_github('bschneidr/fastsurvey'); \
+    remotes::install_github('coolbutuseless/ggsvg'); \
     remotes::install_github('rfsaldanha/microdatasus') \
     "
 
