@@ -6,18 +6,10 @@ library(ggplot2)
 library(ggsvg)
 library(ggspatial)
 
-cil_svg <- 
-  paste(
-    readLines(
-      '/home/rstudio/1_analyses/08_espacializacao/img/libras.svg'
-    ), 
-    collapse = "\n"
-  )
-
-cil_df <- data.frame(
-  cidade = c("São Paulo", "Rio de Janeiro"),
-  lat = c(-23.5489, -22.9068), # Valores negativos entre -33 e 5
-  lon = c(-46.6388, -43.1729)  # Valores negativos entre -73 e -34
+cil_df <- tribble(
+  ~cidade, ~lat, ~lon,
+  'São Paulo', -23.5489, -46.6388,
+  'Rio de Janeiro', -22.9068, -43.1729,
 )
 
 br <- 
@@ -28,7 +20,11 @@ estados <-
     year = 2020
   )
 
-ARG_REGION <- 'Sudeste'
+
+REGIONS <- c("Norte", "Nordeste", "Sudeste", "Sul", "Centro Oeste")
+
+ARG_REGION <- REGIONS[3]
+
 
 limites_sudeste <- 
   br %>% 
@@ -45,40 +41,34 @@ br %>%
   mutate(n = rnorm(n(),30,2)) %>%
   ggplot() +
   geom_sf(aes(fill=n), color = NA, size = 0.1) +
-  geom_sf(data = estados, fill = NA, color = "white", size = 0.2) +
-  scale_fill_viridis_c(option = "magma") + # Escala de cor estilo heat map
+  geom_sf(data = estados, fill = NA, color = "black", size = 0.2) +
+  scale_fill_gradient(
+    low = "white", 
+    high = "darkblue",
+    name = "Valor (n)"
+  ) +
   theme_bw() +
   labs(
     x = 'Longitude',
-    y = 'Latitude'
+    y = 'Latitude',
   ) + 
-  # geom_point_svg(
-  #   data = cil_df,
-  #   aes(x=lon, y=lat),
-  #   svg = cil_svg,
-  #   size = 7
-  # ) + 
   geom_point(
     data = cil_df,
-    aes(x=lon, y=lat),
+    aes(x=lon, y=lat, shape = "CIL"),
     color = 'black',
-    shape = 19,
     size = 3
   ) + 
-  scale_x_continuous(
-    # breaks = seq(-75, -30, by = 5),
-    labels = function(x) paste0(abs(x), "°O")
+  scale_shape_manual(
+    name = NULL, 
+    values = c("CIL" = 19)
   ) +
-  scale_y_continuous(
-    # breaks = seq(-35, 5, by = 5),
-    labels = function(y) paste0(abs(y), "°S")
-  ) +
-  #coord_sf(datum = st_crs(4674)) +
+  scale_x_continuous(labels = function(x) paste0(abs(x), "°O")) +
+  scale_y_continuous(labels = function(y) paste0(abs(y), "°S")) +
   coord_sf(
     xlim = c(limites_sudeste["xmin"], limites_sudeste["xmax"]),
     ylim = c(limites_sudeste["ymin"], limites_sudeste["ymax"]),
     datum = st_crs(4674),
-    expand = TRUE # TRUE adiciona uma pequena margem suave em volta
+    expand = TRUE
   ) +
   annotation_scale(
     location = "bl",

@@ -71,6 +71,7 @@ RUN Rscript -e "install.packages(\
     'MortalityLaws', \
     'HDInterval', \
     'rsvg', \
+    'ggspatial', \
     'hydroGOF' \
     )\
     )"
