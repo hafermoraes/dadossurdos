@@ -11,12 +11,12 @@ toc()
 
 tic("agregando totais populacionais por área de ponderação...")
 censo2010_df <-
-  censo2010_abt %>%
+  censo2010_abt %>% 
   transmute(
     area_ponderacao,
     peso_amostral,
     categ_surdo,
-    categ_difouvir_incapaz = ifelse(dif_ouvir == 'incapaz', 1, 0)
+    categ_difouvir_incapaz = if_else(dif_ouvir == 'incapaz', 1, 0)
   ) %>%
   mutate(
     across(c(peso_amostral, categ_surdo, categ_difouvir_incapaz), as.numeric)

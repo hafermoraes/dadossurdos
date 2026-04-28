@@ -1,6 +1,6 @@
 
 tic("importando áreas de ponderação do país...")
-BR_geom <- 
+AP_geom <- 
  read_weighting_area(year=2010)
 toc()
 

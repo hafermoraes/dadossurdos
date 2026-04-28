@@ -1,8 +1,22 @@
 
+
 # gráfico do país
 input_df <-
-  spatial_df %>%
-  mutate(n = N_incapaz / N) 
+  spatial_muni %>% 
+  mutate(
+    n = N_incapaz,
+    p =  n / N
+  ) 
+
+
+input_df %>%
+  ggplot(aes(x = n)) +
+  geom_histogram(fill = "steelblue", color = "white", bins = 50) +
+  labs(
+       x = "Valores de n",
+       y = "Frequência") +
+  theme_minimal()
+  
 
 input_df %>%
   ggplot() +
@@ -10,24 +24,24 @@ input_df %>%
   geom_sf(data = UF_geom, fill = NA, color = "black", size = 0.2) +
   scale_fill_gradient(
     low = "white", 
-    high = "darkblue",
-    name = "População"
+    high = "darkred",
+    name = "População por mil"
   ) +
   theme_bw() +
   labs(
     x = 'Longitude',
     y = 'Latitude',
   ) + 
-  geom_point(
-    data = cil_df,
-    aes(x=lon, y=lat, shape = "CIL"),
-    color = 'black',
-    size = 3
-  ) + 
-  scale_shape_manual(
-    name = NULL, 
-    values = c("CIL" = 19)
-  ) +
+  # geom_point(
+  #   data = cil_df,
+  #   aes(x=lon, y=lat, shape = "CIL"),
+  #   color = 'black',
+  #   size = 3
+  # ) + 
+  # scale_shape_manual(
+  #   name = NULL, 
+  #   values = c("CIL" = 19)
+  # ) +
   scale_x_continuous(labels = function(x) paste0(abs(x), "°O")) +
   scale_y_continuous(labels = function(y) paste0(abs(y), "°S")) +
   coord_sf(
@@ -49,28 +63,6 @@ input_df %>%
     height = unit(1.0, "cm"), 
     width = unit(1.0, "cm")
   )
-
-
-# sc <- 
-#   read_census_tract(
-#     code_tract = 3509502, 
-#     year=2010
-#     )
-
-
-
-# # correto!!!!
-# sc |>
-#   st_union() |> 
-#   st_cast("LINESTRING") |>
-#   plot()
-# 
-# # vai curintia
-# sc |>
-#   group_by(name_district) |>
-#   summarise(geom = st_union(geom), .groups = 'drop') |> 
-#   st_cast("LINESTRING") |>
-#   ggplot() + geom_sf()
 
 
 
