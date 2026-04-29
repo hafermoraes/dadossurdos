@@ -20,21 +20,72 @@ ggplot(data = spatial_muni) +
   )
 
 
-ggplot(data = spatial_muni) +
+ARG_UF <- 'SP'
+
+xy_lims <- 
+  AP_geom %>% 
+  filter(abbrev_state == ARG_UF) %>% 
+  st_bbox()
+
+
+spatial_muni %>%
+#  filter(abbrev_state == ARG_UF) %>%
+  ggplot() +
   geom_sf(aes(fill = N_surdo), color = NA) +
   geom_sf(data = UF_geom, fill = NA, color = "black", size = 0.1) +
   scale_fill_gradientn(
-    # Criamos um degradê que vai do branco para o rosa vibrante até um roxo bem escuro (Magma style)
-    # Sem passar pelo amarelo.
     colors = c("white", "#f768a1", "#ae017e", "#49006a"), 
     name = "População Surda",
     labels = scales::label_number(big.mark = ".", decimal.mark=','),
-    # Ajusta para que o branco não "pule" direto para a cor forte
-    values = c(0, 0.05, 0.4, 1) 
+    values = c(0, 0.05, 0.4, 1)
   ) +
-  theme_bw() 
+  theme_bw() +
+  labs(
+    x = 'Longitude',
+    y = 'Latitude',
+  ) + 
+  # geom_point(
+  #   data = cil_df,
+  #   aes(x=lon, y=lat, shape = "CIL"),
+  #   color = 'black',
+  #   size = 3
+  # ) + 
+  # scale_shape_manual(
+  #   name = NULL, 
+  #   values = c("CIL" = 19)
+  # ) +
+  scale_x_continuous(labels = function(x) paste0(abs(x), "°O")) +
+  scale_y_continuous(labels = function(y) paste0(abs(y), "°S")) +
+  coord_sf(
+    xlim = c(xy_lims["xmin"], xy_lims["xmax"]),
+    ylim = c(xy_lims["ymin"], xy_lims["ymax"]),
+    datum = st_crs(4674),
+    expand = TRUE
+  ) +
+  annotation_scale(
+    location = "bl",
+    width_hint = 0.2,
+    style = "bar",
+    bar_cols = c("black", "white")
+  ) +
+  annotation_north_arrow(
+    location = "bl",
+    which_north = "true",
+    pad_x = unit(0.25, "in"),
+    pad_y = unit(0.3, "in"),
+    style = north_arrow_fancy_orienteering(),
+    height = unit(1.0, "cm"), 
+    width = unit(1.0, "cm")
+  )
 
 
+# input_df %>%
+#   arrange(desc(N_surdo)) %>%
+#   mutate(
+#     p=N_surdo/sum(N_surdo),
+#     c=cumsum(p)
+#   ) %>%
+#   View()
 
 
 ggplot(data = spatial_muni) +
