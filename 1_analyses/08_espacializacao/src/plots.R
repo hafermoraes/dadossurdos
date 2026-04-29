@@ -1,23 +1,10 @@
 
-ggplot(data = spatial_muni) +
-  geom_sf(aes(fill = N_surdo), color = NA) + # 'color = NA' remove as bordas das cidades para não poluir
-  scale_fill_viridis_c(
-    option = "magma", 
-    name = "População Surda",
-    direction = -1,
-    labels = scales::label_number(big.mark = ".", decimal.mark= ',')
-  ) +
-  labs(
-    title = "Distribuição da População Surda por Município",
-    subtitle = "Brasil",
-    caption = "Fonte: Dados espaciais consolidados"
-  ) +
-  theme_minimal() +
-  theme(
-    panel.grid = element_blank(),
-    axis.text = element_blank(),
-    axis.ticks = element_blank()
-  )
+spatial_muni %>%
+  transmute(n=N_surdo) %>%
+  mutate(
+    pop = cut(n, c(-Inf,0,10,25,50,100,2500,Inf))
+  ) %>%
+  count(pop)
 
 
 max_global <- max(spatial_muni$N_surdo, na.rm=TRUE)
