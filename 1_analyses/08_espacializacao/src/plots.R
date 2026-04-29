@@ -20,7 +20,9 @@ ggplot(data = spatial_muni) +
   )
 
 
-ARG_UF <- 'SP'
+max_global <- max(spatial_muni$N_surdo, na.rm=TRUE)
+
+ARG_UF <- 'MG'
 
 xy_lims <- 
   AP_geom %>% 
@@ -29,7 +31,7 @@ xy_lims <-
 
 
 spatial_muni %>%
-#  filter(abbrev_state == ARG_UF) %>%
+  filter(abbrev_state == ARG_UF) %>%
   ggplot() +
   geom_sf(aes(fill = N_surdo), color = NA) +
   geom_sf(data = UF_geom, fill = NA, color = "black", size = 0.1) +
@@ -37,7 +39,8 @@ spatial_muni %>%
     colors = c("white", "#f768a1", "#ae017e", "#49006a"), 
     name = "População Surda",
     labels = scales::label_number(big.mark = ".", decimal.mark=','),
-    values = c(0, 0.05, 0.4, 1)
+    values = c(0, 0.05, 0.4, 1),
+    limits = c(0, max_global)
   ) +
   theme_bw() +
   labs(
