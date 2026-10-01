@@ -512,6 +512,10 @@ for(arg_column in COLUMNS){
 }
 
 
+eda_base |>
+  write_csv(paste0(eda_dir, "eda_base.csv"))
+
+
 # facets com geom_errorbar
 # adaptado de https://towardsdatascience.com/bank-customer-churn-with-tidymodels-part-1-model-development-cdec4eeb131c/
 tic()
@@ -616,6 +620,113 @@ eda_plot <-
     width=8,
     height=10
   )
+toc()
+
+
+
+
+
+
+# geom_errorbar individuais (pedido na quali)
+tic()
+message("exportando EDA gráfica (individualmente) em disco...")
+
+for(arg_column in COLUMNS){
+eda_plot <-
+  eda_base |>
+  filter( key == arg_column ) |>
+  mutate(
+    key = factor(
+      key,
+      levels = c(
+        "alfabetizado",
+        "instrucao",
+        "sexo",
+        "faixa_idade",
+        "cor_raca",
+        "estado_civil",
+        "dif_ouvir",
+        "dif_enxergar",
+        "dif_locomover",
+        "uf"
+      )
+    ),
+    value = case_when(
+      is.na(value) ~ "nao_informado",
+      TRUE ~ as.character(value)
+    )
+  ) |> 
+  mutate(
+    rank = case_when(
+      # reordenamento para 'uf'
+      key == 'uf' ~ p,
+      # reordenamento para 'instrucao'
+      value == "outros"        ~ 1,
+      value == "fundamental"   ~ 2,
+      value == "medio"         ~ 3,
+      value == "superior"      ~ 4,
+      value == "nao_informado" ~ 5,
+      # reordenamento para 'dif_ouvir'
+      value == "nenhuma"  ~ 1,
+      value == "alguma"   ~ 2,
+      value == "grande"   ~ 3,
+      value == "incapaz"  ~ 4,
+      value == "ignorado" ~ 5,
+      # reordenamento para 'faixa_idade'
+      value == "0-4"      ~ 1,
+      value == "5-9"      ~ 2,
+      value == "10-19"    ~ 3,
+      value == "20-39"    ~ 4,
+      value == "40+"      ~ 5,
+      TRUE                ~ 0
+    ),
+    value = reorder_within(value, rank, key)
+  ) |> 
+  select(-rank) |>
+  select(p, p_low, p_upp, !where(is.numeric)) |> 
+  ggplot(aes(x=value, y=p, color=p)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = p_low, ymax = p_upp), width = 0.1) +
+  annotate(
+    "rect", 
+    ymin = pns2019_pct_libras$pct_low, 
+    ymax = pns2019_pct_libras$pct_upp, 
+    xmin = -Inf, xmax = Inf, 
+    fill = "red", alpha = 0.1
+  ) +
+  geom_hline(
+    yintercept = pns2019_pct_libras$pct, 
+    linetype='dashed', 
+    linewidth=0.5, 
+    color='red'
+  ) +
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = 0.1)
+  ) +
+  scale_x_reordered() + 
+  coord_flip() + 
+  theme(
+    legend.position = "none"
+  ) +
+  labs(
+    # title = 'Análise exploratória de dados', 
+    # subtitle = 'Etapa prévia à Modelagem Preditiva',
+    y = 'percentual de usuários de libras',
+    x = ''
+  ) 
+
+eda_plot |>
+  ggsave(
+    filename = paste0(
+      eda_dir,
+      "eda_geombar_",
+      arg_column,
+      ".pdf"
+    ),
+    width=8,
+    height=5
+  )
+}
 toc()
 
 
