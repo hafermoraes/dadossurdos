@@ -632,6 +632,7 @@ tic()
 message("exportando EDA gráfica (individualmente) em disco...")
 
 for(arg_column in COLUMNS){
+#  arg_column <- "alfabetizado"
 eda_plot <-
   eda_base |>
   filter( key == arg_column ) |>
@@ -723,11 +724,10 @@ eda_plot |>
       arg_column,
       ".pdf"
     ),
-    width=8,
-    height=5
+    width=ifelse(arg_column != "uf", 4, 8),
+    height=ifelse(arg_column != "uf", 2, 5)
   )
 }
 toc()
-
 
 
