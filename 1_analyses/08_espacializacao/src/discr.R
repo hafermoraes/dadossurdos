@@ -27,7 +27,6 @@ spatial_muni_plot <- spatial_muni %>%
 
 
 # 2. Definir a paleta de cores (uma cor para cada label acima)
-cores_azul <- c("white", "#deebf7", "#9ecae1", "#4292c6", "#2171b5", "#084594", "#021a3b")
 
 cores_azul <- c("white", "#deebf7", "#9ecae1", "#4292c6", "#021a3b")
 
@@ -40,10 +39,7 @@ cores_verde <- c("white", "#f7fcf5", "#a1d99b", "#238b45", "#00441b")
 cores_lilas <- c("white", "#fcfaff", "#bcbddc", "#807dba", "#3f007d")
 # O #fcfaff é um lilás extremamente suave.
 
-cores_azul <- c("white", "#f0f8ff", "#9ecae1", "#4292c6", "#021a3b")
-# O #f0f8ff (AliceBlue) é um azul extremamente pálido.
-
-cores_azul <- cores_lilas
+#cores_azul <- cores_lilas
 
 # 3. Plotar
 ARG_UF <- 'SP'
