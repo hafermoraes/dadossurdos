@@ -15,4 +15,24 @@ O repositório também contempla os scripts de análise para a caracterização 
 - do modelo preditivo Libras
 - da análise espacial da população surda no país
 
+## 🐳 Ambiente de Desenvolvimento Docker
 
+Este projeto disponibiliza uma imagem pronta com todo o ambiente configurado (Tidyverse, TeX Live e dados do IBGE pré-processados).
+
+Para baixar o ambiente localmente, execute:
+
+```bash
+docker pull ghcr.io/hafermoraes/dadossurdos:latest
+```
+
+e em seguida
+
+```bash
+	docker run -it --rm \
+		--detach \
+		--publish 8787:8787 \
+		--env DISABLE_AUTH=true \
+		dadossurdos
+```
+
+Agora abra qualquer navegador e acesse http://localhost:8787
