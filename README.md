@@ -22,7 +22,7 @@ Este projeto disponibiliza uma imagem pronta com todo o ambiente configurado (Ti
 Para baixar o ambiente localmente, execute:
 
 ```bash
-docker pull ghcr.io/hafermoraes/dadossurdos:latest
+docker pull ghcr.io/hafermoraes/dadossurdos:v1.1
 ```
 
 e em seguida
@@ -32,7 +32,7 @@ e em seguida
 		--detach \
 		--publish 8787:8787 \
 		--env DISABLE_AUTH=true \
-		dadossurdos
+		ghcr.io/hafermoraes/dadossurdos:v1.1
 ```
 
 Agora abra qualquer navegador e acesse http://localhost:8787

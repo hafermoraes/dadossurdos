@@ -16,6 +16,7 @@
 
 # Note: This rocker image contains all needed packages for etl and analyses purposes
 FROM rocker/tidyverse:4.4.1
+LABEL org.opencontainers.image.source="https://github.com"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -91,7 +92,7 @@ WORKDIR /home/rstudio/
 ENV host_git_repo=/home/rmoraes/git/dadossurdos
 
 # build container with ./analyses folder into it
-# COPY $host_git_repo/analyses/ .
+COPY $host_git_repo/1_analyses/ .
 
 # Data Ingestion
 ENV data_folder=/tmp/etl
